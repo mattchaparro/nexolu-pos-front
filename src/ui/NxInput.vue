@@ -29,9 +29,14 @@ const props = withDefaults(
 
 defineEmits<{ 'update:modelValue': [value: string] }>()
 
+// text-base (16px) en las 3 variantes a proposito: por debajo de 16px,
+// Safari en iOS hace zoom automatico al enfocar el input, y no hay forma
+// de desactivar ese zoom sin tocar el viewport global (rompe el zoom de
+// accesibilidad de toda la app) - asi que el tamaño de fuente del input
+// queda fijo en 16px en todos lados, aunque el alto/padding varien.
 const sizeClasses: Record<NxInputSize, string> = {
-  sm: 'h-8 px-2.5 text-sm',
-  md: 'h-10 px-3 text-sm',
+  sm: 'h-8 px-2.5 text-base',
+  md: 'h-10 px-3 text-base',
   lg: 'h-12 px-3.5 text-base',
 }
 

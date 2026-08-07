@@ -24,7 +24,7 @@ async function handleLogout(): Promise<void> {
   <div class="flex min-h-screen bg-slate-50">
     <NxSidebar :items="adminNavItems" :logo="logo" />
     <div class="flex min-w-0 flex-1 flex-col">
-      <NxNavbar :user-name="auth.user?.full_name ?? ''" @logout="handleLogout" />
+      <NxNavbar :logo="logo" :user-name="auth.user?.full_name ?? ''" @logout="handleLogout" />
       <main class="flex-1 p-6 pb-20 lg:pb-6">
         <router-view />
       </main>

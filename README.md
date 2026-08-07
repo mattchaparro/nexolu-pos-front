@@ -105,6 +105,12 @@ npm run build         # type-check + build de produccion
 ## Estado de la migracion
 
 - [x] Scaffold (Vite + stack completo + Tailwind/PrimeVue + Nexolu UI base)
-- [ ] Modulo Auth (login) - en analisis, ver `nexolu-pos-api` `AuthController`
-- [ ] Modulo Dashboard
+- [x] Modulo Auth (login)
+- [x] Modulo Dashboard (widgets base + consejo del dia; insight IA, onboarding
+      de WhatsApp y atajos personalizables quedan para cuando existan sus
+      modulos dependientes - ver `docs/BACKEND_READINESS.md`)
 - [ ] Resto de modulos: sales, inventory, customers, expenses, cash, reports, settings
+
+Antes de arrancar el siguiente modulo, revisar `docs/BACKEND_READINESS.md`:
+lista, por item del menu, si el backend de `nexolu-pos-api` ya esta listo o
+falta construirlo primero.
