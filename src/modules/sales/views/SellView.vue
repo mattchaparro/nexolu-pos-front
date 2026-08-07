@@ -110,7 +110,7 @@ function handleNewSale(): void {
     </p>
 
     <div class="mt-4 flex min-h-0 flex-1 gap-4">
-      <div class="min-h-0 flex-1 pb-20 lg:pb-0">
+      <div class="min-h-0 min-w-0 flex-1 pb-20 lg:pb-0">
         <template v-if="productsQuery.isPending.value || categoriesQuery.isPending.value">
           <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             <div v-for="n in 10" :key="n" class="h-28 animate-pulse rounded-xl bg-slate-200" />
