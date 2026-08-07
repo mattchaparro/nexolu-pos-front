@@ -86,7 +86,7 @@ async function removeTable(table: BusinessTable): Promise<void> {
       </ul>
 
       <form class="flex items-end gap-2 border-t border-slate-200 pt-3" @submit.prevent="addTable">
-        <NxInput v-model="newTableName" placeholder="Nombre de la mesa" size="sm" class="flex-1" />
+        <NxInput v-model="newTableName" label="Nombre de la mesa" size="sm" class="flex-1" />
         <NxButton size="sm" type="submit" :loading="createMutation.isPending.value">Agregar</NxButton>
       </form>
     </div>

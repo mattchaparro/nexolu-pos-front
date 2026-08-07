@@ -296,8 +296,8 @@ async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Prom
 
         <div v-else class="mb-4 rounded-xl border border-slate-200 bg-white p-4">
           <div v-if="newTabType === 'name'" class="flex flex-col gap-3">
-            <NxInput v-model="newTabName" placeholder="Nombre de la cuenta (ej: Don Pedro)" />
-            <NxInput v-model="newTabPhone" placeholder="Teléfono (opcional)" />
+            <NxInput v-model="newTabName" label="Nombre de la cuenta" />
+            <NxInput v-model="newTabPhone" label="Teléfono (opcional)" />
           </div>
           <p v-else class="text-sm font-medium text-slate-700">Pedido para {{ newTabName }}</p>
 

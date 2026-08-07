@@ -15,7 +15,7 @@ import { computed, ref, watch } from 'vue'
 
 import type { Business } from '@/types/business'
 import type { Sale } from '@/types/sale'
-import { NxButton, NxInput, NxModal } from '@/ui'
+import { NxButton, NxInput, NxInputNumber, NxModal } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 import { isCashPaymentMethodId, isCreditPaymentMethodId } from '@/utils/paymentMethod'
 
@@ -65,10 +65,10 @@ const splitRows = ref<PaymentSplitInput[]>([])
 const singleMethod = ref<string | null>(null)
 const customerName = ref('')
 const customerPhone = ref('')
-const partialAmount = ref('')
+const partialAmount = ref<number | null>(null)
 const partialMethod = ref<string | null>(null)
 const partialLabel = ref('')
-const receivedInput = ref('')
+const receivedInput = ref<number | null>(null)
 
 function resetForm(): void {
   isCourtesy.value = false
@@ -80,10 +80,10 @@ function resetForm(): void {
   singleMethod.value = defaultMethodId.value
   customerName.value = ''
   customerPhone.value = ''
-  partialAmount.value = ''
+  partialAmount.value = null
   partialMethod.value = defaultSplitMethodId.value
   partialLabel.value = ''
-  receivedInput.value = ''
+  receivedInput.value = null
 }
 
 watch(
@@ -176,14 +176,11 @@ function removeSplitRow(index: number): void {
 const isSingleCash = computed(
   () => !isCourtesy.value && !useSplit.value && isCashPaymentMethodId(singleMethod.value),
 )
-const received = computed(() => {
-  const value = Number(receivedInput.value)
-  return Number.isFinite(value) ? value : 0
-})
+const received = computed(() => receivedInput.value ?? 0)
 const change = computed(() => received.value - amountDue.value)
 
 function fillExactAmount(): void {
-  receivedInput.value = String(Math.round(amountDue.value))
+  receivedInput.value = Math.round(amountDue.value)
 }
 
 const needsCustomerInfoForCredit = computed(() => {
@@ -238,7 +235,7 @@ function submitConfirm(): void {
 }
 
 function submitPartial(): void {
-  const amount = Number(partialAmount.value)
+  const amount = partialAmount.value ?? 0
   if (!(amount > 0) || amount > balanceBeforeCharges.value + 0.02 || !partialMethod.value) {
     return
   }
@@ -247,7 +244,7 @@ function submitPartial(): void {
     payment_method: partialMethod.value,
     payer_label: partialLabel.value.trim() || undefined,
   })
-  partialAmount.value = ''
+  partialAmount.value = null
   partialLabel.value = ''
 }
 
@@ -285,14 +282,14 @@ const modalTitle = computed(() => props.title ?? (props.sale ? 'Cobrar cuenta' :
       <div v-if="allowPartial && amountDue > 0.02" class="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
         <p class="mb-2 text-xs font-semibold text-amber-800">Registrar abono parcial</p>
         <div class="flex flex-wrap items-end gap-2">
-          <NxInput v-model="partialAmount" type="number" placeholder="Monto" size="sm" class="w-28" />
+          <NxInputNumber v-model="partialAmount" label="Monto" size="sm" class="w-32" />
           <select
             v-model="partialMethod"
             class="min-w-[110px] rounded-lg border border-amber-300 bg-white px-2 py-1.5 text-xs"
           >
             <option v-for="m in splitMethods" :key="m.id" :value="m.id">{{ m.label }}</option>
           </select>
-          <NxInput v-model="partialLabel" placeholder="Quién paga (opc.)" size="sm" class="min-w-[120px] flex-1" />
+          <NxInput v-model="partialLabel" label="Quién paga (opc.)" size="sm" class="min-w-[120px] flex-1" />
           <NxButton size="sm" variant="secondary" @click="submitPartial">Registrar</NxButton>
         </div>
       </div>
@@ -315,7 +312,7 @@ const modalTitle = computed(() => props.title ?? (props.sale ? 'Cobrar cuenta' :
       <NxInput
         v-if="isCourtesy"
         v-model="courtesyReason"
-        placeholder="Motivo (opcional)"
+        label="Motivo (opcional)"
       />
 
       <div
@@ -360,13 +357,13 @@ const modalTitle = computed(() => props.title ?? (props.sale ? 'Cobrar cuenta' :
           <select v-model="row.method" class="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-2 py-2 text-sm">
             <option v-for="m in splitMethods" :key="m.id" :value="m.id">{{ m.label }}</option>
           </select>
-          <input
-            v-model.number="row.amount"
-            type="number"
-            min="0"
-            step="100"
-            placeholder="Monto"
-            class="w-28 rounded-xl border border-slate-300 px-2 py-2 text-right text-sm"
+          <NxInputNumber
+            :model-value="row.amount"
+            label="Monto"
+            size="sm"
+            class="w-32"
+            :min="0"
+            @update:model-value="row.amount = $event ?? 0"
           />
           <button type="button" class="shrink-0 text-slate-300 hover:text-red-500" @click="removeSplitRow(index)">
             <i class="pi pi-times" />
@@ -388,14 +385,14 @@ const modalTitle = computed(() => props.title ?? (props.sale ? 'Cobrar cuenta' :
             <p class="text-xs text-red-600">
               Un fiado necesita al menos un dato del cliente (nombre o teléfono).
             </p>
-            <NxInput v-model="customerName" placeholder="Nombre del cliente" size="sm" />
-            <NxInput v-model="customerPhone" placeholder="Teléfono" size="sm" />
+            <NxInput v-model="customerName" label="Nombre del cliente" size="sm" />
+            <NxInput v-model="customerPhone" label="Teléfono" size="sm" />
           </template>
         </div>
 
         <div v-if="isSingleCash" class="mt-3 flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
           <div class="flex items-end gap-2">
-            <NxInput v-model="receivedInput" type="number" placeholder="Monto recibido" size="sm" class="flex-1" />
+            <NxInputNumber v-model="receivedInput" label="Monto recibido" size="sm" class="flex-1" />
             <button type="button" class="pb-2 text-xs font-medium text-indigo-600 hover:text-indigo-700" @click="fillExactAmount">
               Monto exacto
             </button>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Discount } from '@/types/discount'
+import { NxInputNumber } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
 import type { CartLineTotals } from '../support/saleMath'
@@ -57,14 +58,13 @@ function applicableDiscounts(): Discount[] {
         </button>
       </div>
 
-      <input
+      <NxInputNumber
         v-if="line.product.price_varies_at_sale"
-        type="number"
-        min="0"
-        step="1"
-        class="w-24 rounded-lg border border-slate-300 px-2 py-1 text-right text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        :value="line.unitPrice"
-        @change="emit('update:unitPrice', Number(($event.target as HTMLInputElement).value))"
+        :model-value="line.unitPrice"
+        size="sm"
+        class="w-28"
+        :min="0"
+        @update:model-value="emit('update:unitPrice', $event ?? 0)"
       />
 
       <p class="text-sm font-semibold text-slate-900">

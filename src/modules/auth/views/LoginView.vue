@@ -19,7 +19,7 @@ import { useRouter } from 'vue-router'
 import { z } from 'zod'
 
 import { useAuthStore } from '@/stores/auth.store'
-import { NxButton, NxFormField, NxInput } from '@/ui'
+import { NxButton, NxInput } from '@/ui'
 
 const loginSchema = z.object({
   email: z.string().min(1, 'El correo es obligatorio').email('Ingresa un correo válido'),
@@ -81,29 +81,25 @@ const onSubmit = handleSubmit(async (values) => {
         {{ submitError }}
       </p>
 
-      <NxFormField label="Correo" for="email" :error="errors.email">
-        <NxInput
-          id="email"
-          v-model="email"
-          v-bind="emailAttrs"
-          type="email"
-          autocomplete="username"
-          placeholder="tu@correo.com"
-          :invalid="Boolean(errors.email)"
-        />
-      </NxFormField>
+      <NxInput
+        id="email"
+        v-model="email"
+        v-bind="emailAttrs"
+        type="email"
+        label="Correo"
+        autocomplete="username"
+        :error="errors.email"
+      />
 
-      <NxFormField label="Contraseña" for="password" :error="errors.password">
-        <NxInput
-          id="password"
-          v-model="password"
-          v-bind="passwordAttrs"
-          type="password"
-          autocomplete="current-password"
-          placeholder="••••••••"
-          :invalid="Boolean(errors.password)"
-        />
-      </NxFormField>
+      <NxInput
+        id="password"
+        v-model="password"
+        v-bind="passwordAttrs"
+        type="password"
+        label="Contraseña"
+        autocomplete="current-password"
+        :error="errors.password"
+      />
 
       <NxButton type="submit" class="w-full" :loading="isSubmitting"> Ingresar </NxButton>
     </form>

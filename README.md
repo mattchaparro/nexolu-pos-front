@@ -46,12 +46,22 @@ Query, no en stores.
 
 ### Nexolú UI
 
-Ninguna pantalla importa `primevue` directamente. Todo pasa por
-`src/ui` (`NxButton`, `NxInput`, `NxCard`, ...): por dentro pueden usar
-PrimeVue en modo `unstyled` (aporta comportamiento/accesibilidad, cero
-estilo), pero el estilo lo pone siempre Tailwind desde el wrapper. Esto
-desacopla la app de PrimeVue y nos da una identidad visual propia y
-consistente.
+Ninguna pantalla importa `primevue` directamente. Todo pasa por `src/ui`
+(`NxButton`, `NxInput`, `NxInputNumber`, `NxCard`, ...): por dentro usan
+PrimeVue con un tema propio (Aura + indigo de marca, `src/theme/nexoluPreset.ts`),
+pero cada wrapper decide que props expone y aporta el resto del estilo con
+Tailwind. Esto desacopla la app de PrimeVue y nos da una identidad visual
+propia y consistente.
+
+Todo campo de un formulario (nombre, teléfono, correo, etc.) usa `NxInput`/
+`NxInputNumber` con la prop `label` - Float Label variante "on" de PrimeVue
+(el label flota sobre el borde al enfocar o llenar el campo), nunca un
+`<label>` aparte ni un `placeholder` como sustituto de label. Los campos
+de solo filtro/búsqueda (buscador de productos, de mesas) no son parte de
+"un formulario" y se quedan con placeholder simple, sin label flotante.
+`NxInputNumber` formatea todo monto en pesos colombianos (`es-CO`, sin
+decimales) por defecto - usarlo para cualquier precio/abono/vuelto en vez
+de un `<input type="number">` suelto.
 
 ### Sistema de color
 

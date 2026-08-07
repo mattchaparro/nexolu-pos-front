@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 
 import type { Product } from '@/types/product'
-import { NxButton, NxFormField, NxInput, NxModal } from '@/ui'
+import { NxButton, NxInputNumber, NxModal } from '@/ui'
 
 const props = defineProps<{
   modelValue: boolean
@@ -14,21 +14,18 @@ const emit = defineEmits<{
   confirm: [price: number]
 }>()
 
-const priceInput = ref('')
+const price = ref<number | null>(null)
 
 watch(
   () => props.modelValue,
   (open) => {
     if (open) {
-      priceInput.value = ''
+      price.value = null
     }
   },
 )
 
-const parsedPrice = computed(() => {
-  const value = Number(priceInput.value)
-  return Number.isFinite(value) && value >= 0 ? value : null
-})
+const parsedPrice = computed(() => (price.value !== null && price.value >= 0 ? price.value : null))
 
 function confirm(): void {
   if (parsedPrice.value === null) {
@@ -46,15 +43,7 @@ function confirm(): void {
     size="sm"
     @update:model-value="$emit('update:modelValue', $event)"
   >
-    <NxFormField label="Precio a cobrar" required>
-      <NxInput
-        v-model="priceInput"
-        type="number"
-        placeholder="0"
-        autocomplete="off"
-        @keyup.enter="confirm"
-      />
-    </NxFormField>
+    <NxInputNumber v-model="price" label="Precio a cobrar" required :min="0" @keyup.enter="confirm" />
 
     <template #footer>
       <div class="flex justify-end gap-2">

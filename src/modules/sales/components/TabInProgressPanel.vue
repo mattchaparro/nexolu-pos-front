@@ -74,8 +74,8 @@ function title(): string {
     </div>
 
     <div v-if="!activeSale" class="mb-3 flex flex-col gap-2">
-      <NxInput v-if="!pendingTable" v-model="newTabName" placeholder="Nombre de la cuenta (ej: Don Pedro)" size="sm" />
-      <NxInput v-if="!pendingTable" v-model="newTabPhone" placeholder="Teléfono (opcional)" size="sm" />
+      <NxInput v-if="!pendingTable" v-model="newTabName" label="Nombre de la cuenta" size="sm" />
+      <NxInput v-if="!pendingTable" v-model="newTabPhone" label="Teléfono (opcional)" size="sm" />
       <label
         v-if="business?.delivery_enabled"
         class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
