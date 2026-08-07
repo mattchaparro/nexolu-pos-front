@@ -63,22 +63,23 @@ function close(): void {
         {{ step === 'items' ? 'Carrito' : 'Cobrar' }}
         <span class="text-slate-400">({{ checkout.itemCount.value }})</span>
       </h2>
-      <button
-        v-if="step === 'items' && checkout.lines.value.length > 0"
-        type="button"
-        class="ml-auto px-1 text-xs font-medium text-slate-400 hover:text-red-600"
-        @click="checkout.reset()"
-      >
-        Vaciar
-      </button>
-      <button
-        type="button"
-        class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
-        :class="step === 'checkout' ? 'ml-auto' : ''"
-        @click="close"
-      >
-        <i class="pi pi-times" />
-      </button>
+      <div class="ml-auto flex items-center gap-1">
+        <button
+          v-if="step === 'items' && checkout.lines.value.length > 0"
+          type="button"
+          class="px-1 text-xs font-medium text-slate-400 hover:text-red-600"
+          @click="checkout.reset()"
+        >
+          Vaciar
+        </button>
+        <button
+          type="button"
+          class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+          @click="close"
+        >
+          <i class="pi pi-times" />
+        </button>
+      </div>
     </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto p-4">
