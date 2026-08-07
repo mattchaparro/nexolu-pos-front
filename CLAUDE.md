@@ -5,6 +5,17 @@ SPA nueva del POS de Nexolú (Vue 3 + Vite). Consume exclusivamente
 gradualmente al frontend Inertia del monolito legacy (`pos-saas-legacy`
 / `pos.nexolu.co`), módulo por módulo.
 
+## Alcance: solo la app autenticada
+
+Este repo cubre exclusivamente lo que hay **después del login** (auth,
+dashboard, sales, inventory, ...). El home/marketing público de
+`pos.nexolu.co` (SEO, landing, contenido pre-login) queda **fuera de
+alcance** a propósito: una SPA client-rendered es mala opción para
+contenido que vive de indexación (los crawlers no ven HTML real hasta
+que se ejecuta el JS). El marketing site sigue sirviéndose desde el
+monolito legacy por ahora; si en el futuro se migra, evaluar SSR/SSG
+aparte, no meterlo en esta SPA.
+
 ## Reglas del proyecto (inamovibles)
 
 ### Rutas del frontend en español
