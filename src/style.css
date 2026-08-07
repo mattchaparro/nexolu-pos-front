@@ -1,0 +1,33 @@
+@import 'tailwindcss';
+@plugin 'tailwindcss-primeui';
+
+/**
+ * Sistema de color disciplinado, a proposito chico: el legacy no tenia
+ * estandar (botones de guardar en rojo, verde y morado segun la pantalla)
+ * y no vamos a repetir eso. Unicas familias de color permitidas en toda
+ * la app, todas ya provistas por Tailwind v4 (no se redefinen aca):
+ *
+ *   - indigo  -> color de marca (acciones primarias, links, foco)
+ *   - slate   -> neutros (texto, bordes, fondos)
+ *   - emerald -> exito / confirmacion (nunca como color decorativo)
+ *   - red     -> destructivo (eliminar, cancelar algo irreversible)
+ *   - amber   -> advertencia
+ *
+ * Ningun otro color de Tailwind (purple, pink, cyan, etc.) sin decidirlo
+ * explicitamente aca primero - ver README.md "Sistema de color".
+ */
+@theme {
+  --font-sans: 'Lato', ui-sans-serif, system-ui, sans-serif;
+}
+
+/**
+ * PrimeVue corre en modo unstyled (ver main.ts) - sin esto, sus
+ * componentes no tienen ningun estilo base y dependen 100% de las clases
+ * Tailwind que les da cada wrapper de src/ui. tailwindcss-primeui aporta
+ * los data-attribute variants (ui:enabled:, ui:checked:, etc.) para poder
+ * usar Tailwind directamente sobre el estado interno de cada componente.
+ */
+
+body {
+  margin: 0;
+}
