@@ -12,6 +12,7 @@ import { formatCop } from '@/utils/formatCop'
 
 import CashCheckoutModal from '../components/CashCheckoutModal.vue'
 import CartPanel from '../components/CartPanel.vue'
+import MobileCartSheet from '../components/MobileCartSheet.vue'
 import PriceVariesModal from '../components/PriceVariesModal.vue'
 import ProductGrid from '../components/ProductGrid.vue'
 import SaleSuccessDialog from '../components/SaleSuccessDialog.vue'
@@ -153,28 +154,14 @@ function handleNewSale(): void {
     </button>
 
     <Teleport to="body">
-      <div
-        v-if="business && mobileCartOpen"
-        class="fixed inset-0 z-40 flex flex-col bg-white lg:hidden"
-      >
-        <div class="flex items-center justify-end border-b border-slate-200 px-4 py-2">
-          <button
-            type="button"
-            class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
-            @click="mobileCartOpen = false"
-          >
-            <i class="pi pi-times" />
-          </button>
-        </div>
-        <div class="min-h-0 flex-1 overflow-y-auto p-4">
-          <CartPanel
-            :checkout="checkout"
-            :business="business"
-            :submitting="createSaleMutation.isPending.value"
-            @submit="handleSubmit"
-          />
-        </div>
-      </div>
+      <MobileCartSheet
+        v-if="business"
+        v-model="mobileCartOpen"
+        :checkout="checkout"
+        :business="business"
+        :submitting="createSaleMutation.isPending.value"
+        @submit="handleSubmit"
+      />
     </Teleport>
 
     <PriceVariesModal
