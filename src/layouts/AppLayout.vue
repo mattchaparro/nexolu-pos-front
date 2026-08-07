@@ -1,11 +1,15 @@
 <script setup lang="ts">
-// Shell minimo para poder validar el guard de auth de punta a punta.
-// El sidebar/navbar real (NxSidebar, NxNavbar) se construye en la
-// iteracion del modulo Dashboard, replicando la distribucion del legacy.
+// Distribucion real: sidebar + navbar, calcados de Layouts/AppLayout.vue
+// del legacy (Sidebar.vue + NavBarProfile.vue). Los banners del legacy
+// (impersonacion, stock bajo, turno vencido, suscripcion, anuncios)
+// quedan para cuando existan esos modulos - no son parte de la
+// navegacion base.
 import { useRouter } from 'vue-router'
 
+import logo from '@/assets/nexolu-logo.png'
+import { adminNavItems } from '@/router/navigation'
 import { useAuthStore } from '@/stores/auth.store'
-import { NxButton } from '@/ui'
+import { NxNavbar, NxSidebar } from '@/ui'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -17,18 +21,13 @@ async function handleLogout(): Promise<void> {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50">
-    <header
-      class="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3"
-    >
-      <span class="font-semibold text-indigo-700">Nexolú POS</span>
-      <div class="flex items-center gap-3">
-        <span class="text-sm text-slate-600">{{ auth.user?.full_name }}</span>
-        <NxButton variant="ghost" size="sm" @click="handleLogout">Cerrar sesión</NxButton>
-      </div>
-    </header>
-    <main class="p-6">
-      <router-view />
-    </main>
+  <div class="flex min-h-screen bg-slate-50">
+    <NxSidebar :items="adminNavItems" :logo="logo" />
+    <div class="flex min-w-0 flex-1 flex-col">
+      <NxNavbar :user-name="auth.user?.full_name ?? ''" @logout="handleLogout" />
+      <main class="flex-1 p-6">
+        <router-view />
+      </main>
+    </div>
   </div>
 </template>
