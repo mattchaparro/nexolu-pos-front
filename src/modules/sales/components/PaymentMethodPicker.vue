@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { BusinessPaymentMethod } from '@/types/business'
 
+import { resolvePaymentMethodIcon } from '../support/paymentMethodIcon'
+
 defineProps<{
   methods: BusinessPaymentMethod[]
   modelValue: string | null
@@ -15,7 +17,7 @@ defineEmits<{ 'update:modelValue': [value: string] }>()
       v-for="method in methods"
       :key="method.id"
       type="button"
-      class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
+      class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
       :class="
         modelValue === method.id
           ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
@@ -23,6 +25,7 @@ defineEmits<{ 'update:modelValue': [value: string] }>()
       "
       @click="$emit('update:modelValue', method.id)"
     >
+      <i :class="resolvePaymentMethodIcon(method.id)" class="text-base" />
       {{ method.label }}
     </button>
   </div>

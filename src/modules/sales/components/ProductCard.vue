@@ -45,6 +45,7 @@ const isDisabled = computed(() => props.product.track_stock && props.product.sto
       </span>
     </div>
     <p class="line-clamp-2 text-sm font-medium leading-tight text-slate-900">{{ product.name }}</p>
+    <p v-if="product.category" class="truncate text-xs text-slate-400">{{ product.category.name }}</p>
     <p class="text-sm font-semibold text-indigo-700">
       {{ product.price_varies_at_sale ? 'Precio variable' : formatCop(product.price) }}
     </p>
