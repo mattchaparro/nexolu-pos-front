@@ -1,10 +1,10 @@
 <script setup lang="ts">
-// Sidebar de escritorio, calcado de Components/Menu/Sidebar.vue del
-// legacy: logo arriba, boton de colapsar, lista de items con icono +
-// label. PrimeIcons en vez de Material Icons (sistema unico de iconos).
-// El menu movil (bottom nav) del legacy queda pendiente para una
-// iteracion aparte - por ahora el sidebar solo se muestra en desktop
-// (lg:flex), igual que hace el legacy con el suyo.
+// Sidebar de escritorio + barra inferior movil, calcado de
+// Components/Menu/Sidebar.vue del legacy: logo arriba, boton de
+// colapsar, lista de items con icono + label. PrimeIcons en vez de
+// Material Icons (sistema unico de iconos). La barra movil muestra el
+// mismo menu completo (con scroll horizontal), no solo los items
+// habilitados, para verse consistente con el sidebar de escritorio.
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -74,4 +74,43 @@ function isActive(item: NavItem): boolean {
       </ul>
     </nav>
   </aside>
+
+  <nav
+    class="fixed bottom-0 z-20 w-full overflow-x-auto border-t border-slate-200 bg-white shadow-lg lg:hidden"
+  >
+    <ul class="m-auto flex w-max min-w-full flex-row items-center justify-evenly px-1 py-1.5">
+      <li v-for="item in items" :key="item.label" class="shrink-0">
+        <RouterLink
+          v-if="!item.disabled && item.routeName"
+          :to="{ name: item.routeName }"
+          class="flex min-h-[52px] min-w-[60px] flex-col items-center justify-center rounded-xl px-2.5 py-2"
+          :class="isActive(item) ? 'bg-indigo-100 ring-2 ring-inset ring-indigo-500' : ''"
+        >
+          <i
+            :class="[
+              item.icon,
+              'text-xl leading-none',
+              isActive(item) ? 'text-indigo-700' : 'text-slate-500',
+            ]"
+          />
+          <span
+            class="mt-0.5 max-w-[4.5rem] truncate text-center text-[10px] font-medium leading-tight"
+            :class="isActive(item) ? 'text-indigo-800 font-bold' : 'text-slate-500'"
+          >
+            {{ item.label }}
+          </span>
+        </RouterLink>
+        <span
+          v-else
+          class="flex min-h-[52px] min-w-[60px] flex-col items-center justify-center rounded-xl px-2.5 py-2"
+          :title="item.disabled ? 'Próximamente' : undefined"
+        >
+          <i :class="item.icon" class="text-xl leading-none text-slate-300" />
+          <span class="mt-0.5 max-w-[4.5rem] truncate text-center text-[10px] font-medium leading-tight text-slate-300">
+            {{ item.label }}
+          </span>
+        </span>
+      </li>
+    </ul>
+  </nav>
 </template>
