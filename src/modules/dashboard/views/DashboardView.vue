@@ -1,24 +1,29 @@
 <script setup lang="ts">
-// Version recortada de Pages/Admin/Dashboard.vue del legacy: solo las 5
-// StatCards (resumen del dia). Quedan afuera para una iteracion aparte:
-// tarjeta de insight IA, onboarding de WhatsApp, "consejo del dia" y la
-// grilla de atajos personalizable - dependen de modulos que este
-// frontend todavia no tiene (chat IA, catalogo, etc.).
-//
-// El titulo usa "Mi Negocio" fijo por ahora - el legacy usa el nombre
-// real del negocio, pero eso requiere traer Business (UserResource no
-// lo incluye) y no es parte de esta iteracion.
+// Version recortada de Pages/Admin/Dashboard.vue del legacy: las 5
+// StatCards (resumen del dia), el nombre real del negocio y el "consejo
+// del dia". Quedan afuera para cuando exista el modulo de chat IA:
+// tarjeta de insight IA y onboarding de WhatsApp - ambas enlazan a esa
+// conversacion, que este frontend todavia no tiene. La grilla de atajos
+// personalizable queda para cuando haya 2-3 modulos reales a los que
+// apuntar.
 import { NxPageHeader, NxStatCard } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
+import ConsejoDelDiaCard from '../components/ConsejoDelDiaCard.vue'
+import { useBusiness } from '../composables/useBusiness'
 import { useDashboardSummary } from '../composables/useDashboardSummary'
 
 const { data: stats, isPending, isError } = useDashboardSummary()
+const { data: business } = useBusiness()
 </script>
 
 <template>
   <div>
-    <NxPageHeader title="Mi Negocio" subtitle="Resumen del día" icon="pi pi-shop" />
+    <NxPageHeader
+      :title="business?.name ?? 'Mi Negocio'"
+      subtitle="Resumen del día"
+      icon="pi pi-shop"
+    />
 
     <p v-if="isError" class="mt-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
       No pudimos cargar el resumen del día. Intenta de nuevo más tarde.
@@ -54,5 +59,7 @@ const { data: stats, isPending, isError } = useDashboardSummary()
         />
       </template>
     </div>
+
+    <ConsejoDelDiaCard class="mt-6" />
   </div>
 </template>

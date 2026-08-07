@@ -84,7 +84,6 @@ function isActive(item: NavItem): boolean {
           v-if="!item.disabled && item.routeName"
           :to="{ name: item.routeName }"
           class="flex min-h-[52px] min-w-[60px] flex-col items-center justify-center rounded-xl px-2.5 py-2"
-          :class="isActive(item) ? 'bg-indigo-100 ring-2 ring-inset ring-indigo-500' : ''"
         >
           <i
             :class="[
