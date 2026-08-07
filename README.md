@@ -113,7 +113,9 @@ npm run build         # type-check + build de produccion
       cortesia, fiado, cobro en efectivo con vueltas). Cuentas
       abiertas/mesas quedan para su propio modulo - ver
       `docs/BACKEND_READINESS.md`.
-- [ ] Resto de modulos: cuentas abiertas, inventory, customers, expenses, cash, reports, settings
+- [x] Modulo Cuentas abiertas (mesas + cuentas por nombre, agregar/editar
+      items, cobro con cortesia/cargos/abonos parciales/pago dividido)
+- [ ] Resto de modulos: inventory, customers, expenses, cash, reports, settings
 
 Antes de arrancar el siguiente modulo, revisar `docs/BACKEND_READINESS.md`:
 lista, por item del menu, si el backend de `nexolu-pos-api` ya esta listo o
