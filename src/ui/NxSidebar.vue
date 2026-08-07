@@ -105,7 +105,9 @@ function isActive(item: NavItem): boolean {
           :title="item.disabled ? 'Próximamente' : undefined"
         >
           <i :class="item.icon" class="text-xl leading-none text-slate-300" />
-          <span class="mt-0.5 max-w-[4.5rem] truncate text-center text-[10px] font-medium leading-tight text-slate-300">
+          <span
+            class="mt-0.5 max-w-[4.5rem] truncate text-center text-[10px] font-medium leading-tight text-slate-300"
+          >
             {{ item.label }}
           </span>
         </span>

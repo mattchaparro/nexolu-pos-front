@@ -109,7 +109,11 @@ npm run build         # type-check + build de produccion
 - [x] Modulo Dashboard (widgets base + consejo del dia; insight IA, onboarding
       de WhatsApp y atajos personalizables quedan para cuando existan sus
       modulos dependientes - ver `docs/BACKEND_READINESS.md`)
-- [ ] Resto de modulos: sales, inventory, customers, expenses, cash, reports, settings
+- [x] Modulo Vender (venta directa: carrito, descuentos, cargos, domicilio,
+      cortesia, fiado, cobro en efectivo con vueltas). Cuentas
+      abiertas/mesas quedan para su propio modulo - ver
+      `docs/BACKEND_READINESS.md`.
+- [ ] Resto de modulos: cuentas abiertas, inventory, customers, expenses, cash, reports, settings
 
 Antes de arrancar el siguiente modulo, revisar `docs/BACKEND_READINESS.md`:
 lista, por item del menu, si el backend de `nexolu-pos-api` ya esta listo o

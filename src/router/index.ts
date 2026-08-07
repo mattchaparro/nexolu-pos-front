@@ -28,6 +28,11 @@ const router = createRouter({
           name: 'dashboard',
           component: () => import('@/modules/dashboard/views/DashboardView.vue'),
         },
+        {
+          path: 'vender',
+          name: 'sales.create',
+          component: () => import('@/modules/sales/views/SellView.vue'),
+        },
       ],
     },
   ],

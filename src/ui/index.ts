@@ -10,6 +10,8 @@ export { default as NxFormField } from './NxFormField.vue'
 export { default as NxInput } from './NxInput.vue'
 export type { NxInputSize } from './NxInput.vue'
 
+export { default as NxModal } from './NxModal.vue'
+
 export { default as NxNavbar } from './NxNavbar.vue'
 
 export { default as NxPageHeader } from './NxPageHeader.vue'

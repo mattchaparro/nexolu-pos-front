@@ -14,8 +14,8 @@ para lo que falta del lado del backend.
 |---|---|---|
 | Inicio (Dashboard) | ✅ Listo | `GET /business`, `GET /dashboard/summary`. Implementado. |
 | Asistente IA | ✅ Listo | `POST /ai/chat`, `/ai/drafts/{id}/confirm|discard`, `GET /insights`, `POST /insights/{tipo}/refresh`, `/ai/channels/whatsapp/*`. Ningún endpoint falta - lo que falta es el módulo de frontend (chat UI) en sí. |
-| Vender | ✅ Listo | `sales` (index/show/store) + `POST /sales/{sale}/reverse`. |
-| Cuentas abiertas | ✅ Listo | `tables`, `open-tabs` (+ items/partial-payments/close). |
+| Vender | ✅ Listo y construido | `sales` (index/show/store) + `POST /sales/{sale}/reverse`. Solo venta directa (`mode==='quick'` del legacy) - mesas/cuentas abiertas quedan en el modulo de abajo. |
+| Cuentas abiertas | ✅ Listo | `tables`, `open-tabs` (+ items/partial-payments/close). **Ojo al construirlo**: `CloseOpenTabRequest` tiene el mismo hueco que `StoreSaleRequest` tenia antes de Vender - no exige ningun dato de cliente al cerrar una cuenta como fiado. Se corrigio en `StoreSaleRequest` (venta directa) pero no aca todavia; replicar el mismo fix ahi antes o al construir este modulo. |
 | Servicios | ✅ Listo | `service-orders` (+ pay/cancel). |
 | Agenda | ✅ Listo | `appointments` (+ reschedule/status). |
 | Fiados | ✅ Listo | `receivables` (+ collect). |

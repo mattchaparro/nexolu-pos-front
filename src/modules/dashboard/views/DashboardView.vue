@@ -6,11 +6,11 @@
 // conversacion, que este frontend todavia no tiene. La grilla de atajos
 // personalizable queda para cuando haya 2-3 modulos reales a los que
 // apuntar.
+import { useBusiness } from '@/composables/useBusiness'
 import { NxPageHeader, NxStatCard } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
 import ConsejoDelDiaCard from '../components/ConsejoDelDiaCard.vue'
-import { useBusiness } from '../composables/useBusiness'
 import { useDashboardSummary } from '../composables/useDashboardSummary'
 
 const { data: stats, isPending, isError } = useDashboardSummary()
