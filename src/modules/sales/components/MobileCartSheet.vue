@@ -1,11 +1,13 @@
 <script setup lang="ts">
 // Version movil del carrito: a pantalla completa, en 2 pasos (items ->
-// cobro) en vez de todo apilado en una sola pantalla larga - en un celular
-// la seccion de cobro (cliente, domicilio, cortesia, descuento, cargos,
-// medio de pago, totales) sumada a los items del carrito no entra sin
-// scrollear demasiado. El panel de escritorio (CartPanel.vue) no tiene
-// este problema (tiene alto de sobra) asi que se queda en una sola vista,
-// con el boton de expandir para el listado de items en vez de pasos.
+// datos previos al cobro) en vez de todo apilado en una sola pantalla
+// larga - en un celular la seccion previa al cobro (cliente, domicilio,
+// descuento, totales) sumada a los items del carrito no entra sin
+// scrollear demasiado. Cortesia/cargos/medio de pago/vuelto se resuelven
+// en PaymentModal al tocar "Cobrar", no aca - ver la nota en
+// useSaleCheckout.ts. El panel de escritorio (CartPanel.vue) no tiene el
+// problema de espacio (tiene alto de sobra) asi que se queda en una sola
+// vista, con el boton de expandir para el listado de items en vez de pasos.
 import { ref, watch } from 'vue'
 
 import type { Business } from '@/types/business'

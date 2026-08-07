@@ -1,34 +1,52 @@
 <script setup lang="ts">
-// Cobrar/cerrar una cuenta abierta: cortesia, cargos (mismo patron que
-// CartCheckoutSection de Vender, sin override de tasa - ver nota en
-// docs/BACKEND_READINESS.md), abonos parciales, pago con un solo medio o
-// dividido entre 2+. Simplificacion deliberada sobre el legacy
-// (OpenTabs.vue): sin el selector "una persona/varias personas" ni el
-// boton de "repartir entre N" - misma funcionalidad final (abonar de a
-// poco o dividir el pago), presentada como 3 acciones directas en vez de
-// alternar entre pestañas.
+// Modal de cobro UNICO para venta directa y cuentas abiertas - antes venta
+// directa resolvia el pago inline en el carrito + un modal chiquito aparte
+// solo para efectivo (sin pago dividido), y cuentas abiertas tenia su
+// propio modal con cortesia/cargos/pago dividido/abonos pero sin vuelto en
+// efectivo. Dos experiencias distintas para la misma accion ("cobrar") no
+// se justificaban - ver la charla sobre unificar la experiencia de pago.
+//
+// sale=null significa venta directa (la Sale todavia no existe): el monto
+// base para cargos y el domicilio vienen de fallbackChargeBase/
+// fallbackDeliveryFee en vez de derivarse de una Sale ya persistida. Los
+// abonos parciales no aplican a una venta directa (se cobra completa en el
+// momento), asi que esa seccion solo aparece si sale no es null.
 import { computed, ref, watch } from 'vue'
 
 import type { Business } from '@/types/business'
 import type { Sale } from '@/types/sale'
 import { NxButton, NxInput, NxModal } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
-import { isCreditPaymentMethodId } from '@/utils/paymentMethod'
+import { isCashPaymentMethodId, isCreditPaymentMethodId } from '@/utils/paymentMethod'
 
-import { round2 } from '../../sales/support/saleMath'
-import type { CloseOpenTabPayload, PaymentSplitInput, RecordPartialPaymentPayload } from '../types'
-import PaymentMethodPicker from '../../sales/components/PaymentMethodPicker.vue'
+import type { CloseOpenTabPayload, PaymentSplitInput, RecordPartialPaymentPayload } from '../../open-tabs/types'
+import { round2 } from '../support/saleMath'
+import PaymentMethodPicker from './PaymentMethodPicker.vue'
 
-const props = defineProps<{
-  modelValue: boolean
-  sale: Sale
-  business: Business
-  submitting: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: boolean
+    business: Business
+    submitting: boolean
+    sale: Sale | null
+    fallbackChargeBase?: number
+    fallbackDeliveryFee?: number
+    existingCustomerName?: string | null
+    existingCustomerPhone?: string | null
+    title?: string
+  }>(),
+  {
+    fallbackChargeBase: 0,
+    fallbackDeliveryFee: 0,
+    existingCustomerName: null,
+    existingCustomerPhone: null,
+    title: undefined,
+  },
+)
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
-  close: [payload: CloseOpenTabPayload]
+  confirm: [payload: CloseOpenTabPayload]
   'register-partial': [payload: RecordPartialPaymentPayload]
 }>()
 
@@ -50,6 +68,7 @@ const customerPhone = ref('')
 const partialAmount = ref('')
 const partialMethod = ref<string | null>(null)
 const partialLabel = ref('')
+const receivedInput = ref('')
 
 function resetForm(): void {
   isCourtesy.value = false
@@ -64,6 +83,7 @@ function resetForm(): void {
   partialAmount.value = ''
   partialMethod.value = defaultSplitMethodId.value
   partialLabel.value = ''
+  receivedInput.value = ''
 }
 
 watch(
@@ -75,25 +95,30 @@ watch(
   },
 )
 
-const hasPartialPayments = computed(() => (props.sale.partial_payments?.length ?? 0) > 0)
-// Number(): amount_paid/p.amount/sale.total llegan como string desde el
-// backend (cast decimal:2 de Laravel se serializa como string en JSON) -
-// sumarlos directo con "+" concatenaria texto en vez de sumar.
+const allowPartial = computed(() => props.sale !== null)
+const hasPartialPayments = computed(() => (props.sale?.partial_payments?.length ?? 0) > 0)
 const amountPaid = computed(() => {
-  if (props.sale.amount_paid !== null && props.sale.amount_paid !== undefined) {
+  if (props.sale?.amount_paid !== null && props.sale?.amount_paid !== undefined) {
     return Number(props.sale.amount_paid)
   }
-  return props.sale.partial_payments?.reduce((s, p) => s + Number(p.amount), 0) ?? 0
-})
-const balanceBeforeCharges = computed(() => {
-  if (props.sale.balance_due !== null && props.sale.balance_due !== undefined) {
-    return round2(Number(props.sale.balance_due))
-  }
-  return round2(Number(props.sale.total) - amountPaid.value)
+  return props.sale?.partial_payments?.reduce((s, p) => s + Number(p.amount), 0) ?? 0
 })
 
-// Base sin el domicilio, igual que OpenTabService::close().
-const chargeBase = computed(() => Math.max(0, props.sale.total - props.sale.delivery_fee))
+// Number(): sale.total/delivery_fee llegan como string desde el backend
+// (cast decimal:2 de Laravel se serializa como string en JSON).
+const chargeBase = computed(() =>
+  props.sale
+    ? Math.max(0, Number(props.sale.total) - Number(props.sale.delivery_fee))
+    : props.fallbackChargeBase,
+)
+const grandBase = computed(() => (props.sale ? Number(props.sale.total) : props.fallbackChargeBase + props.fallbackDeliveryFee))
+
+const balanceBeforeCharges = computed(() => {
+  if (props.sale?.balance_due !== null && props.sale?.balance_due !== undefined) {
+    return round2(Number(props.sale.balance_due))
+  }
+  return round2(grandBase.value - amountPaid.value)
+})
 
 const serviceChargeAmount = computed(() => {
   if (isCourtesy.value || !props.business.charges.service_charge_enabled || !applyServiceCharge.value) {
@@ -146,6 +171,21 @@ function removeSplitRow(index: number): void {
   splitRows.value.splice(index, 1)
 }
 
+// Vuelto: solo tiene sentido con un unico medio en efectivo, ni en pago
+// dividido ni en cortesia.
+const isSingleCash = computed(
+  () => !isCourtesy.value && !useSplit.value && isCashPaymentMethodId(singleMethod.value),
+)
+const received = computed(() => {
+  const value = Number(receivedInput.value)
+  return Number.isFinite(value) ? value : 0
+})
+const change = computed(() => received.value - amountDue.value)
+
+function fillExactAmount(): void {
+  receivedInput.value = String(Math.round(amountDue.value))
+}
+
 const needsCustomerInfoForCredit = computed(() => {
   if (isCourtesy.value || useSplit.value) {
     return false
@@ -153,10 +193,10 @@ const needsCustomerInfoForCredit = computed(() => {
   if (!isCreditPaymentMethodId(singleMethod.value)) {
     return false
   }
-  return !props.sale.customer_name && !props.sale.customer_phone && !customerName.value && !customerPhone.value
+  return !props.existingCustomerName && !props.existingCustomerPhone && !customerName.value && !customerPhone.value
 })
 
-const canClose = computed(() => {
+const canConfirm = computed(() => {
   if (isCourtesy.value) {
     return true
   }
@@ -164,11 +204,14 @@ const canClose = computed(() => {
     const validRows = splitRows.value.filter((r) => Number(r.amount) > 0.009)
     return validRows.length >= 2 && Math.abs(splitRemainder.value) < 0.02
   }
-  return Boolean(singleMethod.value) && !needsCustomerInfoForCredit.value
+  if (!singleMethod.value || needsCustomerInfoForCredit.value) {
+    return false
+  }
+  return !isSingleCash.value || change.value >= -0.01
 })
 
-function submitClose(): void {
-  if (!canClose.value) {
+function submitConfirm(): void {
+  if (!canConfirm.value) {
     return
   }
 
@@ -191,7 +234,7 @@ function submitClose(): void {
     }
   }
 
-  emit('close', payload)
+  emit('confirm', payload)
 }
 
 function submitPartial(): void {
@@ -207,19 +250,21 @@ function submitPartial(): void {
   partialAmount.value = ''
   partialLabel.value = ''
 }
+
+const modalTitle = computed(() => props.title ?? (props.sale ? 'Cobrar cuenta' : 'Cobrar venta'))
 </script>
 
 <template>
   <NxModal
     :model-value="modelValue"
-    title="Cobrar cuenta"
+    :title="modalTitle"
     size="lg"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <div class="flex flex-col gap-4">
       <div>
         <p v-if="amountPaid > 0" class="space-y-0.5 text-xs text-slate-500">
-          Total cuenta: <strong class="text-slate-700">{{ formatCop(sale.total) }}</strong> · Ya pagado:
+          Total cuenta: <strong class="text-slate-700">{{ formatCop(grandBase) }}</strong> · Ya pagado:
           <strong class="text-emerald-700">{{ formatCop(amountPaid) }}</strong>
         </p>
         <p class="text-2xl font-bold text-emerald-600">{{ formatCop(amountDue) }}</p>
@@ -227,7 +272,7 @@ function submitPartial(): void {
       </div>
 
       <div
-        v-if="sale.partial_payments?.length"
+        v-if="sale?.partial_payments?.length"
         class="rounded-lg border border-amber-200 bg-amber-50/60 p-3 text-[11px] text-amber-900"
       >
         <p v-for="p in sale.partial_payments" :key="p.id">
@@ -237,7 +282,7 @@ function submitPartial(): void {
         </p>
       </div>
 
-      <div v-if="amountDue > 0.02" class="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
+      <div v-if="allowPartial && amountDue > 0.02" class="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
         <p class="mb-2 text-xs font-semibold text-amber-800">Registrar abono parcial</p>
         <div class="flex flex-wrap items-end gap-2">
           <NxInput v-model="partialAmount" type="number" placeholder="Monto" size="sm" class="w-28" />
@@ -337,7 +382,7 @@ function submitPartial(): void {
 
         <div v-if="isCreditPaymentMethodId(singleMethod)" class="mt-3 flex flex-col gap-2">
           <p v-if="!needsCustomerInfoForCredit" class="text-xs text-slate-500">
-            Cliente: {{ sale.customer_name || sale.customer_phone || customerName || customerPhone }}
+            Cliente: {{ existingCustomerName || existingCustomerPhone || customerName || customerPhone }}
           </p>
           <template v-else>
             <p class="text-xs text-red-600">
@@ -347,13 +392,28 @@ function submitPartial(): void {
             <NxInput v-model="customerPhone" placeholder="Teléfono" size="sm" />
           </template>
         </div>
+
+        <div v-if="isSingleCash" class="mt-3 flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div class="flex items-end gap-2">
+            <NxInput v-model="receivedInput" type="number" placeholder="Monto recibido" size="sm" class="flex-1" />
+            <button type="button" class="pb-2 text-xs font-medium text-indigo-600 hover:text-indigo-700" @click="fillExactAmount">
+              Monto exacto
+            </button>
+          </div>
+          <p
+            class="rounded-lg px-3 py-1.5 text-center text-sm font-semibold"
+            :class="change >= -0.01 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'"
+          >
+            {{ change >= -0.01 ? `Vueltas: ${formatCop(change)}` : `Falta ${formatCop(-change)}` }}
+          </p>
+        </div>
       </div>
     </div>
 
     <template #footer>
       <div class="flex gap-2">
         <NxButton variant="outline" class="flex-1" @click="emit('update:modelValue', false)">Cancelar</NxButton>
-        <NxButton class="flex-1" :disabled="!canClose" :loading="submitting" @click="submitClose">Cobrar</NxButton>
+        <NxButton class="flex-1" :disabled="!canConfirm" :loading="submitting" @click="submitConfirm">Cobrar</NxButton>
       </div>
     </template>
   </NxModal>

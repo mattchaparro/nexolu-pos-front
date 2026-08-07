@@ -1,6 +1,8 @@
 // Payloads que esperan StoreOpenTabRequest/OpenTabItemsRequest/
 // RecordPartialPaymentRequest/CloseOpenTabRequest en nexolu-pos-api.
-import type { SaleItemInput } from '@/types/sale'
+import type { PaymentSplitInput, SaleItemInput } from '@/types/sale'
+
+export type { PaymentSplitInput }
 
 export interface OpenTabPayload {
   table_id?: number | null
@@ -12,12 +14,6 @@ export interface OpenTabPayload {
 
 export interface OpenTabItemsPayload {
   items: SaleItemInput[]
-}
-
-export interface PaymentSplitInput {
-  method: string
-  amount: number
-  label?: string | null
 }
 
 export interface RecordPartialPaymentPayload {

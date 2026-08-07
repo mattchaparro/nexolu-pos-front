@@ -17,17 +17,16 @@ import { NxPageHeader } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 
-import CloseTabModal from '../../open-tabs/components/CloseTabModal.vue'
 import TabClosedDialog from '../../open-tabs/components/TabClosedDialog.vue'
 import { useNewItemsCart } from '../../open-tabs/composables/useNewItemsCart'
 import { useOpenTabMutations } from '../../open-tabs/composables/useOpenTabMutations'
 import { useOpenTabsList } from '../../open-tabs/composables/useOpenTabsList'
 import { useTables } from '../../open-tabs/composables/useTables'
 import type { CloseOpenTabPayload, RecordPartialPaymentPayload } from '../../open-tabs/types'
-import CashCheckoutModal from '../components/CashCheckoutModal.vue'
 import CartPanel from '../components/CartPanel.vue'
 import MobileCartSheet from '../components/MobileCartSheet.vue'
 import MobileTabSheet from '../components/MobileTabSheet.vue'
+import PaymentModal from '../components/PaymentModal.vue'
 import PriceVariesModal from '../components/PriceVariesModal.vue'
 import ProductGrid from '../components/ProductGrid.vue'
 import SaleSuccessDialog from '../components/SaleSuccessDialog.vue'
@@ -62,7 +61,7 @@ const newTabName = ref('')
 const newTabPhone = ref('')
 const newTabIsDelivery = ref(false)
 const mobileTabSheetOpen = ref(false)
-const closeModalOpen = ref(false)
+const paymentModalOpen = ref(false)
 const tabClosedOpen = ref(false)
 const lastClosedSale = ref<Sale | null>(null)
 
@@ -157,22 +156,6 @@ async function submitTabCart(): Promise<void> {
   }
 }
 
-async function handleTabCloseSubmit(payload: CloseOpenTabPayload): Promise<void> {
-  if (!activeSale.value) {
-    return
-  }
-  submitError.value = null
-  try {
-    const closed = await tabMutations.closeMutation.mutateAsync({ saleId: activeSale.value.id, payload })
-    lastClosedSale.value = closed
-    closeModalOpen.value = false
-    tabClosedOpen.value = true
-    cancelTab()
-  } catch (error) {
-    submitError.value = extractErrorMessage(error, 'No pudimos cerrar la cuenta.')
-  }
-}
-
 async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Promise<void> {
   if (!activeSale.value) {
     return
@@ -199,7 +182,6 @@ function mobileTabLabel(): string {
 
 // --- Venta directa ---
 const priceVariesProduct = ref<Product | null>(null)
-const cashModalOpen = ref(false)
 const successOpen = ref(false)
 const submitError = ref<string | null>(null)
 const mobileCartOpen = ref(false)
@@ -227,34 +209,41 @@ function handlePriceConfirmed(price: number): void {
   priceVariesProduct.value = null
 }
 
-// El id de metodo de pago se normaliza a snake_case desde su label
-// (Business::normalizePaymentMethodsInput) - "efectivo"/"cash" son los
-// unicos que representan pago en efectivo, igual que
-// Business::resolveCashPaymentMethodId() en el backend.
-function isCashMethod(id: string | null): boolean {
-  return id !== null && ['cash', 'efectivo'].includes(id.toLowerCase())
+// Boton "Cobrar" (venta directa o cuenta abierta): abre el mismo
+// PaymentModal en los dos casos, la resolucion final del pago (cortesia/
+// cargos/metodo unico o dividido/vuelto en efectivo) vive ahi - ver la nota
+// en PaymentModal.vue sobre unificar la experiencia de pago.
+function openPaymentModal(): void {
+  submitError.value = null
+  paymentModalOpen.value = true
 }
 
-async function handleSubmit(): Promise<void> {
+async function handlePaymentConfirm(payload: CloseOpenTabPayload): Promise<void> {
   submitError.value = null
 
-  if (!checkout.isNonRevenue.value && isCashMethod(checkout.paymentMethod.value)) {
-    cashModalOpen.value = true
+  if (mode.value === 'quick') {
+    try {
+      await createSaleMutation.mutateAsync({ ...checkout.buildPayload(), ...payload })
+      paymentModalOpen.value = false
+      mobileCartOpen.value = false
+      successOpen.value = true
+    } catch (error) {
+      submitError.value = extractErrorMessage(error, 'No pudimos registrar la venta. Intenta de nuevo.')
+    }
     return
   }
 
-  await submitSale()
-}
-
-async function submitSale(): Promise<void> {
-  submitError.value = null
+  if (!activeSale.value) {
+    return
+  }
   try {
-    await createSaleMutation.mutateAsync(checkout.buildPayload())
-    cashModalOpen.value = false
-    mobileCartOpen.value = false
-    successOpen.value = true
+    const closed = await tabMutations.closeMutation.mutateAsync({ saleId: activeSale.value.id, payload })
+    lastClosedSale.value = closed
+    paymentModalOpen.value = false
+    tabClosedOpen.value = true
+    cancelTab()
   } catch (error) {
-    submitError.value = extractErrorMessage(error, 'No pudimos registrar la venta. Intenta de nuevo.')
+    submitError.value = extractErrorMessage(error, 'No pudimos cerrar la cuenta.')
   }
 }
 
@@ -315,7 +304,7 @@ function handleNewSale(): void {
           :checkout="checkout"
           :business="business"
           :submitting="createSaleMutation.isPending.value"
-          @submit="handleSubmit"
+          @submit="openPaymentModal"
         />
         <TabInProgressPanel
           v-else
@@ -329,7 +318,7 @@ function handleNewSale(): void {
           :submitting-cart="tabMutations.addItemsMutation.isPending.value || tabMutations.openMutation.isPending.value"
           @cancel="cancelTab"
           @submit="submitTabCart"
-          @close="closeModalOpen = true"
+          @close="openPaymentModal"
         />
       </div>
     </div>
@@ -363,7 +352,7 @@ function handleNewSale(): void {
         :checkout="checkout"
         :business="business"
         :submitting="createSaleMutation.isPending.value"
-        @submit="handleSubmit"
+        @submit="openPaymentModal"
       />
       <MobileTabSheet
         v-model="mobileTabSheetOpen"
@@ -379,7 +368,7 @@ function handleNewSale(): void {
         @submit="submitTabCart"
         @close="
           mobileTabSheetOpen = false;
-          closeModalOpen = true
+          openPaymentModal()
         "
       />
     </Teleport>
@@ -391,26 +380,23 @@ function handleNewSale(): void {
       @confirm="handlePriceConfirmed"
     />
 
-    <CashCheckoutModal
-      v-model="cashModalOpen"
-      :total="checkout.totals.value?.grandTotal ?? 0"
-      :submitting="createSaleMutation.isPending.value"
-      @confirm="submitSale"
-    />
-
     <SaleSuccessDialog
       v-model="successOpen"
       :sale="createSaleMutation.data.value ?? null"
       @new-sale="handleNewSale"
     />
 
-    <CloseTabModal
-      v-if="activeSale && business"
-      v-model="closeModalOpen"
-      :sale="activeSale"
+    <PaymentModal
+      v-if="business"
+      v-model="paymentModalOpen"
+      :sale="mode === 'quick' ? null : activeSale"
       :business="business"
-      :submitting="tabMutations.closeMutation.isPending.value"
-      @close="handleTabCloseSubmit"
+      :submitting="mode === 'quick' ? createSaleMutation.isPending.value : tabMutations.closeMutation.isPending.value"
+      :fallback-charge-base="checkout.totals.value?.subtotalAfterCartDiscount ?? 0"
+      :fallback-delivery-fee="checkout.totals.value?.deliveryFee ?? 0"
+      :existing-customer-name="mode === 'quick' ? checkout.customerName.value : activeSale?.customer_name"
+      :existing-customer-phone="mode === 'quick' ? checkout.customerPhone.value : activeSale?.customer_phone"
+      @confirm="handlePaymentConfirm"
       @register-partial="handleRegisterPartial"
     />
 

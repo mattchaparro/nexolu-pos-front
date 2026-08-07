@@ -13,15 +13,22 @@ export interface SaleItemInput {
   discount_id?: number | null
 }
 
+export interface PaymentSplitInput {
+  method: string
+  amount: number
+  label?: string | null
+}
+
 export interface CreateSalePayload {
   items: SaleItemInput[]
   payment_method?: string | null
+  payment_splits?: PaymentSplitInput[]
   customer_name?: string
   customer_phone?: string
   customer_identification?: string
   is_delivery?: boolean
   is_non_revenue?: boolean
-  non_revenue_reason?: string
+  non_revenue_reason?: string | null
   cart_discount_id?: number | null
   apply_service_charge?: boolean
   apply_ipoconsumo?: boolean

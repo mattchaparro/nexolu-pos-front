@@ -15,8 +15,8 @@ import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import PriceVariesModal from '../../sales/components/PriceVariesModal.vue'
 import ProductGrid from '../../sales/components/ProductGrid.vue'
 import { useProductCatalog } from '../../sales/composables/useProductCatalog'
+import PaymentModal from '../../sales/components/PaymentModal.vue'
 import ActiveTabItemsPanel from '../components/ActiveTabItemsPanel.vue'
-import CloseTabModal from '../components/CloseTabModal.vue'
 import NewItemsCartList from '../components/NewItemsCartList.vue'
 import OpenTabsByNameList from '../components/OpenTabsByNameList.vue'
 import TabClosedDialog from '../components/TabClosedDialog.vue'
@@ -352,13 +352,15 @@ async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Prom
 
     <TableManagerModal v-model="tableManagerOpen" :tables="tablesQuery.data.value ?? []" />
 
-    <CloseTabModal
+    <PaymentModal
       v-if="activeSale && business"
       v-model="closeModalOpen"
       :sale="activeSale"
       :business="business"
       :submitting="mutations.closeMutation.isPending.value"
-      @close="handleCloseSubmit"
+      :existing-customer-name="activeSale.customer_name"
+      :existing-customer-phone="activeSale.customer_phone"
+      @confirm="handleCloseSubmit"
       @register-partial="handleRegisterPartial"
     />
 

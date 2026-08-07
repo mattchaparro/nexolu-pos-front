@@ -9,3 +9,14 @@ export function isCreditPaymentMethodId(id: string | null | undefined): boolean 
   }
   return CREDIT_METHOD_IDS.includes(id.toLowerCase())
 }
+
+// Espejo de Business::resolveCashPaymentMethodId() en nexolu-pos-api: solo
+// estos dos representan pago en efectivo (habilita el calculo de vuelto).
+const CASH_METHOD_IDS = ['cash', 'efectivo']
+
+export function isCashPaymentMethodId(id: string | null | undefined): boolean {
+  if (!id) {
+    return false
+  }
+  return CASH_METHOD_IDS.includes(id.toLowerCase())
+}

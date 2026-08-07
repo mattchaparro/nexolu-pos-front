@@ -5,7 +5,6 @@ import { formatCop } from '@/utils/formatCop'
 
 import type { useSaleCheckout } from '../composables/useSaleCheckout'
 import CustomerFieldsSection from './CustomerFieldsSection.vue'
-import PaymentMethodPicker from './PaymentMethodPicker.vue'
 import SaleTotalsSummary from './SaleTotalsSummary.vue'
 
 const props = defineProps<{
@@ -16,10 +15,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{ submit: [] }>()
 
+// Cortesia/cargos/metodo de pago se deciden en PaymentModal al tocar este
+// boton, no antes - ver la nota en useSaleCheckout.ts.
 function submitLabel(): string {
-  if (props.checkout.isNonRevenue.value) {
-    return 'Registrar cortesía'
-  }
   const total = props.checkout.totals.value?.grandTotal ?? 0
   return `Cobrar ${formatCop(total)}`
 }
@@ -35,7 +33,7 @@ function submitLabel(): string {
       :name="checkout.customerName.value"
       :phone="checkout.customerPhone.value"
       :identification="checkout.customerIdentification.value"
-      :required="checkout.isCreditPaymentMethod.value"
+      :required="false"
       @update:name="checkout.customerName.value = $event"
       @update:phone="checkout.customerPhone.value = $event"
       @update:identification="checkout.customerIdentification.value = $event"
@@ -49,22 +47,6 @@ function submitLabel(): string {
       />
       Domicilio ({{ formatCop(business.delivery_fee) }})
     </label>
-
-    <label class="flex items-center gap-2 text-sm text-slate-700">
-      <input
-        v-model="checkout.isNonRevenue.value"
-        type="checkbox"
-        class="h-4 w-4 rounded accent-amber-500"
-      />
-      Cortesía
-    </label>
-    <input
-      v-if="checkout.isNonRevenue.value"
-      v-model="checkout.nonRevenueReason.value"
-      type="text"
-      placeholder="Motivo de la cortesía"
-      class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-    />
 
     <div v-if="checkout.cartDiscounts.value.length > 0" class="flex flex-col gap-1">
       <label class="text-xs font-medium text-slate-500">Descuento de la cuenta</label>
@@ -83,41 +65,6 @@ function submitLabel(): string {
         </option>
       </select>
     </div>
-
-    <div
-      v-if="business.charges.service_charge_enabled || business.charges.ipoconsumo_enabled"
-      class="flex flex-col gap-1.5"
-    >
-      <label
-        v-if="business.charges.service_charge_enabled"
-        class="flex items-center gap-2 text-sm text-slate-700"
-      >
-        <input
-          v-model="checkout.applyServiceCharge.value"
-          type="checkbox"
-          class="h-4 w-4 rounded accent-indigo-600"
-        />
-        Servicio ({{ business.charges.service_charge_rate }}%)
-      </label>
-      <label
-        v-if="business.charges.ipoconsumo_enabled"
-        class="flex items-center gap-2 text-sm text-slate-700"
-      >
-        <input
-          v-model="checkout.applyIpoconsumo.value"
-          type="checkbox"
-          class="h-4 w-4 rounded accent-indigo-600"
-        />
-        Ipoconsumo ({{ business.charges.ipoconsumo_rate }}%)
-      </label>
-    </div>
-
-    <PaymentMethodPicker
-      v-if="!checkout.isNonRevenue.value"
-      :methods="business.payment_methods"
-      :model-value="checkout.paymentMethod.value"
-      @update:model-value="checkout.paymentMethod.value = $event"
-    />
 
     <SaleTotalsSummary v-if="checkout.totals.value" :totals="checkout.totals.value" />
 

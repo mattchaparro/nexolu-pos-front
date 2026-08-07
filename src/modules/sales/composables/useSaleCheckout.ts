@@ -12,10 +12,16 @@ import type { Discount } from '@/types/discount'
 import type { Product } from '@/types/product'
 import type { CreateSalePayload } from '@/types/sale'
 import { hasFeature } from '@/utils/hasFeature'
-import { isCreditPaymentMethodId } from '@/utils/paymentMethod'
 
 import { computeSaleTotals, type CartLine } from '../support/saleMath'
 
+// Cortesia/cargos/metodo de pago (unico o dividido) ya NO viven aca: se
+// resuelven en PaymentModal (compartido con el cierre de cuentas abiertas)
+// al tocar "Cobrar", no inline mientras se arma el carrito - ver la nota en
+// PaymentModal.vue sobre unificar la experiencia de pago. applyServiceCharge/
+// applyIpoconsumo se mantienen fijos en true solo para el preview de
+// SaleTotalsSummary en el panel; el monto final que se cobra lo decide el
+// modal.
 export function useSaleCheckout(business: Ref<Business | undefined>, discounts: Ref<Discount[]>) {
   const lines = ref<CartLine[]>([])
 
@@ -23,10 +29,7 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
   const customerPhone = ref('')
   const customerIdentification = ref('')
 
-  const paymentMethod = ref<string | null>(null)
   const isDelivery = ref(false)
-  const isNonRevenue = ref(false)
-  const nonRevenueReason = ref('')
 
   const cartDiscountId = ref<number | null>(null)
   const applyServiceCharge = ref(true)
@@ -36,8 +39,6 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
   const cartDiscounts = computed(() => discounts.value.filter((d) => d.scope === 'cart'))
 
   const itemCount = computed(() => lines.value.reduce((sum, l) => sum + l.quantity, 0))
-
-  const isCreditPaymentMethod = computed(() => isCreditPaymentMethodId(paymentMethod.value))
 
   const totals = computed(() => {
     if (!business.value) {
@@ -124,22 +125,13 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     }
   }
 
-  const canSubmit = computed(() => {
-    if (lines.value.length === 0) {
-      return false
-    }
-    if (isNonRevenue.value) {
-      return true
-    }
-    if (!paymentMethod.value) {
-      return false
-    }
-    if (isCreditPaymentMethod.value) {
-      return Boolean(customerName.value || customerPhone.value || customerIdentification.value)
-    }
-    return true
-  })
+  const canSubmit = computed(() => lines.value.length > 0)
 
+  /**
+   * Payload base (items, cliente, domicilio, descuento de carrito) - a esto
+   * se le mezclan encima los campos que resuelve PaymentModal (cortesia,
+   * cargos, payment_method o payment_splits) antes de enviarlo.
+   */
   function buildPayload(): CreateSalePayload {
     return {
       items: lines.value.map((l) => ({
@@ -148,16 +140,11 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
         unit_price: l.product.price_varies_at_sale ? l.unitPrice : undefined,
         discount_id: l.discountId,
       })),
-      payment_method: isNonRevenue.value ? undefined : (paymentMethod.value ?? undefined),
       customer_name: customerName.value || undefined,
       customer_phone: customerPhone.value || undefined,
       customer_identification: customerIdentification.value || undefined,
       is_delivery: isDelivery.value,
-      is_non_revenue: isNonRevenue.value,
-      non_revenue_reason: isNonRevenue.value ? nonRevenueReason.value || undefined : undefined,
       cart_discount_id: cartDiscountId.value,
-      apply_service_charge: applyServiceCharge.value,
-      apply_ipoconsumo: applyIpoconsumo.value,
     }
   }
 
@@ -166,10 +153,7 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     customerName.value = ''
     customerPhone.value = ''
     customerIdentification.value = ''
-    paymentMethod.value = null
     isDelivery.value = false
-    isNonRevenue.value = false
-    nonRevenueReason.value = ''
     cartDiscountId.value = null
     applyServiceCharge.value = true
     applyIpoconsumo.value = true
@@ -180,17 +164,13 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     customerName,
     customerPhone,
     customerIdentification,
-    paymentMethod,
     isDelivery,
-    isNonRevenue,
-    nonRevenueReason,
     cartDiscountId,
     applyServiceCharge,
     applyIpoconsumo,
     itemDiscounts,
     cartDiscounts,
     itemCount,
-    isCreditPaymentMethod,
     totals,
     canSubmit,
     availableStock,

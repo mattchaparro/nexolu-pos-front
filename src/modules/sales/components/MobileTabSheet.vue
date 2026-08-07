@@ -1,8 +1,8 @@
 <script setup lang="ts">
 // Version movil de TabInProgressPanel: a pantalla completa, igual que
 // MobileCartSheet para el modo venta directa. El flujo de cobro (cortesia/
-// cargos/abonos/pago dividido) vive en CloseTabModal, que ya es un modal -
-// no necesita su propia version movil aparte.
+// cargos/abonos/pago dividido/vuelto) vive en PaymentModal, que ya es un
+// modal - no necesita su propia version movil aparte.
 import type { Business } from '@/types/business'
 import type { Sale } from '@/types/sale'
 import type { BusinessTable } from '@/types/table'
