@@ -71,10 +71,12 @@ const onSubmit = handleSubmit(async (values) => {
 
 <template>
   <div>
-    <h1 class="text-2xl font-bold text-slate-900">¡Hola!</h1>
-    <p class="mt-1 text-slate-500">Inicia sesión para continuar</p>
+    <div class="mb-8 text-center">
+      <h1 class="text-3xl font-bold text-slate-900">¡Hola!</h1>
+      <p class="mt-2 text-slate-500">Inicia sesión para continuar</p>
+    </div>
 
-    <form class="mt-8 space-y-5" novalidate @submit.prevent="onSubmit">
+    <form class="space-y-5" novalidate @submit.prevent="onSubmit">
       <p v-if="submitError" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
         {{ submitError }}
       </p>

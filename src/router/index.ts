@@ -6,7 +6,9 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
-      path: '/login',
+      // Path en espanol (regla del proyecto, ver CLAUDE.md) - el `name`
+      // interno sigue en ingles como cualquier otro identificador de codigo.
+      path: '/iniciar-sesion',
       component: () => import('@/layouts/AuthLayout.vue'),
       children: [
         {

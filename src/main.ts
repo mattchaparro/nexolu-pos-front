@@ -2,6 +2,7 @@
 // no la carga por Google/Bunny Fonts, la empaqueta con @fontsource/lato).
 import '@fontsource/lato/400.css'
 import '@fontsource/lato/700.css'
+import 'primeicons/primeicons.css'
 import './style.css'
 
 import { VueQueryPlugin } from '@tanstack/vue-query'
