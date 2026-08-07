@@ -57,16 +57,26 @@ const primeSize = computed<'small' | 'large' | undefined>(() => {
 </script>
 
 <template>
+  <!--
+    Icon prop y el slot de loading nativos de PrimeButton no se usan: su
+    fallback (icono/spinner) solo se renderiza cuando el slot default esta
+    vacio, y NxButton siempre lo llena con el texto del boton. Pasarle
+    :icon ademas rompe el tamaño (PrimeVue marca "icon-only" con solo
+    chequear la prop icon + la prop label, sin mirar el slot - ver
+    node_modules/primevue/button/index.mjs hasIcon/icon-only), asi que el
+    icono y el spinner se pintan a mano aca en vez de delegarselos.
+  -->
   <PrimeButton
     :severity="severity"
     :outlined="outlined"
     :text="text"
     :size="primeSize"
-    :icon="icon"
     :loading="loading"
     :disabled="disabled || loading"
     :type="type"
   >
+    <i v-if="loading" class="pi pi-spinner pi-spin" aria-hidden="true" />
+    <i v-else-if="icon" :class="icon" aria-hidden="true" />
     <slot />
   </PrimeButton>
 </template>
