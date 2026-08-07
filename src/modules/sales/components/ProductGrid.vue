@@ -52,7 +52,13 @@ function selectCategory(id: number | null): void {
 
 <template>
   <div class="flex h-full flex-col gap-3">
-    <NxInput v-model="search" placeholder="Buscar producto..." size="lg" icon="pi pi-search" />
+    <NxInput
+      v-model="search"
+      placeholder="Buscar producto..."
+      size="lg"
+      icon="pi pi-search"
+      clearable
+    />
 
     <div v-if="categoriesInUse.length > 0" class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
       <button

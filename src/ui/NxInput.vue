@@ -18,6 +18,8 @@ const props = withDefaults(
     autocomplete?: string
     /** PrimeIcon (ej. "pi pi-search") a la izquierda del texto. */
     icon?: string
+    /** Muestra una X a la derecha para vaciar el campo cuando tiene texto. */
+    clearable?: boolean
   }>(),
   {
     modelValue: '',
@@ -29,10 +31,13 @@ const props = withDefaults(
     id: undefined,
     autocomplete: undefined,
     icon: undefined,
+    clearable: false,
   },
 )
 
-defineEmits<{ 'update:modelValue': [value: string] }>()
+const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+
+const showClear = computed(() => props.clearable && Boolean(props.modelValue))
 
 // PrimeVue solo tiene "small"/"large" nativos - "md" es su tamaño por
 // defecto (undefined).
@@ -53,8 +58,8 @@ const fontSizeStyle = { fontSize: '16px' }
 </script>
 
 <template>
-  <PrimeIconField v-if="icon">
-    <PrimeInputIcon :class="icon" />
+  <PrimeIconField v-if="icon || showClear">
+    <PrimeInputIcon v-if="icon" :class="icon" />
     <PrimeInputText
       :id="id"
       :model-value="modelValue"
@@ -66,7 +71,14 @@ const fontSizeStyle = { fontSize: '16px' }
       :size="primeSize"
       :style="fontSizeStyle"
       fluid
-      @update:model-value="(value) => $emit('update:modelValue', value as string)"
+      @update:model-value="(value) => emit('update:modelValue', value as string)"
+    />
+    <PrimeInputIcon
+      v-if="showClear"
+      class="pi pi-times cursor-pointer"
+      role="button"
+      aria-label="Limpiar"
+      @click="emit('update:modelValue', '')"
     />
   </PrimeIconField>
   <PrimeInputText
@@ -81,6 +93,6 @@ const fontSizeStyle = { fontSize: '16px' }
     :size="primeSize"
     :style="fontSizeStyle"
     fluid
-    @update:model-value="(value) => $emit('update:modelValue', value as string)"
+    @update:model-value="(value) => emit('update:modelValue', value as string)"
   />
 </template>

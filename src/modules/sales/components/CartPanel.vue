@@ -100,7 +100,7 @@ function submitLabel(): string {
             type="checkbox"
             class="h-4 w-4 rounded accent-amber-500"
           />
-          Cortesía (no cuenta como ingreso)
+          Cortesía
         </label>
         <input
           v-if="checkout.isNonRevenue.value"

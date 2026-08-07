@@ -20,7 +20,6 @@ defineEmits<{
     <summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium text-slate-700">
       Datos del cliente
       <span v-if="required" class="text-red-600">(obligatorio para fiado)</span>
-      <span v-else class="text-slate-400">(opcional)</span>
     </summary>
     <div class="flex flex-col gap-3 border-t border-slate-200 p-3">
       <NxFormField label="Nombre">
