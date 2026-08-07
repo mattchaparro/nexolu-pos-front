@@ -8,6 +8,7 @@ import { computed, ref } from 'vue'
 import { useBusiness } from '@/composables/useBusiness'
 import type { Product } from '@/types/product'
 import { NxPageHeader } from '@/ui'
+import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 
 import CashCheckoutModal from '../components/CashCheckoutModal.vue'
@@ -80,20 +81,8 @@ async function submitSale(): Promise<void> {
     mobileCartOpen.value = false
     successOpen.value = true
   } catch (error) {
-    submitError.value = extractErrorMessage(error)
+    submitError.value = extractErrorMessage(error, 'No pudimos registrar la venta. Intenta de nuevo.')
   }
-}
-
-function extractErrorMessage(error: unknown): string {
-  const response = (
-    error as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }
-  ).response
-  const firstFieldError = response?.data?.errors
-    ? Object.values(response.data.errors)[0]?.[0]
-    : undefined
-  return (
-    firstFieldError ?? response?.data?.message ?? 'No pudimos registrar la venta. Intenta de nuevo.'
-  )
 }
 
 function handleNewSale(): void {

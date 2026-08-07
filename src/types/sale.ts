@@ -1,7 +1,8 @@
-// Refleja SaleResource/SaleItemResource (app/Http/Resources/Api/V1) y el
-// payload que espera StoreSaleRequest en nexolu-pos-api. Solo cubre venta
-// directa (POST /sales) - payment_splits/partial_payments (cuentas
-// abiertas) se tipan cuando exista ese modulo.
+// Refleja SaleResource/SaleItemResource (app/Http/Resources/Api/V1) y los
+// payloads que esperan StoreSaleRequest/StoreOpenTabRequest/etc en
+// nexolu-pos-api. Sale cubre tanto venta directa (status='closed' siempre)
+// como cuenta abierta (status='open'|'closed', con payment_splits/
+// partial_payments) - un solo modelo en el back, un solo tipo aca.
 import type { Product } from './product'
 
 export interface SaleItemInput {
@@ -36,6 +37,21 @@ export interface SaleItem {
   discount_amount: number
 }
 
+export interface SalePaymentSplit {
+  id: number
+  payment_method: string
+  amount: number
+  payer_label: string | null
+}
+
+export interface SalePartialPayment {
+  id: number
+  amount: number
+  payment_method: string
+  payer_label: string | null
+  user_id: number
+}
+
 export interface Sale {
   id: number
   business_id: number
@@ -59,4 +75,9 @@ export interface Sale {
   customer_identification: string | null
   closed_at: string | null
   items: SaleItem[]
+  payment_splits?: SalePaymentSplit[]
+  partial_payments?: SalePartialPayment[]
+  /** Solo vienen cuando partial_payments esta cargado en el back. */
+  amount_paid?: number
+  balance_due?: number
 }

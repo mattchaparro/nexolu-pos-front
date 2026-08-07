@@ -33,6 +33,11 @@ const router = createRouter({
           name: 'sales.create',
           component: () => import('@/modules/sales/views/SellView.vue'),
         },
+        {
+          path: 'cuentas-abiertas',
+          name: 'open-tabs.index',
+          component: () => import('@/modules/open-tabs/views/OpenTabsView.vue'),
+        },
       ],
     },
   ],

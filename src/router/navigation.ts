@@ -9,7 +9,7 @@ export const adminNavItems: NavItem[] = [
   { label: 'Inicio', icon: 'pi pi-home', routeName: 'dashboard' },
   { label: 'Asistente IA', icon: 'pi pi-comments', disabled: true },
   { label: 'Vender', icon: 'pi pi-shopping-cart', routeName: 'sales.create' },
-  { label: 'Cuentas abiertas', icon: 'pi pi-receipt', disabled: true },
+  { label: 'Cuentas abiertas', icon: 'pi pi-receipt', routeName: 'open-tabs.index' },
   { label: 'Servicios', icon: 'pi pi-wrench', disabled: true },
   { label: 'Agenda', icon: 'pi pi-calendar', disabled: true },
   { label: 'Fiados', icon: 'pi pi-wallet', disabled: true },

@@ -12,6 +12,7 @@ import type { Discount } from '@/types/discount'
 import type { Product } from '@/types/product'
 import type { CreateSalePayload } from '@/types/sale'
 import { hasFeature } from '@/utils/hasFeature'
+import { isCreditPaymentMethodId } from '@/utils/paymentMethod'
 
 import { computeSaleTotals, type CartLine } from '../support/saleMath'
 
@@ -36,10 +37,7 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
 
   const itemCount = computed(() => lines.value.reduce((sum, l) => sum + l.quantity, 0))
 
-  const isCreditPaymentMethod = computed(() => {
-    const id = paymentMethod.value?.toLowerCase()
-    return id !== undefined && id !== null && ['credit', 'fiado', 'credito', 'crédito'].includes(id)
-  })
+  const isCreditPaymentMethod = computed(() => isCreditPaymentMethodId(paymentMethod.value))
 
   const totals = computed(() => {
     if (!business.value) {
