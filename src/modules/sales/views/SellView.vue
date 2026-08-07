@@ -1,22 +1,38 @@
 <script setup lang="ts">
-// Vender: version recortada de SalesTerminal.vue del legacy, solo venta
-// directa (mode==='quick'). Cuentas abiertas/mesas (mode==='tab'/'new-tab'),
-// dictado por voz e impresion/envio de recibo quedan fuera - ver
-// docs/BACKEND_READINESS.md para el detalle de por que cada una.
+// Vender: version recortada de SalesTerminal.vue del legacy. Cubre venta
+// directa (mode==='quick') Y cuentas abiertas/mesas embebidas en la misma
+// pantalla (mode==='tab'|'new-tab', tira de chips arriba del buscador) -
+// el cajero vive aca y espera encontrar sus mesas/cuentas sin navegar a
+// otro lado. La pantalla completa "Cuentas abiertas" (link "Ver detalle")
+// sigue existiendo para gestion mas a fondo (mesas, buscador dedicado).
+// Dictado por voz e impresion/envio de recibo quedan fuera, igual que
+// antes - ver docs/BACKEND_READINESS.md.
 import { computed, ref } from 'vue'
 
 import { useBusiness } from '@/composables/useBusiness'
 import type { Product } from '@/types/product'
+import type { Sale } from '@/types/sale'
+import type { BusinessTable } from '@/types/table'
 import { NxPageHeader } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 
+import CloseTabModal from '../../open-tabs/components/CloseTabModal.vue'
+import TabClosedDialog from '../../open-tabs/components/TabClosedDialog.vue'
+import { useNewItemsCart } from '../../open-tabs/composables/useNewItemsCart'
+import { useOpenTabMutations } from '../../open-tabs/composables/useOpenTabMutations'
+import { useOpenTabsList } from '../../open-tabs/composables/useOpenTabsList'
+import { useTables } from '../../open-tabs/composables/useTables'
+import type { CloseOpenTabPayload, RecordPartialPaymentPayload } from '../../open-tabs/types'
 import CashCheckoutModal from '../components/CashCheckoutModal.vue'
 import CartPanel from '../components/CartPanel.vue'
 import MobileCartSheet from '../components/MobileCartSheet.vue'
+import MobileTabSheet from '../components/MobileTabSheet.vue'
 import PriceVariesModal from '../components/PriceVariesModal.vue'
 import ProductGrid from '../components/ProductGrid.vue'
 import SaleSuccessDialog from '../components/SaleSuccessDialog.vue'
+import TabInProgressPanel from '../components/TabInProgressPanel.vue'
+import TabSwitcherStrip from '../components/TabSwitcherStrip.vue'
 import { useActiveDiscounts } from '../composables/useActiveDiscounts'
 import { useCreateSale } from '../composables/useCreateSale'
 import { useProductCatalog } from '../composables/useProductCatalog'
@@ -33,6 +49,155 @@ const checkout = useSaleCheckout(
   discountList,
 )
 
+// --- Cuentas abiertas/mesas embebidas ---
+const tablesQuery = useTables()
+const openTabsQuery = useOpenTabsList()
+const tabMutations = useOpenTabMutations()
+const tabCart = useNewItemsCart()
+
+const mode = ref<'quick' | 'tab' | 'new-tab'>('quick')
+const activeSale = ref<Sale | null>(null)
+const pendingTable = ref<BusinessTable | null>(null)
+const newTabName = ref('')
+const newTabPhone = ref('')
+const newTabIsDelivery = ref(false)
+const mobileTabSheetOpen = ref(false)
+const closeModalOpen = ref(false)
+const tabClosedOpen = ref(false)
+const lastClosedSale = ref<Sale | null>(null)
+
+const openSaleByTable = computed(() => {
+  const map = new Map<number, Sale>()
+  for (const sale of openTabsQuery.data.value ?? []) {
+    if (sale.table_id) {
+      map.set(sale.table_id, sale)
+    }
+  }
+  return map
+})
+const openTabsByName = computed(() => (openTabsQuery.data.value ?? []).filter((s) => !s.table_id))
+
+function selectNewNamedTab(): void {
+  submitError.value = null
+  mode.value = 'new-tab'
+  activeSale.value = null
+  pendingTable.value = null
+  newTabName.value = ''
+  newTabPhone.value = ''
+  newTabIsDelivery.value = false
+  tabCart.reset()
+}
+
+function selectTable(table: BusinessTable): void {
+  submitError.value = null
+  const openSale = openSaleByTable.value.get(table.id)
+  if (openSale) {
+    mode.value = 'tab'
+    activeSale.value = openSale
+    pendingTable.value = null
+  } else {
+    mode.value = 'new-tab'
+    pendingTable.value = table
+    activeSale.value = null
+    newTabName.value = ''
+    newTabPhone.value = ''
+    newTabIsDelivery.value = false
+  }
+  tabCart.reset()
+}
+
+function selectOpenTab(sale: Sale): void {
+  submitError.value = null
+  mode.value = 'tab'
+  activeSale.value = sale
+  pendingTable.value = null
+  tabCart.reset()
+}
+
+function cancelTab(): void {
+  mode.value = 'quick'
+  activeSale.value = null
+  pendingTable.value = null
+  tabCart.reset()
+  mobileTabSheetOpen.value = false
+  submitError.value = null
+}
+
+async function submitTabCart(): Promise<void> {
+  if (tabCart.lines.value.length === 0) {
+    return
+  }
+  submitError.value = null
+
+  try {
+    if (activeSale.value) {
+      const updated = await tabMutations.addItemsMutation.mutateAsync({
+        saleId: activeSale.value.id,
+        payload: { items: tabCart.toItemsPayload() },
+      })
+      activeSale.value = updated
+      tabCart.reset()
+    } else {
+      const opened = await tabMutations.openMutation.mutateAsync({
+        table_id: pendingTable.value?.id ?? null,
+        customer_name: pendingTable.value ? null : newTabName.value || null,
+        customer_phone: newTabPhone.value || null,
+        is_delivery: business.value?.delivery_enabled ? newTabIsDelivery.value : false,
+        items: tabCart.toItemsPayload(),
+      })
+      // Se sigue editando la cuenta recien creada (no vuelve a "quick") -
+      // el cajero suele seguir agregando o cobrar de una vez.
+      mode.value = 'tab'
+      activeSale.value = opened
+      pendingTable.value = null
+      tabCart.reset()
+    }
+  } catch (error) {
+    submitError.value = extractErrorMessage(error, 'No pudimos guardar los productos. Intenta de nuevo.')
+  }
+}
+
+async function handleTabCloseSubmit(payload: CloseOpenTabPayload): Promise<void> {
+  if (!activeSale.value) {
+    return
+  }
+  submitError.value = null
+  try {
+    const closed = await tabMutations.closeMutation.mutateAsync({ saleId: activeSale.value.id, payload })
+    lastClosedSale.value = closed
+    closeModalOpen.value = false
+    tabClosedOpen.value = true
+    cancelTab()
+  } catch (error) {
+    submitError.value = extractErrorMessage(error, 'No pudimos cerrar la cuenta.')
+  }
+}
+
+async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Promise<void> {
+  if (!activeSale.value) {
+    return
+  }
+  try {
+    activeSale.value = await tabMutations.partialPaymentMutation.mutateAsync({
+      saleId: activeSale.value.id,
+      payload,
+    })
+  } catch (error) {
+    submitError.value = extractErrorMessage(error, 'No pudimos registrar el abono.')
+  }
+}
+
+function mobileTabLabel(): string {
+  if (!activeSale.value) {
+    return 'Cuenta nueva'
+  }
+  if (activeSale.value.customer_name) {
+    return activeSale.value.customer_name
+  }
+  return activeSale.value.table_id ? 'Mesa' : `Cuenta #${activeSale.value.id}`
+}
+
+// --- Venta directa ---
 const priceVariesProduct = ref<Product | null>(null)
 const cashModalOpen = ref(false)
 const successOpen = ref(false)
@@ -44,12 +209,20 @@ function handleSelectProduct(product: Product): void {
     priceVariesProduct.value = product
     return
   }
-  checkout.addProduct(product)
+  if (mode.value === 'quick') {
+    checkout.addProduct(product)
+  } else {
+    tabCart.addProduct(product)
+  }
 }
 
 function handlePriceConfirmed(price: number): void {
   if (priceVariesProduct.value) {
-    checkout.addProduct(priceVariesProduct.value, price)
+    if (mode.value === 'quick') {
+      checkout.addProduct(priceVariesProduct.value, price)
+    } else {
+      tabCart.addProduct(priceVariesProduct.value, price)
+    }
   }
   priceVariesProduct.value = null
 }
@@ -99,7 +272,21 @@ function handleNewSale(): void {
       {{ submitError }}
     </p>
 
-    <div class="mt-4 flex min-h-0 flex-1 gap-4">
+    <div class="mt-3">
+      <TabSwitcherStrip
+        :tables="tablesQuery.data.value ?? []"
+        :open-tabs-by-name="openTabsByName"
+        :open-sale-by-table="openSaleByTable"
+        :active-mode="mode"
+        :active-sale-id="activeSale?.id ?? null"
+        :pending-table-id="pendingTable?.id ?? null"
+        @new-name="selectNewNamedTab"
+        @select-table="selectTable"
+        @select-tab="selectOpenTab"
+      />
+    </div>
+
+    <div class="mt-3 flex min-h-0 flex-1 gap-4">
       <div class="min-h-0 min-w-0 flex-1 pb-20 lg:pb-0">
         <template v-if="productsQuery.isPending.value || categoriesQuery.isPending.value">
           <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -117,29 +304,55 @@ function handleNewSale(): void {
         />
       </div>
 
-      <!-- Carrito de escritorio: panel fijo a la derecha -->
+      <!-- Panel de escritorio: carrito de venta directa o cuenta abierta en edicion -->
       <div
         v-if="business"
         class="hidden w-[380px] shrink-0 rounded-xl border border-slate-200 bg-white p-4 lg:block"
       >
         <CartPanel
+          v-if="mode === 'quick'"
           :checkout="checkout"
           :business="business"
           :submitting="createSaleMutation.isPending.value"
           @submit="handleSubmit"
         />
+        <TabInProgressPanel
+          v-else
+          v-model:new-tab-name="newTabName"
+          v-model:new-tab-phone="newTabPhone"
+          v-model:new-tab-is-delivery="newTabIsDelivery"
+          :active-sale="activeSale"
+          :pending-table="pendingTable"
+          :business="business"
+          :cart="tabCart"
+          :submitting-cart="tabMutations.addItemsMutation.isPending.value || tabMutations.openMutation.isPending.value"
+          @cancel="cancelTab"
+          @submit="submitTabCart"
+          @close="closeModalOpen = true"
+        />
       </div>
     </div>
 
-    <!-- Barra movil: resumen + boton para abrir el carrito -->
+    <!-- Barra movil: resumen + boton para abrir el carrito/panel de cuenta -->
     <button
-      v-if="business && checkout.itemCount.value > 0"
+      v-if="business && mode === 'quick' && checkout.itemCount.value > 0"
       type="button"
       class="fixed inset-x-4 bottom-20 z-10 flex items-center justify-between rounded-xl bg-indigo-600 px-4 py-3 text-white shadow-lg lg:hidden"
       @click="mobileCartOpen = true"
     >
       <span class="text-sm font-medium">{{ checkout.itemCount.value }} producto(s)</span>
       <span class="font-bold">{{ formatCop(checkout.totals.value?.grandTotal ?? 0) }}</span>
+    </button>
+    <button
+      v-if="business && mode !== 'quick'"
+      type="button"
+      class="fixed inset-x-4 bottom-20 z-10 flex items-center justify-between rounded-xl bg-amber-600 px-4 py-3 text-white shadow-lg lg:hidden"
+      @click="mobileTabSheetOpen = true"
+    >
+      <span class="text-sm font-medium">
+        {{ mobileTabLabel() }}
+      </span>
+      <span class="font-bold">{{ formatCop((activeSale?.total ?? 0) + tabCart.total.value) }}</span>
     </button>
 
     <Teleport to="body">
@@ -150,6 +363,23 @@ function handleNewSale(): void {
         :business="business"
         :submitting="createSaleMutation.isPending.value"
         @submit="handleSubmit"
+      />
+      <MobileTabSheet
+        v-model="mobileTabSheetOpen"
+        v-model:new-tab-name="newTabName"
+        v-model:new-tab-phone="newTabPhone"
+        v-model:new-tab-is-delivery="newTabIsDelivery"
+        :active-sale="activeSale"
+        :pending-table="pendingTable"
+        :business="business"
+        :cart="tabCart"
+        :submitting-cart="tabMutations.addItemsMutation.isPending.value || tabMutations.openMutation.isPending.value"
+        @cancel="cancelTab"
+        @submit="submitTabCart"
+        @close="
+          mobileTabSheetOpen = false;
+          closeModalOpen = true
+        "
       />
     </Teleport>
 
@@ -172,5 +402,17 @@ function handleNewSale(): void {
       :sale="createSaleMutation.data.value ?? null"
       @new-sale="handleNewSale"
     />
+
+    <CloseTabModal
+      v-if="activeSale && business"
+      v-model="closeModalOpen"
+      :sale="activeSale"
+      :business="business"
+      :submitting="tabMutations.closeMutation.isPending.value"
+      @close="handleTabCloseSubmit"
+      @register-partial="handleRegisterPartial"
+    />
+
+    <TabClosedDialog v-model="tabClosedOpen" :sale="lastClosedSale" />
   </div>
 </template>
