@@ -20,6 +20,23 @@
   --font-sans: 'Lato', ui-sans-serif, system-ui, sans-serif;
 }
 
+/**
+ * iOS Safari puede des-zoomear TODA la pagina (no solo scrollear) cuando
+ * detecta contenido mas ancho que el viewport durante el layout inicial -
+ * el candidato tipico es la barra inferior movil de NxSidebar, que es
+ * mas ancha que la pantalla a proposito (scroll horizontal propio via
+ * overflow-x-auto en el <nav>, mientras carga la fuente Lato). Sin este
+ * corte defensivo en html/body, ese des-zoom deja toda la UI (cards,
+ * nav, texto) chica y "0 responsiva" en el telefono, aunque en Chrome/
+ * escritorio se vea perfecto - ningun elemento de la app depende de
+ * scroll horizontal a nivel de pagina, todos los que scrollean lo hacen
+ * en su propio contenedor.
+ */
+html,
+body {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
 }
