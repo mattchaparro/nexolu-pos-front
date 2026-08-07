@@ -45,13 +45,15 @@ function title(): string {
   <div class="flex h-full flex-col">
     <div class="flex items-center justify-between px-1 pb-2">
       <div class="min-w-0">
-        <p class="text-[10px] font-semibold uppercase tracking-wide text-amber-600">
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-indigo-600">
           {{ activeSale ? 'Editando' : 'Nueva cuenta' }}
         </p>
         <h2 class="truncate text-sm font-semibold text-slate-900">{{ title() }}</h2>
       </div>
       <div class="flex shrink-0 items-center gap-1">
-        <p v-if="activeSale" class="text-sm font-bold text-slate-900">{{ formatCop(activeSale.total) }}</p>
+        <p v-if="activeSale" class="text-sm font-bold text-slate-900">
+          {{ formatCop(Number(activeSale.total) + cart.total.value) }}
+        </p>
         <button type="button" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100" @click="emit('cancel')">
           <i class="pi pi-times" />
         </button>

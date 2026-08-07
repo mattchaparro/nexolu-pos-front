@@ -7,17 +7,27 @@
 // separada "Cuentas abiertas" (link "Ver detalle") sigue existiendo para
 // gestion mas a fondo (crear/desactivar mesas, ver todo sin filtrar por
 // catalogo de productos).
+//
+// Un solo color de acento (indigo) para "cuenta abierta" sea mesa o por
+// nombre - el amarillo separado no aportaba significado, solo ruido. La
+// seleccion se distingue con relleno solido, no combinando borde + ring
+// (esa combinacion se veia recargada).
 import type { Sale } from '@/types/sale'
 import type { BusinessTable } from '@/types/table'
 import { formatCop } from '@/utils/formatCop'
 
-defineProps<{
+const props = defineProps<{
   tables: BusinessTable[]
   openTabsByName: Sale[]
   openSaleByTable: Map<number, Sale>
   activeMode: 'quick' | 'tab' | 'new-tab'
   activeSaleId: number | null
   pendingTableId: number | null
+  // Total de los items aun no guardados (carrito nuevo) de la cuenta que
+  // se esta editando ahora mismo - se suma al total ya persistido para
+  // que el chip activo refleje de inmediato lo que se acaba de tocar en
+  // la grilla, en vez de quedarse "quieto" hasta guardar.
+  pendingCartTotal: number
 }>()
 
 const emit = defineEmits<{
@@ -25,6 +35,23 @@ const emit = defineEmits<{
   'select-table': [table: BusinessTable]
   'select-tab': [tab: Sale]
 }>()
+
+// Number(): sale.total llega como string desde el backend (cast decimal:2
+// de Laravel se serializa como string en JSON) - sumarlo directo con "+"
+// concatenaria texto en vez de sumar.
+function tableTotal(table: BusinessTable): number {
+  const sale = props.openSaleByTable.get(table.id)
+  if (!sale) {
+    return 0
+  }
+  const isActive = props.activeMode === 'tab' && props.activeSaleId === sale.id
+  return Number(sale.total) + (isActive ? props.pendingCartTotal : 0)
+}
+
+function tabTotal(tab: Sale): number {
+  const isActive = props.activeMode === 'tab' && props.activeSaleId === tab.id
+  return Number(tab.total) + (isActive ? props.pendingCartTotal : 0)
+}
 </script>
 
 <template>
@@ -32,52 +59,50 @@ const emit = defineEmits<{
     <div class="flex flex-1 gap-2 overflow-x-auto pb-1">
       <button
         type="button"
-        class="flex min-w-[64px] shrink-0 flex-col items-center gap-0.5 rounded-xl border-2 px-3 py-2 text-center transition-all active:scale-95"
+        class="flex min-w-[64px] shrink-0 flex-col items-center gap-0.5 rounded-xl border px-3 py-2 text-center transition-colors active:scale-95"
         :class="
           activeMode === 'new-tab' && !pendingTableId
-            ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500'
-            : 'border-dashed border-slate-300 hover:border-slate-400'
+            ? 'border-indigo-600 bg-indigo-600 text-white'
+            : 'border-dashed border-slate-300 text-slate-500 hover:border-slate-400'
         "
         @click="emit('new-name')"
       >
         <i
           class="pi pi-user-plus text-lg"
-          :class="activeMode === 'new-tab' && !pendingTableId ? 'text-indigo-600' : 'text-slate-400'"
+          :class="activeMode === 'new-tab' && !pendingTableId ? 'text-white' : 'text-slate-400'"
         />
-        <p
-          class="text-[10px]"
-          :class="
-            activeMode === 'new-tab' && !pendingTableId
-              ? 'font-semibold text-indigo-600'
-              : 'text-slate-400'
-          "
-        >
-          Cuenta
-        </p>
+        <p class="text-[10px] font-medium">Cuenta</p>
       </button>
 
       <button
         v-for="table in tables"
         :key="table.id"
         type="button"
-        class="flex min-w-[76px] shrink-0 flex-col items-center gap-0.5 rounded-xl border-2 px-3 py-2 text-center transition-all active:scale-95"
-        :class="[
-          openSaleByTable.has(table.id)
-            ? 'border-amber-400 bg-amber-50 hover:bg-amber-100'
-            : 'border-slate-200 bg-white hover:border-slate-300',
+        class="flex min-w-[76px] shrink-0 flex-col items-center gap-0.5 rounded-xl border px-3 py-2 text-center transition-colors active:scale-95"
+        :class="
           (activeMode === 'tab' && activeSaleId === openSaleByTable.get(table.id)?.id) ||
           (activeMode === 'new-tab' && pendingTableId === table.id)
-            ? 'ring-2 ring-indigo-500'
-            : '',
-        ]"
+            ? 'border-indigo-600 bg-indigo-600 text-white'
+            : openSaleByTable.has(table.id)
+              ? 'border-indigo-200 bg-indigo-50 text-indigo-900 hover:border-indigo-300'
+              : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+        "
         @click="emit('select-table', table)"
       >
-        <i class="pi pi-table text-lg" :class="openSaleByTable.has(table.id) ? 'text-amber-600' : 'text-slate-300'" />
-        <p class="text-xs font-semibold" :class="openSaleByTable.has(table.id) ? 'text-amber-900' : 'text-slate-500'">
-          {{ table.name }}
-        </p>
-        <p v-if="openSaleByTable.has(table.id)" class="text-[10px] font-bold text-amber-700">
-          {{ formatCop(openSaleByTable.get(table.id)!.total) }}
+        <i
+          class="pi pi-table text-lg"
+          :class="
+            (activeMode === 'tab' && activeSaleId === openSaleByTable.get(table.id)?.id) ||
+            (activeMode === 'new-tab' && pendingTableId === table.id)
+              ? 'text-white'
+              : openSaleByTable.has(table.id)
+                ? 'text-indigo-500'
+                : 'text-slate-300'
+          "
+        />
+        <p class="text-xs font-semibold">{{ table.name }}</p>
+        <p v-if="openSaleByTable.has(table.id)" class="text-[10px] font-bold">
+          {{ formatCop(tableTotal(table)) }}
         </p>
       </button>
 
@@ -85,15 +110,20 @@ const emit = defineEmits<{
         v-for="tab in openTabsByName"
         :key="tab.id"
         type="button"
-        class="flex min-w-[76px] shrink-0 flex-col items-center gap-0.5 rounded-xl border-2 border-indigo-300 bg-indigo-50 px-3 py-2 text-center transition-all hover:bg-indigo-100 active:scale-95"
-        :class="activeMode === 'tab' && activeSaleId === tab.id ? 'ring-2 ring-indigo-500' : ''"
+        class="flex min-w-[76px] shrink-0 flex-col items-center gap-0.5 rounded-xl border px-3 py-2 text-center transition-colors active:scale-95"
+        :class="
+          activeMode === 'tab' && activeSaleId === tab.id
+            ? 'border-indigo-600 bg-indigo-600 text-white'
+            : 'border-indigo-200 bg-indigo-50 text-indigo-900 hover:border-indigo-300'
+        "
         @click="emit('select-tab', tab)"
       >
-        <i class="pi pi-user text-lg text-indigo-600" />
-        <p class="max-w-[70px] truncate text-xs font-semibold text-indigo-900">
-          {{ tab.customer_name || `#${tab.id}` }}
-        </p>
-        <p class="text-[10px] font-bold text-indigo-700">{{ formatCop(tab.total) }}</p>
+        <i
+          class="pi pi-user text-lg"
+          :class="activeMode === 'tab' && activeSaleId === tab.id ? 'text-white' : 'text-indigo-500'"
+        />
+        <p class="max-w-[70px] truncate text-xs font-semibold">{{ tab.customer_name || `#${tab.id}` }}</p>
+        <p class="text-[10px] font-bold">{{ formatCop(tabTotal(tab)) }}</p>
       </button>
     </div>
 

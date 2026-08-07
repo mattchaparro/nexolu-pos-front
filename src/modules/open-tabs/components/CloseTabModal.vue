@@ -76,12 +76,21 @@ watch(
 )
 
 const hasPartialPayments = computed(() => (props.sale.partial_payments?.length ?? 0) > 0)
-const amountPaid = computed(
-  () => props.sale.amount_paid ?? props.sale.partial_payments?.reduce((s, p) => s + p.amount, 0) ?? 0,
-)
-const balanceBeforeCharges = computed(() =>
-  round2(props.sale.balance_due ?? props.sale.total - amountPaid.value),
-)
+// Number(): amount_paid/p.amount/sale.total llegan como string desde el
+// backend (cast decimal:2 de Laravel se serializa como string en JSON) -
+// sumarlos directo con "+" concatenaria texto en vez de sumar.
+const amountPaid = computed(() => {
+  if (props.sale.amount_paid !== null && props.sale.amount_paid !== undefined) {
+    return Number(props.sale.amount_paid)
+  }
+  return props.sale.partial_payments?.reduce((s, p) => s + Number(p.amount), 0) ?? 0
+})
+const balanceBeforeCharges = computed(() => {
+  if (props.sale.balance_due !== null && props.sale.balance_due !== undefined) {
+    return round2(Number(props.sale.balance_due))
+  }
+  return round2(Number(props.sale.total) - amountPaid.value)
+})
 
 // Base sin el domicilio, igual que OpenTabService::close().
 const chargeBase = computed(() => Math.max(0, props.sale.total - props.sale.delivery_fee))

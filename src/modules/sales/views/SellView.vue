@@ -266,13 +266,13 @@ function handleNewSale(): void {
 
 <template>
   <div class="flex h-[calc(100dvh-4rem)] flex-col lg:h-[calc(100dvh-4rem-3rem)]">
-    <NxPageHeader title="Vender" icon="pi pi-shopping-cart" />
+    <NxPageHeader title="Vender" icon="pi pi-shopping-cart" compact />
 
-    <p v-if="submitError" class="mt-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+    <p v-if="submitError" class="mt-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
       {{ submitError }}
     </p>
 
-    <div class="mt-3">
+    <div class="mt-2">
       <TabSwitcherStrip
         :tables="tablesQuery.data.value ?? []"
         :open-tabs-by-name="openTabsByName"
@@ -280,13 +280,14 @@ function handleNewSale(): void {
         :active-mode="mode"
         :active-sale-id="activeSale?.id ?? null"
         :pending-table-id="pendingTable?.id ?? null"
+        :pending-cart-total="tabCart.total.value"
         @new-name="selectNewNamedTab"
         @select-table="selectTable"
         @select-tab="selectOpenTab"
       />
     </div>
 
-    <div class="mt-3 flex min-h-0 flex-1 gap-4">
+    <div class="mt-2 flex min-h-0 flex-1 gap-4">
       <div class="min-h-0 min-w-0 flex-1 pb-20 lg:pb-0">
         <template v-if="productsQuery.isPending.value || categoriesQuery.isPending.value">
           <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -346,13 +347,13 @@ function handleNewSale(): void {
     <button
       v-if="business && mode !== 'quick'"
       type="button"
-      class="fixed inset-x-4 bottom-20 z-10 flex items-center justify-between rounded-xl bg-amber-600 px-4 py-3 text-white shadow-lg lg:hidden"
+      class="fixed inset-x-4 bottom-20 z-10 flex items-center justify-between rounded-xl bg-slate-800 px-4 py-3 text-white shadow-lg lg:hidden"
       @click="mobileTabSheetOpen = true"
     >
       <span class="text-sm font-medium">
         {{ mobileTabLabel() }}
       </span>
-      <span class="font-bold">{{ formatCop((activeSale?.total ?? 0) + tabCart.total.value) }}</span>
+      <span class="font-bold">{{ formatCop(Number(activeSale?.total ?? 0) + tabCart.total.value) }}</span>
     </button>
 
     <Teleport to="body">
