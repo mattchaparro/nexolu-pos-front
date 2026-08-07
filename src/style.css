@@ -31,3 +31,28 @@
 body {
   margin: 0;
 }
+
+/**
+ * Clase utilitaria de Material Icons (calcada de app.css del legacy) - el
+ * paquete @fontsource/material-icons solo trae el @font-face, no esta
+ * clase. Es una fuente de ligaduras: el nombre del icono como texto
+ * (ej. "local_bar") se reemplaza por el glifo real via font-feature 'liga'.
+ * Ver main.ts para por que convive con PrimeIcons en vez de reemplazarlo.
+ */
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'liga';
+}

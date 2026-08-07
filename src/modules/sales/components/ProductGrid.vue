@@ -88,10 +88,10 @@ function selectCategory(id: number | null): void {
         v-if="filteredProducts.length === 0"
         class="flex h-full flex-col items-center justify-center gap-2 text-slate-400"
       >
-        <i class="pi pi-inbox text-3xl" />
-        <p class="text-sm">No hay productos que coincidan.</p>
+        <i class="pi pi-search-minus text-5xl" />
+        <p class="text-sm">No se encontraron productos.</p>
       </div>
-      <div v-else class="grid grid-cols-2 gap-3 pb-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div v-else class="grid grid-cols-2 gap-2 pb-4 sm:grid-cols-3 sm:gap-3 xl:grid-cols-4 2xl:grid-cols-5">
         <ProductCard
           v-for="product in filteredProducts"
           :key="product.id"

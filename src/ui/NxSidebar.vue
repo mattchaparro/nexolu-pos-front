@@ -1,10 +1,13 @@
 <script setup lang="ts">
 // Sidebar de escritorio + barra inferior movil, calcado de
 // Components/Menu/Sidebar.vue del legacy: logo arriba, boton de
-// colapsar, lista de items con icono + label. PrimeIcons en vez de
-// Material Icons (sistema unico de iconos). La barra movil muestra el
-// mismo menu completo (con scroll horizontal), no solo los items
-// habilitados, para verse consistente con el sidebar de escritorio.
+// colapsar, lista de items con icono + label. PrimeIcons para todo el
+// chrome de la app (nav, botones) - la unica excepcion es el icono de
+// categoria de producto (Material Icons, ver main.ts) porque PrimeIcons
+// no cubre iconografia de retail/comida y el legacy ya trae ese
+// vocabulario resuelto. La barra movil muestra el mismo menu completo
+// (con scroll horizontal), no solo los items habilitados, para verse
+// consistente con el sidebar de escritorio.
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 

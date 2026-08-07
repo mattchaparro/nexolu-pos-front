@@ -3,6 +3,14 @@
 import '@fontsource/lato/400.css'
 import '@fontsource/lato/700.css'
 import 'primeicons/primeicons.css'
+// Material Icons (self-hosted, mismo paquete @fontsource que usa el legacy)
+// SOLO para el icono de categoria de producto - PrimeIcons es el sistema de
+// iconos de toda la UI (nav, botones, chrome), pero no tiene practicamente
+// ningun icono de retail/comida/etc. Material Icons ya trae el vocabulario
+// exacto que el legacy usa en product_categories.icon (ver
+// CategoryIconResolver del lado del backend) - dos sistemas, cada uno donde
+// de verdad aporta, no un reemplazo general de PrimeIcons.
+import '@fontsource/material-icons'
 import './style.css'
 
 import { VueQueryPlugin } from '@tanstack/vue-query'
