@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import PrimeIconField from 'primevue/iconfield'
+import PrimeInputIcon from 'primevue/inputicon'
 import PrimeInputText from 'primevue/inputtext'
 
 export type NxInputSize = 'sm' | 'md' | 'lg'
@@ -32,50 +34,27 @@ const props = withDefaults(
 
 defineEmits<{ 'update:modelValue': [value: string] }>()
 
-// text-base (16px) en las 3 variantes a proposito: por debajo de 16px,
-// Safari en iOS hace zoom automatico al enfocar el input, y no hay forma
-// de desactivar ese zoom sin tocar el viewport global (rompe el zoom de
-// accesibilidad de toda la app) - asi que el tamaño de fuente del input
-// queda fijo en 16px en todos lados, aunque el alto/padding varien.
-const sizeClasses: Record<NxInputSize, string> = {
-  sm: 'h-8 px-2.5 text-base',
-  md: 'h-10 px-3 text-base',
-  lg: 'h-12 px-3.5 text-base',
-}
+// PrimeVue solo tiene "small"/"large" nativos - "md" es su tamaño por
+// defecto (undefined).
+const primeSize = computed<'small' | 'large' | undefined>(() => {
+  if (props.size === 'sm') {
+    return 'small'
+  }
+  if (props.size === 'lg') {
+    return 'large'
+  }
+  return undefined
+})
 
-const iconLeftClasses: Record<NxInputSize, string> = {
-  sm: 'left-2.5 text-sm',
-  md: 'left-3 text-base',
-  lg: 'left-3.5 text-lg',
-}
-
-const iconPaddingClasses: Record<NxInputSize, string> = {
-  sm: 'pl-8',
-  md: 'pl-9',
-  lg: 'pl-11',
-}
-
-const rootClass = computed(() => [
-  'w-full rounded-lg border bg-white text-slate-900 placeholder:text-slate-400',
-  'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500',
-  'disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed',
-  props.invalid ? 'border-red-500' : 'border-slate-300',
-  sizeClasses[props.size],
-  props.icon ? iconPaddingClasses[props.size] : '',
-])
+// font-size fijo en 16px pase lo que pase el size: por debajo de eso Safari
+// en iOS hace zoom automatico al enfocar el input (ver nota historica en
+// git blame), y el tema de Aura si varia el font-size por tamaño.
+const fontSizeStyle = { fontSize: '16px' }
 </script>
 
 <template>
-  <div class="relative w-full">
-    <i
-      v-if="icon"
-      :class="[
-        icon,
-        'pointer-events-none absolute top-1/2 -translate-y-1/2 text-slate-400',
-        iconLeftClasses[size],
-      ]"
-      aria-hidden="true"
-    />
+  <PrimeIconField v-if="icon">
+    <PrimeInputIcon :class="icon" />
     <PrimeInputText
       :id="id"
       :model-value="modelValue"
@@ -84,8 +63,24 @@ const rootClass = computed(() => [
       :disabled="disabled"
       :invalid="invalid"
       :autocomplete="autocomplete"
-      :class="rootClass"
+      :size="primeSize"
+      :style="fontSizeStyle"
+      fluid
       @update:model-value="(value) => $emit('update:modelValue', value as string)"
     />
-  </div>
+  </PrimeIconField>
+  <PrimeInputText
+    v-else
+    :id="id"
+    :model-value="modelValue"
+    :type="type"
+    :placeholder="placeholder"
+    :disabled="disabled"
+    :invalid="invalid"
+    :autocomplete="autocomplete"
+    :size="primeSize"
+    :style="fontSizeStyle"
+    fluid
+    @update:model-value="(value) => $emit('update:modelValue', value as string)"
+  />
 </template>

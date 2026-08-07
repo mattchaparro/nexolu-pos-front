@@ -28,51 +28,45 @@ const props = withDefaults(
 // elegir color "porque combina" en una pantalla puntual. `danger` es
 // exclusivo para acciones destructivas (eliminar, cancelar algo
 // irreversible), nunca un color alternativo para "otro boton mas".
-const variantClasses: Record<NxButtonVariant, string> = {
-  primary:
-    'bg-indigo-600 text-white hover:bg-indigo-700 focus-visible:outline-indigo-600 disabled:bg-indigo-300',
-  secondary:
-    'bg-slate-800 text-white hover:bg-slate-900 focus-visible:outline-slate-800 disabled:bg-slate-300',
-  outline:
-    'border border-slate-300 text-slate-700 hover:bg-slate-50 focus-visible:outline-indigo-600 disabled:text-slate-400',
-  ghost:
-    'text-slate-700 hover:bg-slate-100 focus-visible:outline-indigo-600 disabled:text-slate-400',
-  danger:
-    'bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-600 disabled:bg-red-200',
-}
+// El color en si (indigo, slate, rojo) lo pone el tema de PrimeVue
+// (theme/nexoluPreset.ts) via severity - no Tailwind a mano.
+const severity = computed<'primary' | 'secondary' | 'danger'>(() => {
+  if (props.variant === 'danger') {
+    return 'danger'
+  }
+  if (props.variant === 'primary') {
+    return 'primary'
+  }
+  return 'secondary'
+})
 
-const sizeClasses: Record<NxButtonSize, string> = {
-  sm: 'h-8 px-3 text-sm gap-1.5',
-  md: 'h-10 px-4 text-sm gap-2',
-  lg: 'h-12 px-5 text-base gap-2',
-}
+const outlined = computed(() => props.variant === 'outline')
+const text = computed(() => props.variant === 'ghost')
 
-const rootClass = computed(() => [
-  'inline-flex items-center justify-center rounded-lg font-medium transition-colors',
-  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
-  'disabled:cursor-not-allowed',
-  variantClasses[props.variant],
-  sizeClasses[props.size],
-])
+// PrimeVue solo tiene "small"/"large" nativos - "md" es su tamaño por
+// defecto (undefined).
+const primeSize = computed<'small' | 'large' | undefined>(() => {
+  if (props.size === 'sm') {
+    return 'small'
+  }
+  if (props.size === 'lg') {
+    return 'large'
+  }
+  return undefined
+})
 </script>
 
 <template>
-  <PrimeButton :class="rootClass" :disabled="disabled || loading" :type="type">
-    <svg
-      v-if="loading"
-      class="h-4 w-4 animate-spin"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-      <path
-        class="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4Z"
-      />
-    </svg>
-    <i v-else-if="icon" :class="icon" aria-hidden="true" />
+  <PrimeButton
+    :severity="severity"
+    :outlined="outlined"
+    :text="text"
+    :size="primeSize"
+    :icon="icon"
+    :loading="loading"
+    :disabled="disabled || loading"
+    :type="type"
+  >
     <slot />
   </PrimeButton>
 </template>

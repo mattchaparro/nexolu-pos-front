@@ -21,14 +21,21 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 import { queryClient } from './services/query/queryClient'
+import { nexoluPreset } from './theme/nexoluPreset'
 
 const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
-// unstyled: true - PrimeVue aporta comportamiento/accesibilidad, el
-// estilo lo pone siempre Nexolu UI (src/ui) con Tailwind. Ver README.md.
-app.use(PrimeVue, { unstyled: true, license: import.meta.env.VITE_PRIMEVUE_LICENSE_KEY })
+// Tema propio de PrimeVue (Aura + indigo de marca, ver theme/nexoluPreset.ts)
+// en vez de unstyled: la identidad sobria que pide el producto es la que ya
+// trae PrimeVue con su propio sistema de estilos, no una reconstruida a mano
+// con Tailwind. darkModeSelector: false porque el resto de la app (Tailwind)
+// no tiene modo oscuro - sin esto, Aura sigue prefers-color-scheme del SO.
+app.use(PrimeVue, {
+  theme: { preset: nexoluPreset, options: { darkModeSelector: false } },
+  license: import.meta.env.VITE_PRIMEVUE_LICENSE_KEY,
+})
 app.use(VueQueryPlugin, { queryClient })
 
 app.mount('#app')

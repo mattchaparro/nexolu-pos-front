@@ -20,14 +20,6 @@
   --font-sans: 'Lato', ui-sans-serif, system-ui, sans-serif;
 }
 
-/**
- * PrimeVue corre en modo unstyled (ver main.ts) - sin esto, sus
- * componentes no tienen ningun estilo base y dependen 100% de las clases
- * Tailwind que les da cada wrapper de src/ui. tailwindcss-primeui aporta
- * los data-attribute variants (ui:enabled:, ui:checked:, etc.) para poder
- * usar Tailwind directamente sobre el estado interno de cada componente.
- */
-
 body {
   margin: 0;
 }
