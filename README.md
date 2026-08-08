@@ -142,7 +142,15 @@ npm run build         # type-check + build de produccion
       `docs/BACKEND_READINESS.md`.
 - [x] Modulo Cuentas abiertas (mesas + cuentas por nombre, agregar/editar
       items, cobro con cortesia/cargos/abonos parciales/pago dividido)
-- [ ] Resto de modulos: inventory, customers, expenses, cash, reports, settings
+- [x] Modulo Catalogo, fase 1 (categorias con subcategorias de un nivel +
+      selector de icono; productos con precio/costo, tipo - servicio/venta
+      unica/controla inventario -, receta de insumos cuando la feature
+      "ingredients" esta activa). Insumos (CRUD propio) y movimientos de
+      stock quedan para una fase 2 - el backend ya esta listo
+      (`ingredients`, `ingredient-stock-movements`) pero falta el endpoint
+      `GET /stock-movement-reasons` para el dropdown de motivos del
+      formulario de movimientos - ver `docs/BACKEND_READINESS.md`.
+- [ ] Resto de modulos: customers, expenses, cash, reports, settings
 
 Antes de arrancar el siguiente modulo, revisar `docs/BACKEND_READINESS.md`:
 lista, por item del menu, si el backend de `nexolu-pos-api` ya esta listo o

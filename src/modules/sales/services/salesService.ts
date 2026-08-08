@@ -1,6 +1,7 @@
+import { fetchCategories } from '@/modules/catalog/services/catalogService'
 import { httpClient } from '@/services/http/client'
 import type { Discount } from '@/types/discount'
-import type { Product, ProductCategory } from '@/types/product'
+import type { Product } from '@/types/product'
 import type { CreateSalePayload, Sale } from '@/types/sale'
 
 // per_page=200: el POS necesita el catalogo casi completo de una sola vez
@@ -15,16 +16,10 @@ export async function fetchSellableProducts(): Promise<Product[]> {
   return data.data
 }
 
-// Sin paginar (ProductCategoryController::index no pagina) - a diferencia
-// de /products y /discounts, la app tiene JsonResource::withoutWrapping()
-// global (ver AppServiceProvider), asi que una coleccion sin paginar llega
-// como array plano, sin envoltorio 'data'. Solo las respuestas paginadas
-// (products, discounts) mantienen data/links/meta, porque esa envoltura la
-// pone el paginator, no JsonResource.
-export async function fetchProductCategories(): Promise<ProductCategory[]> {
-  const { data } = await httpClient.get<ProductCategory[]>('/product-categories')
-  return data
-}
+// Reexport: la llamada es identica a la que usa el modulo Catalogo (misma
+// URL sin paginar, mismos datos) - una sola implementacion en
+// catalog/services/catalogService.ts en vez de duplicarla aca.
+export { fetchCategories as fetchProductCategories }
 
 export async function fetchActiveDiscounts(): Promise<Discount[]> {
   const { data } = await httpClient.get<{ data: Discount[] }>('/discounts', {

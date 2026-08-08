@@ -35,7 +35,9 @@ const stockBadge = computed(() => {
   if (props.product.stock <= 0) {
     return { label: '0', class: 'bg-red-100 text-red-600' }
   }
-  if (props.product.stock <= props.product.low_stock_alert_threshold) {
+  // null = usa el umbral por defecto del negocio (ver low_stock_alert_threshold
+  // en Business, default 5 del lado del backend).
+  if (props.product.stock <= (props.product.low_stock_alert_threshold ?? 5)) {
     return { label: String(props.product.stock), class: 'bg-amber-100 text-amber-600' }
   }
   return { label: String(props.product.stock), class: 'bg-slate-100 text-slate-500' }

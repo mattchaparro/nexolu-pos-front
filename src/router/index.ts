@@ -38,6 +38,21 @@ const router = createRouter({
           name: 'open-tabs.index',
           component: () => import('@/modules/open-tabs/views/OpenTabsView.vue'),
         },
+        {
+          path: 'catalogo',
+          name: 'catalog.index',
+          component: () => import('@/modules/catalog/views/CatalogView.vue'),
+        },
+        {
+          path: 'catalogo/productos/nuevo',
+          name: 'catalog.products.create',
+          component: () => import('@/modules/catalog/views/ProductFormView.vue'),
+        },
+        {
+          path: 'catalogo/productos/:id/editar',
+          name: 'catalog.products.edit',
+          component: () => import('@/modules/catalog/views/ProductFormView.vue'),
+        },
       ],
     },
   ],

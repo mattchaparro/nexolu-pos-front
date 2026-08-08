@@ -15,7 +15,7 @@ export const adminNavItems: NavItem[] = [
   { label: 'Fiados', icon: 'pi pi-wallet', disabled: true },
   { label: 'Apartados', icon: 'pi pi-bookmark', disabled: true },
   { label: 'Comandera', icon: 'pi pi-list', disabled: true },
-  { label: 'Catálogo', icon: 'pi pi-shop', disabled: true },
+  { label: 'Catálogo', icon: 'pi pi-shop', routeName: 'catalog.index' },
   { label: 'Turnos de caja', icon: 'pi pi-clock', disabled: true },
   { label: 'Resumen del día', icon: 'pi pi-chart-bar', disabled: true },
   { label: 'Gastos', icon: 'pi pi-money-bill', disabled: true },

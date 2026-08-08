@@ -23,6 +23,7 @@ const props = withDefaults(
     disabled?: boolean
     invalid?: boolean
     error?: string
+    required?: boolean
     size?: NxInputSize
     id?: string
   }>(),
@@ -32,6 +33,7 @@ const props = withDefaults(
     disabled: false,
     invalid: false,
     error: undefined,
+    required: false,
     size: 'md',
     id: undefined,
   },
@@ -72,7 +74,7 @@ const fontSizeStyle = { fontSize: '16px' }
         fluid
         @update:model-value="(value) => emit('update:modelValue', value)"
       />
-      <label v-if="label" :for="inputId">{{ label }}</label>
+      <label v-if="label" :for="inputId">{{ label }}<span v-if="required" class="text-red-600"> *</span></label>
     </PrimeFloatLabel>
     <PrimeMessage v-if="error" severity="error" size="small" variant="simple">{{ error }}</PrimeMessage>
   </div>
