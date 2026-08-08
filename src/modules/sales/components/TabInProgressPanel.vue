@@ -99,7 +99,6 @@ function title(): string {
       </NxButton>
       <NxButton
         v-if="activeSale"
-        variant="outline"
         icon="pi pi-money-bill"
         :disabled="cart.lines.value.length > 0"
         @click="emit('close')"

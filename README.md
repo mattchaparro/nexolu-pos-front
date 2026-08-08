@@ -47,21 +47,29 @@ Query, no en stores.
 ### Nexolú UI
 
 Ninguna pantalla importa `primevue` directamente. Todo pasa por `src/ui`
-(`NxButton`, `NxInput`, `NxInputNumber`, `NxCard`, ...): por dentro usan
-PrimeVue con un tema propio (Aura + indigo de marca, `src/theme/nexoluPreset.ts`),
-pero cada wrapper decide que props expone y aporta el resto del estilo con
-Tailwind. Esto desacopla la app de PrimeVue y nos da una identidad visual
-propia y consistente.
+(`NxButton`, `NxInput`, `NxInputNumber`, `NxSelect`, `NxCard`, `NxTabs` +
+`NxTabList`/`NxTab`/`NxTabPanels`/`NxTabPanel`, `NxToggleButton`, ...): por
+dentro usan PrimeVue con un tema propio (Aura + indigo de marca,
+`src/theme/nexoluPreset.ts`), pero cada wrapper decide que props expone y
+aporta el resto del estilo con Tailwind. Esto desacopla la app de PrimeVue
+y nos da una identidad visual propia y consistente.
 
 Todo campo de un formulario (nombre, teléfono, correo, etc.) usa `NxInput`/
-`NxInputNumber` con la prop `label` - Float Label variante "on" de PrimeVue
-(el label flota sobre el borde al enfocar o llenar el campo), nunca un
-`<label>` aparte ni un `placeholder` como sustituto de label. Los campos
-de solo filtro/búsqueda (buscador de productos, de mesas) no son parte de
-"un formulario" y se quedan con placeholder simple, sin label flotante.
-`NxInputNumber` formatea todo monto en pesos colombianos (`es-CO`, sin
-decimales) por defecto - usarlo para cualquier precio/abono/vuelto en vez
-de un `<input type="number">` suelto.
+`NxInputNumber`/`NxSelect` con la prop `label` - Float Label variante "on"
+de PrimeVue (el label flota sobre el borde al enfocar o llenar el campo),
+nunca un `<label>` aparte ni un `placeholder` como sustituto de label. Los
+campos de solo filtro/búsqueda (buscador de productos, de mesas) no son
+parte de "un formulario" y se quedan con placeholder simple, sin label
+flotante. `NxInputNumber` formatea todo monto en pesos colombianos
+(`es-CO`, sin decimales) por defecto - usarlo para cualquier
+precio/abono/vuelto en vez de un `<input type="number">` suelto. El error
+de un campo (`error` prop en `NxInput`/`NxInputNumber`/`NxSelect`) se
+muestra con `PrimeMessage` (`severity="error" size="small"
+variant="simple"`), el estandar de PrimeVue para errores inline, no un
+`<p>` a mano. `NxTabs`/`NxToggleButton` envuelven el `Tabs`/`ToggleButton`
+nativos de PrimeVue para separar formas de pago (ver `PaymentModal.vue`) o
+cualquier interruptor con icono (cortesia, domicilio) sin volver a armar
+checkbox+label a mano.
 
 ### Sistema de color
 

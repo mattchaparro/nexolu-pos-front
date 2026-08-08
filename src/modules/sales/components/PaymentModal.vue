@@ -11,11 +11,31 @@
 // fallbackDeliveryFee en vez de derivarse de una Sale ya persistida. Los
 // abonos parciales no aplican a una venta directa (se cobra completa en el
 // momento), asi que esa seccion solo aparece si sale no es null.
+//
+// Tres tabs para las formas de cobrar (mismo modelo de datos
+// {method, amount, label} para "varios medios" y "cuentas divididas" -
+// la unica diferencia es si se muestra el campo "quien paga" y el ayudante
+// de repartir entre N personas, ver la nota en submitConfirm). El domicilio
+// NO vive aca a proposito: se decide al crear la venta/cuenta (carrito o
+// alta de cuenta), nunca al cerrarla - moverlo aca solo para venta directa
+// rompería esa simetría entre los dos flujos.
 import { computed, ref, watch } from 'vue'
 
 import type { Business } from '@/types/business'
 import type { Sale } from '@/types/sale'
-import { NxButton, NxInput, NxInputNumber, NxModal } from '@/ui'
+import {
+  NxButton,
+  NxInput,
+  NxInputNumber,
+  NxModal,
+  NxSelect,
+  NxTab,
+  NxTabList,
+  NxTabPanel,
+  NxTabPanels,
+  NxTabs,
+  NxToggleButton,
+} from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 import { isCashPaymentMethodId, isCreditPaymentMethodId } from '@/utils/paymentMethod'
 
@@ -50,6 +70,8 @@ const emit = defineEmits<{
   'register-partial': [payload: RecordPartialPaymentPayload]
 }>()
 
+type PaymentTab = 'single' | 'multi' | 'split'
+
 const splitMethods = computed(() =>
   props.business.payment_methods.filter((m) => !isCreditPaymentMethodId(m.id)),
 )
@@ -60,8 +82,9 @@ const isCourtesy = ref(false)
 const courtesyReason = ref('')
 const applyServiceCharge = ref(true)
 const applyIpoconsumo = ref(true)
-const useSplit = ref(false)
+const activeTab = ref<PaymentTab>('single')
 const splitRows = ref<PaymentSplitInput[]>([])
+const splitPeopleCount = ref<number | null>(2)
 const singleMethod = ref<string | null>(null)
 const customerName = ref('')
 const customerPhone = ref('')
@@ -75,8 +98,9 @@ function resetForm(): void {
   courtesyReason.value = ''
   applyServiceCharge.value = true
   applyIpoconsumo.value = true
-  useSplit.value = false
+  activeTab.value = 'single'
   splitRows.value = []
+  splitPeopleCount.value = 2
   singleMethod.value = defaultMethodId.value
   customerName.value = ''
   customerPhone.value = ''
@@ -138,6 +162,7 @@ const amountDue = computed(() =>
   round2(balanceBeforeCharges.value + serviceChargeAmount.value + ipoconsumoAmount.value),
 )
 
+const isSplitTab = computed(() => activeTab.value === 'multi' || activeTab.value === 'split')
 const splitTotal = computed(() => round2(splitRows.value.reduce((s, r) => s + (Number(r.amount) || 0), 0)))
 const splitRemainder = computed(() => round2(amountDue.value - splitTotal.value))
 
@@ -151,15 +176,9 @@ function initSplitRows(): void {
   ]
 }
 
-watch(useSplit, (v) => {
-  if (v) {
+watch(activeTab, (tab) => {
+  if ((tab === 'multi' || tab === 'split') && splitRows.value.length < 2) {
     initSplitRows()
-  }
-})
-
-watch(isCourtesy, (v) => {
-  if (v) {
-    useSplit.value = false
   }
 })
 
@@ -171,10 +190,24 @@ function removeSplitRow(index: number): void {
   splitRows.value.splice(index, 1)
 }
 
+/** Reparte amountDue en N filas iguales (la ultima ajusta el redondeo), una por persona. */
+function divideAmongN(): void {
+  const n = Math.max(1, Math.round(splitPeopleCount.value ?? 1))
+  const per = round2(amountDue.value / n)
+  let assigned = 0
+  const rows: PaymentSplitInput[] = []
+  for (let i = 0; i < n; i++) {
+    const amount = i === n - 1 ? round2(amountDue.value - assigned) : per
+    assigned = round2(assigned + amount)
+    rows.push({ method: defaultSplitMethodId.value, amount, label: `Persona ${i + 1}` })
+  }
+  splitRows.value = rows
+}
+
 // Vuelto: solo tiene sentido con un unico medio en efectivo, ni en pago
 // dividido ni en cortesia.
 const isSingleCash = computed(
-  () => !isCourtesy.value && !useSplit.value && isCashPaymentMethodId(singleMethod.value),
+  () => !isCourtesy.value && activeTab.value === 'single' && isCashPaymentMethodId(singleMethod.value),
 )
 const received = computed(() => receivedInput.value ?? 0)
 const change = computed(() => received.value - amountDue.value)
@@ -184,7 +217,7 @@ function fillExactAmount(): void {
 }
 
 const needsCustomerInfoForCredit = computed(() => {
-  if (isCourtesy.value || useSplit.value) {
+  if (isCourtesy.value || isSplitTab.value) {
     return false
   }
   if (!isCreditPaymentMethodId(singleMethod.value)) {
@@ -197,7 +230,7 @@ const canConfirm = computed(() => {
   if (isCourtesy.value) {
     return true
   }
-  if (useSplit.value) {
+  if (isSplitTab.value) {
     const validRows = splitRows.value.filter((r) => Number(r.amount) > 0.009)
     return validRows.length >= 2 && Math.abs(splitRemainder.value) < 0.02
   }
@@ -219,7 +252,7 @@ function submitConfirm(): void {
     apply_ipoconsumo: !isCourtesy.value && applyIpoconsumo.value,
   }
 
-  if (!isCourtesy.value && useSplit.value) {
+  if (!isCourtesy.value && isSplitTab.value) {
     payload.payment_splits = splitRows.value
       .filter((r) => Number(r.amount) > 0.009)
       .map((r) => ({ method: r.method, amount: Number(r.amount), label: r.label || undefined }))
@@ -264,51 +297,51 @@ const modalTitle = computed(() => props.title ?? (props.sale ? 'Cobrar cuenta' :
           Total cuenta: <strong class="text-slate-700">{{ formatCop(grandBase) }}</strong> · Ya pagado:
           <strong class="text-emerald-700">{{ formatCop(amountPaid) }}</strong>
         </p>
-        <p class="text-2xl font-bold text-emerald-600">{{ formatCop(amountDue) }}</p>
+        <p class="text-2xl font-bold text-indigo-700">{{ formatCop(amountDue) }}</p>
         <p class="text-xs text-slate-400">{{ amountPaid > 0 ? 'Saldo a cobrar ahora' : 'Total a cobrar' }}</p>
       </div>
 
       <div
         v-if="sale?.partial_payments?.length"
-        class="rounded-lg border border-amber-200 bg-amber-50/60 p-3 text-[11px] text-amber-900"
+        class="rounded-lg border border-slate-200 bg-slate-50 p-3 text-[11px] text-slate-600"
       >
         <p v-for="p in sale.partial_payments" :key="p.id">
           {{ formatCop(p.amount) }} —
           {{ business.payment_methods.find((m) => m.id === p.payment_method)?.label ?? p.payment_method }}
-          <span v-if="p.payer_label" class="text-amber-700">· {{ p.payer_label }}</span>
+          <span v-if="p.payer_label" class="text-slate-500">· {{ p.payer_label }}</span>
         </p>
       </div>
 
-      <div v-if="allowPartial && amountDue > 0.02" class="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
-        <p class="mb-2 text-xs font-semibold text-amber-800">Registrar abono parcial</p>
+      <div v-if="allowPartial && amountDue > 0.02" class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <p class="mb-2 text-xs font-semibold text-slate-700">Registrar abono parcial</p>
         <div class="flex flex-wrap items-end gap-2">
           <NxInputNumber v-model="partialAmount" label="Monto" size="sm" class="w-32" />
-          <select
-            v-model="partialMethod"
-            class="min-w-[110px] rounded-lg border border-amber-300 bg-white px-2 py-1.5 text-xs"
-          >
-            <option v-for="m in splitMethods" :key="m.id" :value="m.id">{{ m.label }}</option>
-          </select>
+          <NxSelect
+            :model-value="partialMethod"
+            :options="splitMethods"
+            option-label="label"
+            option-value="id"
+            label="Medio"
+            size="sm"
+            class="min-w-[130px]"
+            @update:model-value="partialMethod = $event as string"
+          />
           <NxInput v-model="partialLabel" label="Quién paga (opc.)" size="sm" class="min-w-[120px] flex-1" />
           <NxButton size="sm" variant="secondary" @click="submitPartial">Registrar</NxButton>
         </div>
       </div>
 
-      <label
-        class="flex items-center justify-between py-1"
-        :class="hasPartialPayments ? 'opacity-50' : ''"
-      >
-        <span class="text-sm font-medium text-slate-700">Cerrar como cortesía</span>
-        <input
+      <div>
+        <NxToggleButton
           v-model="isCourtesy"
-          type="checkbox"
+          label="Cerrar como cortesía"
+          icon="pi pi-gift"
           :disabled="hasPartialPayments"
-          class="h-4 w-4 rounded accent-amber-500 disabled:opacity-50"
         />
-      </label>
-      <p v-if="hasPartialPayments" class="-mt-2 text-[11px] text-amber-700">
-        No aplica cortesía con abonos registrados.
-      </p>
+        <p v-if="hasPartialPayments" class="mt-1 text-[11px] text-amber-700">
+          No aplica cortesía con abonos registrados.
+        </p>
+      </div>
       <NxInput
         v-if="isCourtesy"
         v-model="courtesyReason"
@@ -317,94 +350,155 @@ const modalTitle = computed(() => props.title ?? (props.sale ? 'Cobrar cuenta' :
 
       <div
         v-if="!isCourtesy && (business.charges.service_charge_enabled || business.charges.ipoconsumo_enabled)"
-        class="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50/40 p-3"
+        class="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3"
       >
         <label
           v-if="business.charges.service_charge_enabled"
-          class="flex items-center justify-between text-sm text-amber-900"
+          class="flex items-center justify-between text-sm text-slate-700"
         >
           <span class="flex items-center gap-2 font-medium">
-            <input v-model="applyServiceCharge" type="checkbox" class="h-4 w-4 rounded accent-amber-600" />
+            <input v-model="applyServiceCharge" type="checkbox" class="h-4 w-4 rounded accent-indigo-600" />
             Servicio ({{ business.charges.service_charge_rate }}%)
           </span>
           <span v-if="serviceChargeAmount > 0" class="font-semibold">+{{ formatCop(serviceChargeAmount) }}</span>
         </label>
         <label
           v-if="business.charges.ipoconsumo_enabled"
-          class="flex items-center justify-between text-sm text-amber-900"
+          class="flex items-center justify-between text-sm text-slate-700"
         >
           <span class="flex items-center gap-2 font-medium">
-            <input v-model="applyIpoconsumo" type="checkbox" class="h-4 w-4 rounded accent-amber-600" />
+            <input v-model="applyIpoconsumo" type="checkbox" class="h-4 w-4 rounded accent-indigo-600" />
             Ipoconsumo ({{ business.charges.ipoconsumo_rate }}%)
           </span>
           <span v-if="ipoconsumoAmount > 0" class="font-semibold">+{{ formatCop(ipoconsumoAmount) }}</span>
         </label>
       </div>
 
-      <label v-if="!isCourtesy && splitMethods.length >= 2" class="flex items-center justify-between py-1">
-        <span class="text-sm font-medium text-indigo-700">Pago dividido (2+ medios)</span>
-        <input v-model="useSplit" type="checkbox" class="h-4 w-4 rounded accent-indigo-600" />
-      </label>
+      <NxTabs v-if="!isCourtesy" v-model:value="activeTab">
+        <NxTabList>
+          <NxTab value="single" icon="pi pi-wallet">Pago único</NxTab>
+          <NxTab value="multi" icon="pi pi-credit-card">Varios medios</NxTab>
+          <NxTab value="split" icon="pi pi-users">Cuentas divididas</NxTab>
+        </NxTabList>
+        <NxTabPanels>
+          <NxTabPanel value="single">
+            <PaymentMethodPicker :methods="business.payment_methods" :model-value="singleMethod" @update:model-value="singleMethod = $event" />
 
-      <div v-if="!isCourtesy && useSplit" class="flex flex-col gap-2">
-        <p class="text-xs text-slate-500">
-          Saldo {{ formatCop(amountDue) }}. Diferencia:
-          <span :class="Math.abs(splitRemainder) < 0.02 ? 'font-semibold text-emerald-600' : 'font-semibold text-amber-600'">
-            {{ formatCop(splitRemainder) }}
-          </span>
-        </p>
-        <div v-for="(row, index) in splitRows" :key="index" class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
-          <select v-model="row.method" class="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-2 py-2 text-sm">
-            <option v-for="m in splitMethods" :key="m.id" :value="m.id">{{ m.label }}</option>
-          </select>
-          <NxInputNumber
-            :model-value="row.amount"
-            label="Monto"
-            size="sm"
-            class="w-32"
-            :min="0"
-            @update:model-value="row.amount = $event ?? 0"
-          />
-          <button type="button" class="shrink-0 text-slate-300 hover:text-red-500" @click="removeSplitRow(index)">
-            <i class="pi pi-times" />
-          </button>
-        </div>
-        <button type="button" class="text-left text-xs font-semibold text-indigo-600 hover:text-indigo-800" @click="addSplitRow">
-          + Agregar medio
-        </button>
-      </div>
+            <div v-if="isCreditPaymentMethodId(singleMethod)" class="mt-3 flex flex-col gap-2">
+              <p v-if="!needsCustomerInfoForCredit" class="text-xs text-slate-500">
+                Cliente: {{ existingCustomerName || existingCustomerPhone || customerName || customerPhone }}
+              </p>
+              <template v-else>
+                <p class="text-xs text-red-600">
+                  Un fiado necesita al menos un dato del cliente (nombre o teléfono).
+                </p>
+                <NxInput v-model="customerName" label="Nombre del cliente" size="sm" />
+                <NxInput v-model="customerPhone" label="Teléfono" size="sm" />
+              </template>
+            </div>
 
-      <div v-if="!isCourtesy && !useSplit">
-        <PaymentMethodPicker :methods="business.payment_methods" :model-value="singleMethod" @update:model-value="singleMethod = $event" />
+            <div v-if="isSingleCash" class="mt-3 flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div class="flex items-end gap-2">
+                <NxInputNumber v-model="receivedInput" label="Monto recibido" size="sm" class="flex-1" />
+                <button type="button" class="pb-2 text-xs font-medium text-indigo-600 hover:text-indigo-700" @click="fillExactAmount">
+                  Monto exacto
+                </button>
+              </div>
+              <p
+                class="rounded-lg px-3 py-1.5 text-center text-sm font-semibold"
+                :class="change >= -0.01 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'"
+              >
+                {{ change >= -0.01 ? `Vueltas: ${formatCop(change)}` : `Falta ${formatCop(-change)}` }}
+              </p>
+            </div>
+          </NxTabPanel>
 
-        <div v-if="isCreditPaymentMethodId(singleMethod)" class="mt-3 flex flex-col gap-2">
-          <p v-if="!needsCustomerInfoForCredit" class="text-xs text-slate-500">
-            Cliente: {{ existingCustomerName || existingCustomerPhone || customerName || customerPhone }}
-          </p>
-          <template v-else>
-            <p class="text-xs text-red-600">
-              Un fiado necesita al menos un dato del cliente (nombre o teléfono).
+          <NxTabPanel value="multi">
+            <p class="text-xs text-slate-500">
+              Saldo {{ formatCop(amountDue) }}. Diferencia:
+              <span :class="Math.abs(splitRemainder) < 0.02 ? 'font-semibold text-emerald-600' : 'font-semibold text-red-600'">
+                {{ formatCop(splitRemainder) }}
+              </span>
             </p>
-            <NxInput v-model="customerName" label="Nombre del cliente" size="sm" />
-            <NxInput v-model="customerPhone" label="Teléfono" size="sm" />
-          </template>
-        </div>
+            <div class="mt-2 flex flex-col gap-2">
+              <div v-for="(row, index) in splitRows" :key="index" class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                <NxSelect
+                  :model-value="row.method"
+                  :options="splitMethods"
+                  option-label="label"
+                  option-value="id"
+                  label="Medio"
+                  size="sm"
+                  class="min-w-0 flex-1"
+                  @update:model-value="row.method = $event as string"
+                />
+                <NxInputNumber
+                  :model-value="row.amount"
+                  label="Monto"
+                  size="sm"
+                  class="w-32"
+                  :min="0"
+                  @update:model-value="row.amount = $event ?? 0"
+                />
+                <button type="button" class="shrink-0 text-slate-300 hover:text-red-500" @click="removeSplitRow(index)">
+                  <i class="pi pi-times" />
+                </button>
+              </div>
+              <button type="button" class="text-left text-xs font-semibold text-indigo-600 hover:text-indigo-800" @click="addSplitRow">
+                + Agregar medio
+              </button>
+            </div>
+          </NxTabPanel>
 
-        <div v-if="isSingleCash" class="mt-3 flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <div class="flex items-end gap-2">
-            <NxInputNumber v-model="receivedInput" label="Monto recibido" size="sm" class="flex-1" />
-            <button type="button" class="pb-2 text-xs font-medium text-indigo-600 hover:text-indigo-700" @click="fillExactAmount">
-              Monto exacto
-            </button>
-          </div>
-          <p
-            class="rounded-lg px-3 py-1.5 text-center text-sm font-semibold"
-            :class="change >= -0.01 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'"
-          >
-            {{ change >= -0.01 ? `Vueltas: ${formatCop(change)}` : `Falta ${formatCop(-change)}` }}
-          </p>
-        </div>
-      </div>
+          <NxTabPanel value="split">
+            <p class="text-xs text-slate-500">
+              Saldo {{ formatCop(amountDue) }}. Diferencia:
+              <span :class="Math.abs(splitRemainder) < 0.02 ? 'font-semibold text-emerald-600' : 'font-semibold text-red-600'">
+                {{ formatCop(splitRemainder) }}
+              </span>
+            </p>
+            <div class="mt-2 flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+              <NxInputNumber v-model="splitPeopleCount" label="Personas" size="sm" class="w-24" :min="1" :currency="false" />
+              <NxButton size="sm" variant="secondary" icon="pi pi-users" @click="divideAmongN">Dividir</NxButton>
+            </div>
+            <div class="mt-2 flex flex-col gap-2">
+              <div v-for="(row, index) in splitRows" :key="index" class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                <NxSelect
+                  :model-value="row.method"
+                  :options="splitMethods"
+                  option-label="label"
+                  option-value="id"
+                  label="Medio"
+                  size="sm"
+                  class="min-w-0 flex-1"
+                  @update:model-value="row.method = $event as string"
+                />
+                <NxInputNumber
+                  :model-value="row.amount"
+                  label="Monto"
+                  size="sm"
+                  class="w-32"
+                  :min="0"
+                  @update:model-value="row.amount = $event ?? 0"
+                />
+                <NxInput
+                  :model-value="row.label ?? ''"
+                  label="Quién paga"
+                  size="sm"
+                  class="min-w-[110px] flex-1"
+                  @update:model-value="row.label = $event"
+                />
+                <button type="button" class="shrink-0 text-slate-300 hover:text-red-500" @click="removeSplitRow(index)">
+                  <i class="pi pi-times" />
+                </button>
+              </div>
+              <button type="button" class="text-left text-xs font-semibold text-indigo-600 hover:text-indigo-800" @click="addSplitRow">
+                + Agregar persona
+              </button>
+            </div>
+          </NxTabPanel>
+        </NxTabPanels>
+      </NxTabs>
     </div>
 
     <template #footer>

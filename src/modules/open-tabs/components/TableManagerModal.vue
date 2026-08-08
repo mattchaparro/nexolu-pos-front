@@ -65,7 +65,7 @@ async function removeTable(table: BusinessTable): Promise<void> {
           <span class="flex-1 text-sm font-medium" :class="table.is_active ? 'text-slate-900' : 'text-slate-400'">
             {{ table.name }}
           </span>
-          <span v-if="table.has_open_sale" class="text-[10px] font-semibold text-amber-600">Ocupada</span>
+          <span v-if="table.has_open_sale" class="text-[10px] font-semibold text-indigo-600">Ocupada</span>
           <button
             type="button"
             class="text-xs font-medium text-slate-400 hover:text-indigo-600"

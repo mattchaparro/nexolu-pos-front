@@ -16,6 +16,20 @@ export { default as NxNavbar } from './NxNavbar.vue'
 
 export { default as NxPageHeader } from './NxPageHeader.vue'
 
+export { default as NxSelect } from './NxSelect.vue'
+
 export { default as NxSidebar } from './NxSidebar.vue'
 
 export { default as NxStatCard } from './NxStatCard.vue'
+
+export { default as NxTab } from './NxTab.vue'
+
+export { default as NxTabList } from './NxTabList.vue'
+
+export { default as NxTabPanel } from './NxTabPanel.vue'
+
+export { default as NxTabPanels } from './NxTabPanels.vue'
+
+export { default as NxTabs } from './NxTabs.vue'
+
+export { default as NxToggleButton } from './NxToggleButton.vue'

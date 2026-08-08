@@ -252,7 +252,7 @@ async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Prom
       <div v-if="filteredTables.length > 0" class="mt-5">
         <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
           Mesas
-          <span class="ml-1 font-semibold text-amber-600">
+          <span class="ml-1 font-semibold text-indigo-600">
             {{ filteredTables.filter((t) => openSaleByTable.has(t.id)).length }}/{{ filteredTables.length }} ocupadas
           </span>
         </h3>

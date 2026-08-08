@@ -8,6 +8,7 @@
 import { computed, useId } from 'vue'
 import PrimeFloatLabel from 'primevue/floatlabel'
 import PrimeInputNumber from 'primevue/inputnumber'
+import PrimeMessage from 'primevue/message'
 
 import type { NxInputSize } from './NxInput.vue'
 
@@ -86,6 +87,6 @@ const effectivePlaceholder = computed(() => (props.label ? undefined : props.pla
       />
       <label v-if="label" :for="inputId">{{ label }}<span v-if="required" class="text-red-600"> *</span></label>
     </PrimeFloatLabel>
-    <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
+    <PrimeMessage v-if="error" severity="error" size="small" variant="simple">{{ error }}</PrimeMessage>
   </div>
 </template>

@@ -22,7 +22,7 @@ const emit = defineEmits<{
 <template>
   <div class="mb-4 rounded-xl border border-slate-200 bg-white p-4">
     <h3 class="mb-2 flex items-center gap-2 font-bold text-slate-900">
-      <i class="pi pi-file text-amber-600" />
+      <i class="pi pi-file text-indigo-600" />
       {{ sale.table_id ? `Mesa` : sale.customer_name || `Cuenta #${sale.id}` }}
       <span class="ml-auto text-lg font-bold text-emerald-600">{{ formatCop(sale.total) }}</span>
     </h3>
