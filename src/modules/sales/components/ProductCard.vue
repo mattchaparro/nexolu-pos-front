@@ -15,9 +15,10 @@ const props = defineProps<{ product: Product }>()
 
 const emit = defineEmits<{ click: [] }>()
 
-// Feedback visual del tap (borde+sombra, sin icono superpuesto - quitaba
-// visibilidad al producto) ademas de la alerta de sistema (NxToast) que
-// dispara la pantalla que escucha "click".
+// Feedback visual del tap: borde/sombra + un oscurecido breve de toda la
+// card (mas notorio que la sombra sola) - sin icono superpuesto, eso le
+// quitaba visibilidad al producto. Se suma a la alerta de sistema (NxToast)
+// que dispara la pantalla que escucha "click".
 const justAdded = ref(false)
 
 function handleClick(): void {
@@ -59,6 +60,16 @@ const isDisabled = computed(() => props.product.track_stock && props.product.sto
     :disabled="isDisabled"
     @click="handleClick"
   >
+    <Transition
+      enter-active-class="transition duration-100 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-300 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div v-if="justAdded" class="pointer-events-none absolute inset-0 rounded-xl bg-slate-900/15" />
+    </Transition>
     <div class="flex min-w-0 items-start gap-2">
       <span class="material-icons mt-0.5 shrink-0 rounded-lg bg-indigo-50 p-1.5 text-lg text-indigo-600">
         {{ product.category?.icon || 'inventory_2' }}

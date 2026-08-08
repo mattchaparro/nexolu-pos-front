@@ -12,13 +12,16 @@
 // abonos parciales no aplican a una venta directa (se cobra completa en el
 // momento), asi que esa seccion solo aparece si sale no es null.
 //
-// Tres tabs para las formas de cobrar (mismo modelo de datos
-// {method, amount, label} para "varios medios" y "cuentas divididas" -
-// la unica diferencia es si se muestra el campo "quien paga" y el ayudante
-// de repartir entre N personas, ver la nota en submitConfirm). El domicilio
-// NO vive aca a proposito: se decide al crear la venta/cuenta (carrito o
-// alta de cuenta), nunca al cerrarla - moverlo aca solo para venta directa
-// rompería esa simetría entre los dos flujos.
+// Tabs para las formas de cobrar (mismo modelo de datos {method, amount,
+// label} para "varios medios" y "cuentas divididas" - la unica diferencia
+// es si se muestra el campo "quien paga" y el ayudante de repartir entre N
+// personas, ver la nota en submitConfirm). "Abonar" (abono parcial) es una
+// cuarta tab, al final, solo para cuentas abiertas (sale != null) - se usa
+// poco comparado con las otras tres, por eso no vive suelta arriba de los
+// tabs como antes. El domicilio NO vive aca a proposito: se decide al
+// crear la venta/cuenta (carrito o alta de cuenta), nunca al cerrarla -
+// moverlo aca solo para venta directa rompería esa simetría entre los dos
+// flujos.
 import { computed, ref, watch } from 'vue'
 
 import type { Business } from '@/types/business'
@@ -70,7 +73,7 @@ const emit = defineEmits<{
   'register-partial': [payload: RecordPartialPaymentPayload]
 }>()
 
-type PaymentTab = 'single' | 'multi' | 'split'
+type PaymentTab = 'single' | 'multi' | 'split' | 'partial'
 
 const splitMethods = computed(() =>
   props.business.payment_methods.filter((m) => !isCreditPaymentMethodId(m.id)),
@@ -300,36 +303,6 @@ const modalTitle = computed(() => props.title ?? (props.sale ? 'Cobrar cuenta' :
         <p class="text-xs text-slate-400">{{ amountPaid > 0 ? 'Saldo a cobrar ahora' : 'Total a cobrar' }}</p>
       </div>
 
-      <div
-        v-if="sale?.partial_payments?.length"
-        class="rounded-lg border border-slate-200 bg-slate-50 p-3 text-[11px] text-slate-600"
-      >
-        <p v-for="p in sale.partial_payments" :key="p.id">
-          {{ formatCop(p.amount) }} —
-          {{ business.payment_methods.find((m) => m.id === p.payment_method)?.label ?? p.payment_method }}
-          <span v-if="p.payer_label" class="text-slate-500">· {{ p.payer_label }}</span>
-        </p>
-      </div>
-
-      <div v-if="allowPartial && amountDue > 0.02" class="rounded-lg border border-slate-200 bg-slate-50 p-3">
-        <p class="mb-2 text-xs font-semibold text-slate-700">Registrar abono parcial</p>
-        <div class="flex flex-wrap items-end gap-2">
-          <NxInputNumber v-model="partialAmount" label="Monto" size="sm" class="w-32" />
-          <NxSelect
-            :model-value="partialMethod"
-            :options="splitMethods"
-            option-label="label"
-            option-value="id"
-            label="Medio"
-            size="sm"
-            class="min-w-[130px]"
-            @update:model-value="partialMethod = $event as string"
-          />
-          <NxInput v-model="partialLabel" label="Quién paga (opc.)" size="sm" class="min-w-[120px] flex-1" />
-          <NxButton size="sm" variant="secondary" @click="submitPartial">Registrar</NxButton>
-        </div>
-      </div>
-
       <div>
         <NxToggleButton
           v-model="isCourtesy"
@@ -378,6 +351,7 @@ const modalTitle = computed(() => props.title ?? (props.sale ? 'Cobrar cuenta' :
           <NxTab value="single" icon="pi pi-wallet">Pago único</NxTab>
           <NxTab value="multi" icon="pi pi-credit-card">Varios medios</NxTab>
           <NxTab value="split" icon="pi pi-users">Cuentas divididas</NxTab>
+          <NxTab v-if="allowPartial" value="partial" icon="pi pi-history">Abonar</NxTab>
         </NxTabList>
         <NxTabPanels>
           <NxTabPanel value="single">
@@ -497,14 +471,39 @@ const modalTitle = computed(() => props.title ?? (props.sale ? 'Cobrar cuenta' :
               </button>
             </div>
           </NxTabPanel>
+
+          <NxTabPanel v-if="allowPartial" value="partial">
+            <div v-if="sale?.partial_payments?.length" class="flex flex-col gap-1 text-[11px] text-slate-600">
+              <p v-for="p in sale.partial_payments" :key="p.id">
+                {{ formatCop(p.amount) }} —
+                {{ business.payment_methods.find((m) => m.id === p.payment_method)?.label ?? p.payment_method }}
+                <span v-if="p.payer_label" class="text-slate-500">· {{ p.payer_label }}</span>
+              </p>
+            </div>
+            <div v-if="amountDue > 0.02" class="mt-3 flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <NxInputNumber v-model="partialAmount" label="Monto" size="sm" class="w-32" />
+              <NxSelect
+                :model-value="partialMethod"
+                :options="splitMethods"
+                option-label="label"
+                option-value="id"
+                label="Medio"
+                size="sm"
+                class="min-w-[130px]"
+                @update:model-value="partialMethod = $event as string"
+              />
+              <NxInput v-model="partialLabel" label="Quién paga (opc.)" size="sm" class="min-w-[120px] flex-1" />
+              <NxButton size="sm" variant="secondary" @click="submitPartial">Registrar</NxButton>
+            </div>
+          </NxTabPanel>
         </NxTabPanels>
       </NxTabs>
     </div>
 
     <template #footer>
       <div class="flex gap-2">
-        <NxButton variant="outline" class="flex-1" @click="emit('update:modelValue', false)">Cancelar</NxButton>
-        <NxButton class="flex-1" :disabled="!canConfirm" :loading="submitting" @click="submitConfirm">Cobrar</NxButton>
+        <NxButton variant="outline" class="flex-[1]" @click="emit('update:modelValue', false)">Cancelar</NxButton>
+        <NxButton class="flex-[3]" :disabled="!canConfirm" :loading="submitting" @click="submitConfirm">Cobrar</NxButton>
       </div>
     </template>
   </NxModal>
