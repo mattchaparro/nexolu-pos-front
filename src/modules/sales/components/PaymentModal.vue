@@ -502,7 +502,9 @@ const modalTitle = computed(() => props.title ?? (props.sale ? 'Cobrar cuenta' :
 
     <template #footer>
       <div class="flex gap-2">
-        <NxButton variant="outline" class="flex-[1]" @click="emit('update:modelValue', false)">Cancelar</NxButton>
+        <NxButton variant="outline" class="min-w-[104px] flex-[1]" @click="emit('update:modelValue', false)">
+          Cancelar
+        </NxButton>
         <NxButton class="flex-[3]" :disabled="!canConfirm" :loading="submitting" @click="submitConfirm">Cobrar</NxButton>
       </div>
     </template>
