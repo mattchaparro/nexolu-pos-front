@@ -15,10 +15,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{ submit: [] }>()
 
-// Cortesia/cargos/metodo de pago se deciden en PaymentModal al tocar este
-// boton, no antes - ver la nota en useSaleCheckout.ts.
+// Cortesia/cargos/domicilio/descuento de cuenta se resuelven/muestran en
+// PaymentModal al tocar este boton, no antes - el carrito solo compromete
+// lo que ya esta en el (items, con su descuento por linea si aplica), ver
+// la nota en useSaleCheckout.ts.
 function submitLabel(): string {
-  const total = props.checkout.totals.value?.grandTotal ?? 0
+  const total = props.checkout.totals.value?.itemsTotal ?? 0
   return `Cobrar ${formatCop(total)}`
 }
 </script>

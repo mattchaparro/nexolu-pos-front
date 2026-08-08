@@ -36,7 +36,7 @@ function close(): void {
         <div>
           <p class="text-xs text-slate-500">Total</p>
           <p class="text-lg font-bold text-slate-900">
-            {{ formatCop(props.checkout.totals.value?.grandTotal ?? 0) }}
+            {{ formatCop(props.checkout.totals.value?.itemsTotal ?? 0) }}
           </p>
         </div>
         <NxButton @click="close">Seguir</NxButton>

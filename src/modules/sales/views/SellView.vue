@@ -19,6 +19,7 @@ import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 
 import TabClosedDialog from '../../open-tabs/components/TabClosedDialog.vue'
+import { useActiveTabItemActions } from '../../open-tabs/composables/useActiveTabItemActions'
 import { useNewItemsCart } from '../../open-tabs/composables/useNewItemsCart'
 import { useOpenTabMutations } from '../../open-tabs/composables/useOpenTabMutations'
 import { useOpenTabsList } from '../../open-tabs/composables/useOpenTabsList'
@@ -124,6 +125,19 @@ function cancelTab(): void {
   submitError.value = null
 }
 
+// Ajustar cantidad/quitar un item YA guardado de la cuenta activa - misma
+// logica que la pantalla completa de Cuentas abiertas (ver
+// useActiveTabItemActions), el cajero no debería tener que salir de Vender
+// para editar lo que ya guardó.
+const { adjustItemQuantity } = useActiveTabItemActions(
+  activeSale,
+  tabMutations,
+  (message) => {
+    submitError.value = message
+  },
+  cancelTab,
+)
+
 async function submitTabCart(): Promise<void> {
   if (tabCart.lines.value.length === 0) {
     return
@@ -139,19 +153,17 @@ async function submitTabCart(): Promise<void> {
       activeSale.value = updated
       tabCart.reset()
     } else {
-      const opened = await tabMutations.openMutation.mutateAsync({
+      await tabMutations.openMutation.mutateAsync({
         table_id: pendingTable.value?.id ?? null,
         customer_name: pendingTable.value ? null : newTabName.value || null,
         customer_phone: newTabPhone.value || null,
         is_delivery: business.value?.delivery_enabled ? newTabIsDelivery.value : false,
         items: tabCart.toItemsPayload(),
       })
-      // Se sigue editando la cuenta recien creada (no vuelve a "quick") -
-      // el cajero suele seguir agregando o cobrar de una vez.
-      mode.value = 'tab'
-      activeSale.value = opened
-      pendingTable.value = null
-      tabCart.reset()
+      // Vuelve al indice de Vender (mode 'quick') en vez de quedarse
+      // editando la cuenta recien creada - la cuenta ya queda disponible
+      // en la tira de chips de arriba para retomarla cuando haga falta.
+      cancelTab()
     }
   } catch (error) {
     submitError.value = extractErrorMessage(error, 'No pudimos guardar los productos. Intenta de nuevo.')
@@ -331,9 +343,13 @@ function handleNewSale(): void {
           :business="business"
           :cart="tabCart"
           :submitting-cart="tabMutations.addItemsMutation.isPending.value || tabMutations.openMutation.isPending.value"
+          :syncing-items="tabMutations.syncItemsMutation.isPending.value"
           @cancel="cancelTab"
           @submit="submitTabCart"
           @close="openPaymentModal"
+          @increment-item="adjustItemQuantity($event.id, 1)"
+          @decrement-item="adjustItemQuantity($event.id, -1)"
+          @remove-item="adjustItemQuantity($event.id, -$event.quantity)"
         />
       </div>
     </div>
@@ -346,7 +362,7 @@ function handleNewSale(): void {
       @click="mobileCartOpen = true"
     >
       <span class="text-sm font-medium">{{ checkout.itemCount.value }} producto(s)</span>
-      <span class="font-bold">{{ formatCop(checkout.totals.value?.grandTotal ?? 0) }}</span>
+      <span class="font-bold">{{ formatCop(checkout.totals.value?.itemsTotal ?? 0) }}</span>
     </button>
     <button
       v-if="business && mode !== 'quick'"
@@ -379,12 +395,16 @@ function handleNewSale(): void {
         :business="business"
         :cart="tabCart"
         :submitting-cart="tabMutations.addItemsMutation.isPending.value || tabMutations.openMutation.isPending.value"
+        :syncing-items="tabMutations.syncItemsMutation.isPending.value"
         @cancel="cancelTab"
         @submit="submitTabCart"
         @close="
           mobileTabSheetOpen = false;
           openPaymentModal()
         "
+        @increment-item="adjustItemQuantity($event.id, 1)"
+        @decrement-item="adjustItemQuantity($event.id, -1)"
+        @remove-item="adjustItemQuantity($event.id, -$event.quantity)"
       />
     </Teleport>
 

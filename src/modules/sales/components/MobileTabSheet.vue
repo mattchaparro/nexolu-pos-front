@@ -5,7 +5,7 @@
 // dividido/vuelto) vive en PaymentModal, que ya es un modal - no necesita
 // su propia version movil aparte.
 import type { Business } from '@/types/business'
-import type { Sale } from '@/types/sale'
+import type { Sale, SaleItem } from '@/types/sale'
 import type { BusinessTable } from '@/types/table'
 
 import type { useNewItemsCart } from '../../open-tabs/composables/useNewItemsCart'
@@ -18,6 +18,7 @@ defineProps<{
   business: Business | undefined
   cart: ReturnType<typeof useNewItemsCart>
   submittingCart: boolean
+  syncingItems: boolean
 }>()
 
 const emit = defineEmits<{
@@ -25,6 +26,9 @@ const emit = defineEmits<{
   cancel: []
   submit: []
   close: []
+  'increment-item': [item: SaleItem]
+  'decrement-item': [item: SaleItem]
+  'remove-item': [item: SaleItem]
 }>()
 
 const newTabName = defineModel<string>('newTabName', { default: '' })
@@ -48,12 +52,16 @@ const newTabIsDelivery = defineModel<boolean>('newTabIsDelivery', { default: fal
         :business="business"
         :cart="cart"
         :submitting-cart="submittingCart"
+        :syncing-items="syncingItems"
         @cancel="
           emit('cancel');
           emit('update:modelValue', false)
         "
         @submit="emit('submit')"
         @close="emit('close')"
+        @increment-item="emit('increment-item', $event)"
+        @decrement-item="emit('decrement-item', $event)"
+        @remove-item="emit('remove-item', $event)"
       />
     </div>
   </template>

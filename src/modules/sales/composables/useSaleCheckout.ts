@@ -15,13 +15,14 @@ import { hasFeature } from '@/utils/hasFeature'
 
 import { computeSaleTotals, type CartLine } from '../support/saleMath'
 
-// Cortesia/cargos/metodo de pago (unico o dividido) ya NO viven aca: se
-// resuelven en PaymentModal (compartido con el cierre de cuentas abiertas)
-// al tocar "Cobrar", no inline mientras se arma el carrito - ver la nota en
-// PaymentModal.vue sobre unificar la experiencia de pago. applyServiceCharge/
-// applyIpoconsumo se mantienen fijos en true solo para el preview de
-// SaleTotalsSummary en el panel; el monto final que se cobra lo decide el
-// modal.
+// Cortesia/cargos (servicio/ipoconsumo)/metodo de pago (unico o dividido)
+// ya NO viven aca: se resuelven y se muestran en PaymentModal (compartido
+// con el cierre de cuentas abiertas) al tocar "Cobrar", no antes - el
+// carrito (SaleTotalsSummary) solo muestra el total de lo que hay en el
+// carrito, sin duplicar esa cuenta con un preview que el propio carrito no
+// puede des/activar. Domicilio y descuento de cuenta si se deciden aca
+// (isDelivery/cartDiscountId): son datos de la venta, no del cobro, y el
+// modal los recibe ya resueltos via props/payload.
 export function useSaleCheckout(business: Ref<Business | undefined>, discounts: Ref<Discount[]>) {
   const lines = ref<CartLine[]>([])
 
@@ -32,8 +33,6 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
   const isDelivery = ref(false)
 
   const cartDiscountId = ref<number | null>(null)
-  const applyServiceCharge = ref(true)
-  const applyIpoconsumo = ref(true)
 
   const itemDiscounts = computed(() => discounts.value.filter((d) => d.scope === 'item'))
   const cartDiscounts = computed(() => discounts.value.filter((d) => d.scope === 'cart'))
@@ -50,10 +49,6 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
       discounts: discounts.value,
       cartDiscountId: cartDiscountId.value,
       discountsEnabled: hasFeature(business.value, 'discounts'),
-      charges: business.value.charges,
-      chargesEnabled: hasFeature(business.value, 'charges'),
-      applyServiceCharge: applyServiceCharge.value,
-      applyIpoconsumo: applyIpoconsumo.value,
       isDelivery: isDelivery.value,
       business: business.value,
     })
@@ -155,8 +150,6 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     customerIdentification.value = ''
     isDelivery.value = false
     cartDiscountId.value = null
-    applyServiceCharge.value = true
-    applyIpoconsumo.value = true
   }
 
   return {
@@ -166,8 +159,6 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     customerIdentification,
     isDelivery,
     cartDiscountId,
-    applyServiceCharge,
-    applyIpoconsumo,
     itemDiscounts,
     cartDiscounts,
     itemCount,

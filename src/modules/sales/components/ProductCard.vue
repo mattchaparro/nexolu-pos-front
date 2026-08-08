@@ -15,9 +15,9 @@ const props = defineProps<{ product: Product }>()
 
 const emit = defineEmits<{ click: [] }>()
 
-// Feedback visual del tap (pulso + check) ademas de la alerta de sistema
-// (NxToast) que dispara la pantalla que escucha "click" - confirma de
-// inmediato, sin esperar el toast, que el producto SI se agrego.
+// Feedback visual del tap (borde+sombra, sin icono superpuesto - quitaba
+// visibilidad al producto) ademas de la alerta de sistema (NxToast) que
+// dispara la pantalla que escucha "click".
 const justAdded = ref(false)
 
 function handleClick(): void {
@@ -59,21 +59,6 @@ const isDisabled = computed(() => props.product.track_stock && props.product.sto
     :disabled="isDisabled"
     @click="handleClick"
   >
-    <Transition
-      enter-active-class="transition duration-150 ease-out"
-      enter-from-class="opacity-0 scale-75"
-      enter-to-class="opacity-100 scale-100"
-      leave-active-class="transition duration-200 ease-in"
-      leave-from-class="opacity-100 scale-100"
-      leave-to-class="opacity-0 scale-75"
-    >
-      <div
-        v-if="justAdded"
-        class="pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl bg-indigo-600/10"
-      >
-        <i class="pi pi-check-circle text-4xl text-indigo-600" />
-      </div>
-    </Transition>
     <div class="flex min-w-0 items-start gap-2">
       <span class="material-icons mt-0.5 shrink-0 rounded-lg bg-indigo-50 p-1.5 text-lg text-indigo-600">
         {{ product.category?.icon || 'inventory_2' }}

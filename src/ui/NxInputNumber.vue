@@ -60,6 +60,10 @@ const primeSize = computed<'small' | 'large' | undefined>(() => {
   return undefined
 })
 
+// input-style (no style): PrimeInputNumber solo reenvia su prop "style" al
+// <span> wrapper, no al <input> real por dentro - mismo problema que
+// input-id vs id (ver mas abajo). Sin esto el font-size de 16px no pisaba
+// el mas chico de la variante "sm" y volvia el zoom automatico de iOS.
 const fontSizeStyle = { fontSize: '16px' }
 const effectivePlaceholder = computed(() => (props.label ? undefined : props.placeholder))
 </script>
@@ -74,7 +78,7 @@ const effectivePlaceholder = computed(() => (props.label ? undefined : props.pla
         :disabled="disabled"
         :invalid="isInvalid"
         :size="primeSize"
-        :style="fontSizeStyle"
+        :input-style="fontSizeStyle"
         :min="min"
         :max="max"
         locale="es-CO"

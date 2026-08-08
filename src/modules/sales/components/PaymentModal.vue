@@ -234,10 +234,9 @@ const canConfirm = computed(() => {
     const validRows = splitRows.value.filter((r) => Number(r.amount) > 0.009)
     return validRows.length >= 2 && Math.abs(splitRemainder.value) < 0.02
   }
-  if (!singleMethod.value || needsCustomerInfoForCredit.value) {
-    return false
-  }
-  return !isSingleCash.value || change.value >= -0.01
+  // El monto recibido es informativo (para calcular vueltas), no un
+  // requisito para cobrar - el cajero puede confirmar sin haberlo tipeado.
+  return Boolean(singleMethod.value) && !needsCustomerInfoForCredit.value
 })
 
 function submitConfirm(): void {
@@ -399,12 +398,13 @@ const modalTitle = computed(() => props.title ?? (props.sale ? 'Cobrar cuenta' :
 
             <div v-if="isSingleCash" class="mt-3 flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
               <div class="flex items-end gap-2">
-                <NxInputNumber v-model="receivedInput" label="Monto recibido" size="sm" class="flex-1" />
+                <NxInputNumber v-model="receivedInput" label="Monto recibido (opcional)" size="sm" class="flex-1" />
                 <button type="button" class="pb-2 text-xs font-medium text-indigo-600 hover:text-indigo-700" @click="fillExactAmount">
                   Monto exacto
                 </button>
               </div>
               <p
+                v-if="receivedInput !== null"
                 class="rounded-lg px-3 py-1.5 text-center text-sm font-semibold"
                 :class="change >= -0.01 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'"
               >

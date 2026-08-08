@@ -1,9 +1,10 @@
-// Espejo exacto de la aritmetica de dinero de SaleService (createSale,
-// applyItems, applyCartDiscount, resolveCharges) y Discount::computeAmount
-// en nexolu-pos-api. El servidor es la fuente de verdad final (recalcula
-// todo bajo lock al confirmar), pero el carrito tiene que mostrar el mismo
-// numero que va a cobrar o el cajero pierde confianza en la pantalla.
-import type { Business, BusinessChargesConfig } from '@/types/business'
+// Espejo exacto de la aritmetica de dinero de SaleService (applyItems,
+// applyCartDiscount) y Discount::computeAmount en nexolu-pos-api, hasta
+// donde el carrito la necesita mostrar. Cargos (servicio/ipoconsumo) NO se
+// calculan aca: esa decision (aplicarlos o no) vive solo en PaymentModal,
+// que los computa de forma independiente al cobrar - ver la nota en
+// useSaleCheckout.ts sobre por que el carrito no duplica esa cuenta.
+import type { Business } from '@/types/business'
 import type { Discount } from '@/types/discount'
 import type { Product } from '@/types/product'
 
@@ -29,10 +30,7 @@ export interface SaleTotals {
   itemsTotal: number
   cartDiscountAmount: number
   subtotalAfterCartDiscount: number
-  serviceChargeAmount: number
-  ipoconsumoAmount: number
   deliveryFee: number
-  grandTotal: number
 }
 
 /** round(x, 2) con redondeo "half up", igual que PHP round() para montos positivos. */
@@ -56,10 +54,6 @@ export interface ComputeSaleTotalsInput {
   discounts: Discount[]
   cartDiscountId: number | null
   discountsEnabled: boolean
-  charges: BusinessChargesConfig
-  chargesEnabled: boolean
-  applyServiceCharge: boolean
-  applyIpoconsumo: boolean
   isDelivery: boolean
   business: Business
 }
@@ -87,21 +81,8 @@ export function computeSaleTotals(input: ComputeSaleTotalsInput): SaleTotals {
   const cartDiscountAmount = computeDiscountAmount(cartDiscount, itemsTotal)
   const subtotalAfterCartDiscount = round2(itemsTotal - cartDiscountAmount)
 
-  const serviceChargeAmount =
-    input.chargesEnabled && input.charges.service_charge_enabled && input.applyServiceCharge
-      ? round2((subtotalAfterCartDiscount * input.charges.service_charge_rate) / 100)
-      : 0
-  const ipoconsumoAmount =
-    input.chargesEnabled && input.charges.ipoconsumo_enabled && input.applyIpoconsumo
-      ? round2((subtotalAfterCartDiscount * input.charges.ipoconsumo_rate) / 100)
-      : 0
-
   const deliveryFee =
     input.isDelivery && input.business.delivery_enabled ? Number(input.business.delivery_fee) : 0
-
-  const grandTotal = round2(
-    subtotalAfterCartDiscount + serviceChargeAmount + ipoconsumoAmount + deliveryFee,
-  )
 
   return {
     lines,
@@ -110,9 +91,6 @@ export function computeSaleTotals(input: ComputeSaleTotalsInput): SaleTotals {
     itemsTotal,
     cartDiscountAmount,
     subtotalAfterCartDiscount,
-    serviceChargeAmount,
-    ipoconsumoAmount,
     deliveryFee,
-    grandTotal,
   }
 }

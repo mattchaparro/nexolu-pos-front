@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import PrimeButton from 'primevue/button'
 
-export type NxButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
+export type NxButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'dark'
 export type NxButtonSize = 'sm' | 'md' | 'lg'
 
 const props = withDefaults(
@@ -27,15 +27,22 @@ const props = withDefaults(
 // Cada variante tiene un unico significado fijo en toda la app - nunca
 // elegir color "porque combina" en una pantalla puntual. `danger` es
 // exclusivo para acciones destructivas (eliminar, cancelar algo
-// irreversible), nunca un color alternativo para "otro boton mas".
-// El color en si (indigo, slate, rojo) lo pone el tema de PrimeVue
+// irreversible), nunca un color alternativo para "otro boton mas". `dark`
+// (severity "contrast" de PrimeVue: fondo negro/surface.950 en modo claro)
+// es para la accion secundaria de una pantalla que tiene una primaria
+// (indigo) al lado - ej. "Agregar a la cuenta" junto a "Cobrar" - nunca un
+// segundo indigo compitiendo por atencion con el primario. El color en si
+// (indigo, slate, negro, rojo) lo pone el tema de PrimeVue
 // (theme/nexoluPreset.ts) via severity - no Tailwind a mano.
-const severity = computed<'primary' | 'secondary' | 'danger'>(() => {
+const severity = computed<'primary' | 'secondary' | 'danger' | 'contrast'>(() => {
   if (props.variant === 'danger') {
     return 'danger'
   }
   if (props.variant === 'primary') {
     return 'primary'
+  }
+  if (props.variant === 'dark') {
+    return 'contrast'
   }
   return 'secondary'
 })

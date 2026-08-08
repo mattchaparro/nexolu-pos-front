@@ -1,19 +1,20 @@
 <script setup lang="ts">
 // Panel derecho de Vender cuando se esta editando/abriendo una cuenta
-// (mode !== 'quick'). Los items YA guardados de la cuenta se muestran
-// como chips de solo lectura (igual que la barra "Editando" del legacy) -
-// para editar cantidad/quitar un item ya guardado hay que ir a la
-// pantalla completa de Cuentas abiertas (link "Ver detalle" de la tira de
-// arriba); aca el foco es agregar rapido sin perder el catalogo de
-// productos a la vista.
+// (mode !== 'quick'). Los items YA guardados de la cuenta usan
+// SavedTabItemsList (+/-/quitar, sync inmediato) - antes eran chips de
+// solo lectura y para editarlos había que salir a la pantalla completa de
+// Cuentas abiertas; el cajero no debería tener que salir de Vender para
+// eso. Los items nuevos (todavia sin guardar) siguen en NewItemsCartList
+// aparte, mismo patron que antes.
 import type { Business } from '@/types/business'
-import type { Sale } from '@/types/sale'
+import type { Sale, SaleItem } from '@/types/sale'
 import type { BusinessTable } from '@/types/table'
 import { NxButton, NxInput } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
 import type { useNewItemsCart } from '../../open-tabs/composables/useNewItemsCart'
 import NewItemsCartList from '../../open-tabs/components/NewItemsCartList.vue'
+import SavedTabItemsList from '../../open-tabs/components/SavedTabItemsList.vue'
 
 const props = defineProps<{
   activeSale: Sale | null
@@ -21,12 +22,16 @@ const props = defineProps<{
   business: Business | undefined
   cart: ReturnType<typeof useNewItemsCart>
   submittingCart: boolean
+  syncingItems: boolean
 }>()
 
 const emit = defineEmits<{
   cancel: []
   submit: []
   close: []
+  'increment-item': [item: SaleItem]
+  'decrement-item': [item: SaleItem]
+  'remove-item': [item: SaleItem]
 }>()
 
 const newTabName = defineModel<string>('newTabName', { default: '' })
@@ -60,19 +65,6 @@ function title(): string {
       </div>
     </div>
 
-    <div
-      v-if="activeSale && activeSale.items.length > 0"
-      class="mb-3 flex flex-wrap gap-1.5 rounded-lg bg-slate-50 p-2"
-    >
-      <span
-        v-for="item in activeSale.items"
-        :key="item.id"
-        class="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 text-xs text-slate-600 shadow-sm"
-      >
-        {{ item.product.name }} <span class="font-semibold text-slate-900">x{{ item.quantity }}</span>
-      </span>
-    </div>
-
     <div v-if="!activeSale" class="mb-3 flex flex-col gap-2">
       <NxInput v-if="!pendingTable" v-model="newTabName" label="Nombre de la cuenta" size="sm" />
       <NxInput v-if="!pendingTable" v-model="newTabPhone" label="Teléfono (opcional)" size="sm" />
@@ -86,12 +78,27 @@ function title(): string {
     </div>
 
     <div class="flex-1 overflow-y-auto">
+      <template v-if="activeSale && activeSale.items.length > 0">
+        <p class="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">Ítems guardados</p>
+        <SavedTabItemsList
+          class="mb-3"
+          :items="activeSale.items"
+          :syncing="syncingItems"
+          @increment-item="emit('increment-item', $event)"
+          @decrement-item="emit('decrement-item', $event)"
+          @remove-item="emit('remove-item', $event)"
+        />
+      </template>
+      <p v-if="cart.lines.value.length > 0" class="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+        Por agregar
+      </p>
       <NewItemsCartList :cart="cart" />
     </div>
 
     <div class="flex flex-col gap-2 border-t border-slate-200 pt-3">
       <NxButton
         v-if="cart.lines.value.length > 0"
+        :variant="activeSale ? 'dark' : 'primary'"
         :loading="submittingCart"
         @click="emit('submit')"
       >
