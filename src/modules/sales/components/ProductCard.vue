@@ -6,14 +6,27 @@
 // no una paleta rotando por indice (ver README.md "Sistema de color") - el
 // legacy no tenia ningun criterio para asignarlos, y ya se decidio no
 // repetir esa falta de estandar en este frontend.
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { Product } from '@/types/product'
 import { formatCop } from '@/utils/formatCop'
 
 const props = defineProps<{ product: Product }>()
 
-defineEmits<{ click: [] }>()
+const emit = defineEmits<{ click: [] }>()
+
+// Feedback visual del tap (pulso + check) ademas de la alerta de sistema
+// (NxToast) que dispara la pantalla que escucha "click" - confirma de
+// inmediato, sin esperar el toast, que el producto SI se agrego.
+const justAdded = ref(false)
+
+function handleClick(): void {
+  emit('click')
+  justAdded.value = true
+  window.setTimeout(() => {
+    justAdded.value = false
+  }, 450)
+}
 
 const stockBadge = computed(() => {
   if (!props.product.track_stock) {
@@ -35,14 +48,30 @@ const isDisabled = computed(() => props.product.track_stock && props.product.sto
   <button
     type="button"
     class="relative flex min-h-[90px] flex-col justify-between rounded-xl border-2 bg-white p-3 text-left transition-all sm:min-h-[100px] sm:p-4"
-    :class="
+    :class="[
       isDisabled
         ? 'cursor-not-allowed border-slate-100 opacity-50'
-        : 'border-slate-200 hover:border-indigo-300 hover:shadow-md active:scale-95'
-    "
+        : 'border-slate-200 hover:border-indigo-300 hover:shadow-md active:scale-95',
+      justAdded ? 'border-indigo-400 shadow-md' : '',
+    ]"
     :disabled="isDisabled"
-    @click="$emit('click')"
+    @click="handleClick"
   >
+    <Transition
+      enter-active-class="transition duration-150 ease-out"
+      enter-from-class="opacity-0 scale-75"
+      enter-to-class="opacity-100 scale-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="opacity-100 scale-100"
+      leave-to-class="opacity-0 scale-75"
+    >
+      <div
+        v-if="justAdded"
+        class="pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl bg-indigo-600/10"
+      >
+        <i class="pi pi-check-circle text-4xl text-indigo-600" />
+      </div>
+    </Transition>
     <div class="flex min-w-0 items-start gap-2">
       <span class="material-icons mt-0.5 shrink-0 rounded-lg bg-indigo-50 p-1.5 text-lg text-indigo-600">
         {{ product.category?.icon || 'inventory_2' }}

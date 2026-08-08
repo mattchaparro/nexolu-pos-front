@@ -54,7 +54,7 @@ function selectCategory(id: number | null): void {
   <div class="flex h-full flex-col gap-3">
     <NxInput
       v-model="search"
-      placeholder="Buscar producto..."
+      label="Buscar producto"
       size="lg"
       icon="pi pi-search"
       clearable

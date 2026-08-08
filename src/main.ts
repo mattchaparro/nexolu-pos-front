@@ -16,6 +16,7 @@ import './style.css'
 import { VueQueryPlugin } from '@tanstack/vue-query'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
+import ToastService from 'primevue/toastservice'
 import { createApp } from 'vue'
 
 import App from './App.vue'
@@ -37,5 +38,8 @@ app.use(PrimeVue, {
   license: import.meta.env.VITE_PRIMEVUE_LICENSE_KEY,
 })
 app.use(VueQueryPlugin, { queryClient })
+// Servicio de alertas de acciones del sistema (ver src/ui/NxToast.vue +
+// src/composables/useSystemAlert.ts) - "producto agregado", etc.
+app.use(ToastService)
 
 app.mount('#app')

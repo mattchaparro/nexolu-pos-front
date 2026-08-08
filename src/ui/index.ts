@@ -32,4 +32,6 @@ export { default as NxTabPanels } from './NxTabPanels.vue'
 
 export { default as NxTabs } from './NxTabs.vue'
 
+export { default as NxToast } from './NxToast.vue'
+
 export { default as NxToggleButton } from './NxToggleButton.vue'

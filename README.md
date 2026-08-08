@@ -57,10 +57,10 @@ y nos da una identidad visual propia y consistente.
 Todo campo de un formulario (nombre, teléfono, correo, etc.) usa `NxInput`/
 `NxInputNumber`/`NxSelect` con la prop `label` - Float Label variante "on"
 de PrimeVue (el label flota sobre el borde al enfocar o llenar el campo),
-nunca un `<label>` aparte ni un `placeholder` como sustituto de label. Los
-campos de solo filtro/búsqueda (buscador de productos, de mesas) no son
-parte de "un formulario" y se quedan con placeholder simple, sin label
-flotante. `NxInputNumber` formatea todo monto en pesos colombianos
+nunca un `<label>` aparte ni un `placeholder` como sustituto de label -
+esto incluye los buscadores (producto, mesas/cuentas): también usan
+`NxInput` con `label`, no `placeholder`. `NxInputNumber` formatea todo
+monto en pesos colombianos
 (`es-CO`, sin decimales) por defecto - usarlo para cualquier
 precio/abono/vuelto en vez de un `<input type="number">` suelto. El error
 de un campo (`error` prop en `NxInput`/`NxInputNumber`/`NxSelect`) se
@@ -70,6 +70,15 @@ variant="simple"`), el estandar de PrimeVue para errores inline, no un
 nativos de PrimeVue para separar formas de pago (ver `PaymentModal.vue`) o
 cualquier interruptor con icono (cortesia, domicilio) sin volver a armar
 checkbox+label a mano.
+
+**Alertas de acciones del sistema**: `NxToast` (wrapper de `Toast` de
+PrimeVue, montado una sola vez en `App.vue`, arriba-centro) es la alerta
+flotante y no bloqueante para confirmar algo que acaba de pasar ("Producto
+agregado a la venta"). Se dispara con el composable `useSystemAlert()`
+(`src/composables/useSystemAlert.ts`), nunca con `useToast()` de PrimeVue
+directo desde una pantalla. No reemplaza el `error` de un campo ni los
+banners de error de pantalla completa (`submitError` en las vistas) - es
+solo para confirmaciones cortas de acciones.
 
 ### Sistema de color
 

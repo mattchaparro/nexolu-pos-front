@@ -10,6 +10,7 @@
 import { computed, ref } from 'vue'
 
 import { useBusiness } from '@/composables/useBusiness'
+import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { Product } from '@/types/product'
 import type { Sale } from '@/types/sale'
 import type { BusinessTable } from '@/types/table'
@@ -41,6 +42,7 @@ const { data: business } = useBusiness()
 const { productsQuery, categoriesQuery } = useProductCatalog()
 const { data: discounts } = useActiveDiscounts()
 const createSaleMutation = useCreateSale()
+const { notify } = useSystemAlert()
 
 const discountList = computed(() => discounts.value ?? [])
 const checkout = useSaleCheckout(
@@ -186,6 +188,17 @@ const successOpen = ref(false)
 const submitError = ref<string | null>(null)
 const mobileCartOpen = ref(false)
 
+// Etiqueta de a donde va el producto en la alerta de sistema ("Producto
+// agregado a la venta/mesa/cuenta") - refleja el mismo destino que ya usa
+// mobileTabLabel()/TabSwitcherStrip para el modo activo.
+function cartDestinationLabel(): string {
+  if (mode.value === 'quick') {
+    return 'la venta'
+  }
+  const isTable = pendingTable.value !== null || Boolean(activeSale.value?.table_id)
+  return isTable ? 'la mesa' : 'la cuenta'
+}
+
 function handleSelectProduct(product: Product): void {
   if (product.price_varies_at_sale) {
     priceVariesProduct.value = product
@@ -196,6 +209,7 @@ function handleSelectProduct(product: Product): void {
   } else {
     tabCart.addProduct(product)
   }
+  notify(`Producto agregado a ${cartDestinationLabel()}`)
 }
 
 function handlePriceConfirmed(price: number): void {
@@ -205,6 +219,7 @@ function handlePriceConfirmed(price: number): void {
     } else {
       tabCart.addProduct(priceVariesProduct.value, price)
     }
+    notify(`Producto agregado a ${cartDestinationLabel()}`)
   }
   priceVariesProduct.value = null
 }
