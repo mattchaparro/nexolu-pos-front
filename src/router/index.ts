@@ -100,6 +100,46 @@ const router = createRouter({
           name: 'purchases.show',
           component: () => import('@/modules/purchases/views/PurchaseShowView.vue'),
         },
+        {
+          path: 'apartados',
+          name: 'layaways.index',
+          component: () => import('@/modules/layaways/views/LayawaysView.vue'),
+        },
+        {
+          path: 'apartados/nuevo',
+          name: 'layaways.create',
+          component: () => import('@/modules/layaways/views/LayawayFormView.vue'),
+        },
+        {
+          path: 'apartados/:id',
+          name: 'layaways.show',
+          component: () => import('@/modules/layaways/views/LayawayShowView.vue'),
+        },
+        {
+          // "Servicios" (el nombre del menu) ya esta tomado por la pestaña de
+          // Catalogo (productos is_service=true, ver 'services.index' arriba)
+          // - esto es la orden de trabajo/cobro, path/name distintos para no
+          // chocar aunque ambos se llamen "Servicios" en el menu (mismo caso
+          // que el legacy, que tampoco los unifica).
+          path: 'ordenes-servicio',
+          name: 'service-orders.index',
+          component: () => import('@/modules/service-orders/views/ServiceOrdersView.vue'),
+        },
+        {
+          path: 'ordenes-servicio/nueva',
+          name: 'service-orders.create',
+          component: () => import('@/modules/service-orders/views/ServiceOrderFormView.vue'),
+        },
+        {
+          path: 'ordenes-servicio/:id',
+          name: 'service-orders.show',
+          component: () => import('@/modules/service-orders/views/ServiceOrderShowView.vue'),
+        },
+        {
+          path: 'ordenes-servicio/:id/editar',
+          name: 'service-orders.edit',
+          component: () => import('@/modules/service-orders/views/ServiceOrderFormView.vue'),
+        },
       ],
     },
   ],

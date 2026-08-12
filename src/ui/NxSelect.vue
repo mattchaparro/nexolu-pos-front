@@ -42,7 +42,11 @@ const props = withDefaults(
   },
 )
 
-const emit = defineEmits<{ 'update:modelValue': [value: unknown] }>()
+const emit = defineEmits<{
+  'update:modelValue': [value: unknown]
+  /** Texto tipeado en el buscador (filter=true) - para listas server-driven (ej. clientes). */
+  filter: [query: string]
+}>()
 
 const generatedId = useId()
 const inputId = computed(() => props.id ?? generatedId)
@@ -77,6 +81,7 @@ const fontSizeStyle = { fontSize: '16px' }
         :filter="filter"
         fluid
         @update:model-value="(value) => emit('update:modelValue', value)"
+        @filter="(event: { value: string }) => emit('filter', event.value)"
       />
       <label v-if="label" :for="inputId">{{ label }}<span v-if="required" class="text-red-600"> *</span></label>
     </PrimeFloatLabel>
