@@ -96,6 +96,7 @@ export async function fetchIngredientOptions(): Promise<Ingredient[]> {
 export interface FetchIngredientsParams {
   page?: number
   per_page?: number
+  search?: string
 }
 
 // Listado paginado para la pestaña Ingredientes del Catalogo (a diferencia

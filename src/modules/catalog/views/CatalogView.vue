@@ -81,8 +81,24 @@ function onProductPage(event: { page: number }): void {
 }
 
 // --- Ingredientes ---
+const ingredientSearchInput = ref('')
+const ingredientSearch = ref('')
 const ingredientPage = ref(1)
-const ingredientsQuery = useIngredients(ingredientPage)
+let ingredientDebounce: number | undefined
+
+watch(ingredientSearchInput, (value) => {
+  window.clearTimeout(ingredientDebounce)
+  ingredientDebounce = window.setTimeout(() => {
+    ingredientSearch.value = value
+    ingredientPage.value = 1
+  }, 300)
+})
+
+const ingredientsQuery = useIngredients(
+  ingredientSearch,
+  ingredientPage,
+  computed(() => ingredientsEnabled.value && activeArticleTab.value === 'ingredientes'),
+)
 const { deleteMutation: deleteIngredientMutation } = useIngredientMutations()
 const ingredientMeta = computed(() => ingredientsQuery.data.value?.meta)
 const ingredientsSummaryQuery = useIngredientsSummary(
@@ -344,14 +360,6 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                           <i class="pi pi-history text-sm" />
                         </RouterLink>
                       </template>
-                      <span
-                        v-else-if="data.track_stock && !data.is_service"
-                        class="text-[11px] whitespace-nowrap text-slate-400"
-                      >
-                        {{
-                          data.is_single_sale ? 'No maneja stock (venta única)' : 'Se gestiona desde Ingredientes'
-                        }}
-                      </span>
                       <RouterLink
                         v-if="canAdd"
                         :to="{ name: 'catalog.products.edit', params: { id: data.id } }"
@@ -380,6 +388,13 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
 
         <NxTabPanel v-if="ingredientsEnabled" value="ingredientes">
           <div class="flex flex-col gap-3">
+            <NxInput
+              v-model="ingredientSearchInput"
+              label="Buscar insumo"
+              size="lg"
+              icon="pi pi-search"
+              clearable
+            />
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <NxStatCard
                 v-if="ingredientMeta"
@@ -413,7 +428,13 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                 @page="onIngredientPage"
               >
                 <template #empty>
-                  <p class="py-6 text-center text-sm text-slate-400">Todavía no hay insumos.</p>
+                  <p class="py-6 text-center text-sm text-slate-400">
+                    {{
+                      ingredientSearch
+                        ? 'Sin resultados para tu búsqueda.'
+                        : 'Todavía no hay insumos.'
+                    }}
+                  </p>
                 </template>
                 <NxColumn header="Insumo">
                   <template #body="{ data }: { data: Ingredient }">

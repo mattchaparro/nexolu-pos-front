@@ -221,7 +221,7 @@ async function submit(): Promise<void> {
     <template #footer>
       <div class="flex gap-2">
         <NxButton variant="outline" class="flex-1" @click="emit('update:modelValue', false)">Cancelar</NxButton>
-        <NxButton class="flex-1" :loading="isSaving" @click="submit">{{ isEdit ? 'Guardar cambios' : 'Agendar' }}</NxButton>
+        <NxButton class="flex-[2]" :loading="isSaving" @click="submit">{{ isEdit ? 'Guardar cambios' : 'Agendar' }}</NxButton>
       </div>
     </template>
   </NxModal>

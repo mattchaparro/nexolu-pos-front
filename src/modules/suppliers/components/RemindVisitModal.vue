@@ -100,7 +100,7 @@ async function submit(): Promise<void> {
     <template #footer>
       <div class="flex gap-2">
         <NxButton variant="outline" class="flex-1" @click="emit('update:modelValue', false)">Cancelar</NxButton>
-        <NxButton class="flex-1" :loading="remindVisitMutation.isPending.value" @click="submit">
+        <NxButton class="flex-[2]" :loading="remindVisitMutation.isPending.value" @click="submit">
           Crear recordatorio
         </NxButton>
       </div>

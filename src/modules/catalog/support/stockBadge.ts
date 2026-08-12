@@ -19,13 +19,13 @@ export function productStockBadge(product: Product): StockBadgeInfo {
     return { label: 'Sin control', class: 'bg-slate-100 text-slate-500' }
   }
   if (product.stock <= 0) {
-    return { label: '0 en stock', class: 'bg-red-100 text-red-600' }
+    return { label: '0', class: 'bg-red-100 text-red-600' }
   }
   const threshold = product.low_stock_alert_threshold ?? 5
   if (product.stock <= threshold) {
-    return { label: `${product.stock} en stock`, class: 'bg-amber-100 text-amber-600' }
+    return { label: `${product.stock}`, class: 'bg-amber-100 text-amber-600' }
   }
-  return { label: `${product.stock} en stock`, class: 'bg-slate-100 text-slate-500' }
+  return { label: `${product.stock}`, class: 'bg-slate-100 text-slate-500' }
 }
 
 export function ingredientStockBadge(ingredient: Ingredient): StockBadgeInfo {
