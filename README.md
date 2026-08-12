@@ -153,7 +153,12 @@ npm run build         # type-check + build de produccion
       -entrada/salida/ajuste, con motivo obligatorio en salidas y
       ultimos movimientos- para productos e insumos; listas de
       Productos/Ingredientes migradas a `NxDataTable`/`NxColumn` con
-      paginacion server-side)
+      paginacion server-side; pagina de historial completo de movimientos
+      -`/catalogo/productos/:id/movimientos`,
+      `/catalogo/insumos/:id/movimientos`-; edicion masiva tipo hoja de
+      calculo -doble clic + tab para moverse entre celdas- en
+      `/catalogo/edicion-masiva`, calcada de Products/BulkStock.vue del
+      legacy)
 - [ ] Resto de modulos: customers, expenses, cash, reports, settings
 
 Antes de arrancar el siguiente modulo, revisar `docs/BACKEND_READINESS.md`:

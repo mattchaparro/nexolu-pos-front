@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { computed, type ComputedRef } from 'vue'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { computed, type ComputedRef, type Ref } from 'vue'
 
 import type { StockMovementPayload } from '@/types/inventory'
 
@@ -12,20 +12,29 @@ import {
 
 export type StockSubjectKind = 'product' | 'ingredient'
 
+const FIRST_PAGE = computed(() => 1)
+
 // Historial + registrar movimiento, para un producto o un insumo segun
 // `kind` - mismo modelo StockMovement en el backend para los dos, misma
 // composicion aca. `subjectId` null (nada seleccionado, ej. modal cerrado)
-// deshabilita la query.
-export function useStockMovements(kind: ComputedRef<StockSubjectKind>, subjectId: ComputedRef<number | null>) {
+// deshabilita la query. `page` es opcional (por defecto la pagina 1, para
+// el modal de ajuste rapido que solo muestra "ultimos movimientos") - la
+// pagina de historial completo pasa su propio ref paginable.
+export function useStockMovements(
+  kind: ComputedRef<StockSubjectKind>,
+  subjectId: ComputedRef<number | null>,
+  page: Ref<number> = FIRST_PAGE,
+) {
   const queryClient = useQueryClient()
 
   const movementsQuery = useQuery({
-    queryKey: computed(() => ['stock-movements', kind.value, subjectId.value] as const),
+    queryKey: computed(() => ['stock-movements', kind.value, subjectId.value, page.value] as const),
     queryFn: () =>
       kind.value === 'product'
-        ? fetchProductStockMovements(subjectId.value as number)
-        : fetchIngredientStockMovements(subjectId.value as number),
+        ? fetchProductStockMovements(subjectId.value as number, page.value)
+        : fetchIngredientStockMovements(subjectId.value as number, page.value),
     enabled: computed(() => subjectId.value !== null),
+    placeholderData: keepPreviousData,
   })
 
   const createMutation = useMutation({

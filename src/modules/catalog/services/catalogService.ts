@@ -84,6 +84,11 @@ export async function fetchIngredients(params: FetchIngredientsParams = {}): Pro
   return data
 }
 
+export async function fetchIngredient(id: number): Promise<Ingredient> {
+  const { data } = await httpClient.get<Ingredient>(`/ingredients/${id}`)
+  return data
+}
+
 export async function createIngredient(payload: IngredientPayload): Promise<Ingredient> {
   const { data } = await httpClient.post<Ingredient>('/ingredients', payload)
   return data

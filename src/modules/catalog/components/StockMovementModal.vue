@@ -178,7 +178,19 @@ function movementIcon(movementType: StockMovementType): string {
       <NxInput v-model="notes" label="Notas (opcional)" />
 
       <div v-if="movementsQuery.data.value?.data.length" class="flex flex-col gap-1.5">
-        <p class="text-xs font-semibold text-slate-500">Últimos movimientos</p>
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-semibold text-slate-500">Últimos movimientos</p>
+          <RouterLink
+            :to="{
+              name: kind === 'product' ? 'catalog.products.stock-history' : 'catalog.ingredients.stock-history',
+              params: { id: subjectId },
+            }"
+            class="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+            @click="emit('update:modelValue', false)"
+          >
+            Ver historial completo
+          </RouterLink>
+        </div>
         <div class="flex flex-col divide-y divide-slate-100 rounded-lg border border-slate-200">
           <div
             v-for="movement in movementsQuery.data.value.data.slice(0, 5)"

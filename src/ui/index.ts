@@ -5,7 +5,14 @@ export type { NxButtonSize, NxButtonVariant } from './NxButton.vue'
 
 export { default as NxCard } from './NxCard.vue'
 
-export { default as NxColumn } from './NxColumn.vue'
+// Re-export directo (no una SFC wrapper) a proposito: DataTable de PrimeVue
+// reconoce sus columnas inspeccionando el slot default y comparando
+// `child.type.name === 'Column'` (ver @primevue/core/utils HelperSet) - una
+// wrapper propia con otro nombre de componente rompe esa deteccion y
+// DataTable no renderiza ninguna columna (ni filas). Column no tiene
+// superficie visual propia que valga la pena re-tematizar, asi que el
+// re-export es seguro.
+export { default as NxColumn } from 'primevue/column'
 
 export { default as NxDataTable } from './NxDataTable.vue'
 

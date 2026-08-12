@@ -139,15 +139,25 @@ function openStockModal(subject: StockSubject): void {
   <div class="flex flex-col pb-20 lg:pb-0">
     <div class="flex items-center justify-between gap-3">
       <NxPageHeader title="Catálogo" icon="pi pi-shop" compact />
-      <NxButton
-        v-if="activeTab === 'articulos' && activeArticleTab === 'productos'"
-        icon="pi pi-plus"
-        @click="router.push({ name: 'catalog.products.create' })"
-      >
-        Producto
-      </NxButton>
-      <NxButton v-else-if="activeTab === 'articulos'" icon="pi pi-plus" @click="openNewIngredient">Insumo</NxButton>
-      <NxButton v-else icon="pi pi-plus" @click="openNewCategory">Categoría</NxButton>
+      <div class="flex items-center gap-2">
+        <NxButton
+          v-if="activeTab === 'articulos'"
+          variant="outline"
+          icon="pi pi-table"
+          @click="router.push({ name: 'catalog.bulk-update' })"
+        >
+          Edición masiva
+        </NxButton>
+        <NxButton
+          v-if="activeTab === 'articulos' && activeArticleTab === 'productos'"
+          icon="pi pi-plus"
+          @click="router.push({ name: 'catalog.products.create' })"
+        >
+          Producto
+        </NxButton>
+        <NxButton v-else-if="activeTab === 'articulos'" icon="pi pi-plus" @click="openNewIngredient">Insumo</NxButton>
+        <NxButton v-else icon="pi pi-plus" @click="openNewCategory">Categoría</NxButton>
+      </div>
     </div>
 
     <NxTabs v-model:value="activeTab" class="mt-4">
@@ -229,6 +239,14 @@ function openStockModal(subject: StockSubject): void {
                               <i class="pi pi-sliders-h text-sm" />
                             </button>
                             <RouterLink
+                              v-if="data.track_stock && !data.is_service"
+                              :to="{ name: 'catalog.products.stock-history', params: { id: data.id } }"
+                              class="text-slate-400 hover:text-indigo-600"
+                              title="Historial de movimientos"
+                            >
+                              <i class="pi pi-history text-sm" />
+                            </RouterLink>
+                            <RouterLink
                               :to="{ name: 'catalog.products.edit', params: { id: data.id } }"
                               class="text-slate-400 hover:text-indigo-600"
                               title="Editar"
@@ -309,6 +327,13 @@ function openStockModal(subject: StockSubject): void {
                             >
                               <i class="pi pi-sliders-h text-sm" />
                             </button>
+                            <RouterLink
+                              :to="{ name: 'catalog.ingredients.stock-history', params: { id: data.id } }"
+                              class="text-slate-400 hover:text-indigo-600"
+                              title="Historial de movimientos"
+                            >
+                              <i class="pi pi-history text-sm" />
+                            </RouterLink>
                             <button
                               type="button"
                               class="text-slate-400 hover:text-indigo-600"

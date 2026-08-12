@@ -44,6 +44,11 @@ const router = createRouter({
           component: () => import('@/modules/catalog/views/CatalogView.vue'),
         },
         {
+          path: 'catalogo/edicion-masiva',
+          name: 'catalog.bulk-update',
+          component: () => import('@/modules/catalog/views/BulkStockUpdateView.vue'),
+        },
+        {
           path: 'catalogo/productos/nuevo',
           name: 'catalog.products.create',
           component: () => import('@/modules/catalog/views/ProductFormView.vue'),
@@ -52,6 +57,18 @@ const router = createRouter({
           path: 'catalogo/productos/:id/editar',
           name: 'catalog.products.edit',
           component: () => import('@/modules/catalog/views/ProductFormView.vue'),
+        },
+        {
+          path: 'catalogo/productos/:id/movimientos',
+          name: 'catalog.products.stock-history',
+          component: () => import('@/modules/catalog/views/StockMovementHistoryView.vue'),
+          meta: { stockSubjectKind: 'product' },
+        },
+        {
+          path: 'catalogo/insumos/:id/movimientos',
+          name: 'catalog.ingredients.stock-history',
+          component: () => import('@/modules/catalog/views/StockMovementHistoryView.vue'),
+          meta: { stockSubjectKind: 'ingredient' },
         },
       ],
     },

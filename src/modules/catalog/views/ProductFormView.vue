@@ -44,7 +44,9 @@ const categoryOptions = computed(() => {
 
 const name = ref('')
 const description = ref('')
+const showDescription = ref(false)
 const howToUse = ref('')
+const showHowToUse = ref(false)
 const price = ref<number | null>(null)
 const costPrice = ref<number | null>(null)
 const stock = ref<number | null>(0)
@@ -69,7 +71,9 @@ watch(
     }
     name.value = product.name
     description.value = product.description ?? ''
+    showDescription.value = Boolean(product.description)
     howToUse.value = product.how_to_use ?? ''
+    showHowToUse.value = Boolean(product.how_to_use)
     price.value = Number(product.price)
     costPrice.value = Number(product.cost_price)
     stock.value = product.stock
@@ -143,12 +147,16 @@ async function submit(): Promise<void> {
     fieldErrors.value.category_id = 'Elige una categoría.'
     return
   }
+  if (price.value === null) {
+    fieldErrors.value.price = 'El precio es obligatorio.'
+    return
+  }
 
   const payload = {
     name: name.value.trim(),
-    description: description.value.trim() || null,
-    how_to_use: howToUse.value.trim() || null,
-    price: price.value ?? 0,
+    description: showDescription.value ? description.value.trim() || null : null,
+    how_to_use: showHowToUse.value ? howToUse.value.trim() || null : null,
+    price: price.value,
     ...(recipeCost.value === null ? { cost_price: costPrice.value ?? 0 } : {}),
     ...(isEdit.value ? {} : { stock: stock.value ?? 0 }),
     low_stock_alert_threshold: isService.value ? null : lowStockAlertThreshold.value,
@@ -214,16 +222,18 @@ async function submit(): Promise<void> {
               :error="fieldErrors.category_id"
               @update:model-value="categoryId = $event as number | null"
             />
-            <NxTextarea v-model="description" label="Descripción (opcional)" :rows="2" />
-            <NxTextarea v-model="howToUse" label="Cómo usarlo (opcional)" :rows="2" />
-            <NxInput v-model="sku" label="SKU (opcional, se genera automático)" :error="fieldErrors.sku" />
+            <NxToggleButton v-model="showDescription" label="Descripción" icon="pi pi-align-left" />
+            <NxTextarea v-if="showDescription" v-model="description" label="Descripción" :rows="2" />
+            <NxToggleButton v-model="showHowToUse" label="Cómo usarlo" icon="pi pi-info-circle" />
+            <NxTextarea v-if="showHowToUse" v-model="howToUse" label="Cómo usarlo" :rows="2" />
+            <NxInput v-if="isEdit" v-model="sku" label="SKU" disabled />
           </div>
         </div>
 
         <div class="rounded-xl border border-slate-200 bg-white p-4">
           <p class="mb-3 text-sm font-semibold text-slate-700">Precio y costo</p>
           <div class="flex flex-col gap-3">
-            <NxInputNumber v-model="price" label="Precio de venta" :min="0" :error="fieldErrors.price" />
+            <NxInputNumber v-model="price" label="Precio de venta" :min="0" required :error="fieldErrors.price" />
             <NxInputNumber
               :model-value="recipeCost ?? costPrice"
               label="Costo"
@@ -243,16 +253,17 @@ async function submit(): Promise<void> {
         <div class="rounded-xl border border-slate-200 bg-white p-4">
           <p class="mb-3 text-sm font-semibold text-slate-700">Tipo de producto</p>
           <div class="flex flex-col gap-3">
-            <div class="flex gap-2">
+            <div class="grid grid-cols-2 gap-2">
               <NxToggleButton v-model="isService" label="Es un servicio" icon="pi pi-wrench" />
               <NxToggleButton v-model="isSingleSale" label="Venta única" icon="pi pi-verified" :disabled="isService" />
+              <NxToggleButton
+                v-model="trackStock"
+                label="Controla inventario"
+                icon="pi pi-box"
+                :disabled="isService || isSingleSale || ingredients.length > 0"
+              />
+              <NxToggleButton v-model="isActive" label="Producto activo" icon="pi pi-check-circle" />
             </div>
-            <NxToggleButton
-              v-model="trackStock"
-              label="Controla inventario"
-              icon="pi pi-box"
-              :disabled="isService || isSingleSale || ingredients.length > 0"
-            />
             <NxInputNumber
               v-if="isService"
               v-model="durationMinutes"
@@ -260,7 +271,6 @@ async function submit(): Promise<void> {
               :min="0"
               :currency="false"
             />
-            <NxToggleButton v-model="isActive" label="Producto activo" icon="pi pi-check-circle" />
           </div>
         </div>
 

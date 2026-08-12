@@ -9,9 +9,12 @@ export async function fetchStockMovementReasons(): Promise<StockMovementReason[]
   return data
 }
 
-export async function fetchProductStockMovements(productId: number): Promise<PaginatedResponse<StockMovement>> {
+export async function fetchProductStockMovements(
+  productId: number,
+  page = 1,
+): Promise<PaginatedResponse<StockMovement>> {
   const { data } = await httpClient.get<PaginatedResponse<StockMovement>>('/stock-movements', {
-    params: { product_id: productId },
+    params: { product_id: productId, page },
   })
   return data
 }
@@ -24,9 +27,12 @@ export async function createProductStockMovement(
   return data
 }
 
-export async function fetchIngredientStockMovements(ingredientId: number): Promise<PaginatedResponse<StockMovement>> {
+export async function fetchIngredientStockMovements(
+  ingredientId: number,
+  page = 1,
+): Promise<PaginatedResponse<StockMovement>> {
   const { data } = await httpClient.get<PaginatedResponse<StockMovement>>('/ingredient-stock-movements', {
-    params: { ingredient_id: ingredientId },
+    params: { ingredient_id: ingredientId, page },
   })
   return data
 }

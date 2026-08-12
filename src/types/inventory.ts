@@ -10,6 +10,11 @@ export interface StockMovementReason {
   label: string
 }
 
+export interface StockMovementUser {
+  id: number
+  name: string
+}
+
 export interface StockMovement {
   id: number
   product_id: number | null
@@ -21,6 +26,7 @@ export interface StockMovement {
   notes: string | null
   reason: StockMovementReason | null
   user_id: number
+  user: StockMovementUser | null
   created_at: string
 }
 

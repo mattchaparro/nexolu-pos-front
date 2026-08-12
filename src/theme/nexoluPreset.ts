@@ -25,4 +25,25 @@ export const nexoluPreset = definePreset(Aura, {
       950: '{indigo.950}',
     },
   },
+  components: {
+    // Aura por defecto pinta el estado "checked" con fondo blanco
+    // (togglebutton.content.checked.background) sobre un track gris claro -
+    // en tarjetas blancas se pierde casi por completo la idea de
+    // seleccionado. Lo forzamos a indigo solido (texto/icono blanco), igual
+    // que cualquier otro estado "activo" de Nexolu UI (ver NxToggleButton).
+    togglebutton: {
+      root: {
+        checkedBackground: '{primary.600}',
+        checkedBorderColor: '{primary.600}',
+        checkedColor: '#ffffff',
+      },
+      icon: {
+        checkedColor: '#ffffff',
+      },
+      content: {
+        checkedBackground: 'transparent',
+        checkedShadow: 'none',
+      },
+    },
+  },
 })
