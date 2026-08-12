@@ -33,6 +33,10 @@ interface ProductRow {
   current_stock: number
   current_cost: number
   current_price: number
+  // Falso para venta-unica y productos con receta: su stock no se puede
+  // editar a mano (ver ProductResource/StockService en nexolu-pos-api) -
+  // editar esta celda igual dejaria el guardado entero rechazado con 422.
+  can_manage_stock: boolean
   new_name: string | null
   new_stock: number | null
   new_cost: number | null
@@ -58,6 +62,7 @@ function toProductRow(product: Product): ProductRow {
     current_stock: Number(product.stock),
     current_cost: Number(product.cost_price),
     current_price: Number(product.price),
+    can_manage_stock: product.can_manage_stock !== false,
     new_name: null,
     new_stock: null,
     new_cost: null,
@@ -168,6 +173,9 @@ function focusEditInput(): void {
 }
 
 function startEdit(row: ProductRow | IngredientRow, field: string): void {
+  if (field === 'stock' && 'can_manage_stock' in row && !row.can_manage_stock) {
+    return
+  }
   const id = 'product_id' in row ? row.product_id : row.ingredient_id
   if (editingId.value === id && editingField.value === field) {
     return
@@ -459,7 +467,12 @@ function goBack(): void {
                 <p class="text-xs text-slate-400">{{ row.category }}</p>
               </template>
             </td>
-            <td class="cursor-default select-none px-4 py-2.5 text-center" @dblclick="startEdit(row, 'stock')">
+            <td
+              class="select-none px-4 py-2.5 text-center"
+              :class="row.can_manage_stock ? 'cursor-default' : 'cursor-not-allowed'"
+              :title="row.can_manage_stock ? undefined : 'El stock de este producto se calcula desde sus ingredientes y no se puede editar aquí.'"
+              @dblclick="startEdit(row, 'stock')"
+            >
               <input
                 v-if="isEditing(row, 'stock')"
                 ref="editInputRef"
@@ -472,7 +485,9 @@ function goBack(): void {
                 @keydown.escape="cancelEdit"
                 @keydown.tab="handleTab($event, row, 'stock')"
               />
-              <span v-else class="font-semibold text-slate-800">{{ dispStock(row) }}</span>
+              <span v-else class="font-semibold" :class="row.can_manage_stock ? 'text-slate-800' : 'text-slate-300'">{{
+                dispStock(row)
+              }}</span>
             </td>
             <td class="cursor-default select-none px-4 py-2.5 text-center" @dblclick="startEdit(row, 'cost')">
               <input

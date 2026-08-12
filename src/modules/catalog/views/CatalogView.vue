@@ -14,6 +14,7 @@ import {
   NxColumn,
   NxDataTable,
   NxInput,
+  NxModal,
   NxPageHeader,
   NxStatCard,
   NxTab,
@@ -122,6 +123,9 @@ function openStockModal(subject: StockSubject, initialType: StockMovementType = 
   stockInitialType.value = initialType
   stockModalOpen.value = true
 }
+
+// --- "Platos que usan este ingrediente" (puerto del modal de legacy) ---
+const usedInModalIngredient = ref<Ingredient | null>(null)
 </script>
 
 <template>
@@ -499,6 +503,14 @@ function openStockModal(subject: StockSubject, initialType: StockMovementType = 
                       </RouterLink>
                       <button
                         type="button"
+                        class="text-orange-500 hover:text-orange-700"
+                        title="Platos que lo usan"
+                        @click="usedInModalIngredient = data"
+                      >
+                        <i class="pi pi-book text-sm" />
+                      </button>
+                      <button
+                        type="button"
                         class="text-slate-400 hover:text-indigo-600"
                         title="Editar"
                         @click="openEditIngredient(data)"
@@ -530,5 +542,27 @@ function openStockModal(subject: StockSubject, initialType: StockMovementType = 
       :subject="stockSubject"
       :initial-type="stockInitialType"
     />
+
+    <NxModal
+      :model-value="usedInModalIngredient !== null"
+      :title="usedInModalIngredient?.name"
+      size="sm"
+      @update:model-value="usedInModalIngredient = null"
+    >
+      <p class="-mt-2 mb-3 text-xs text-slate-500">Platos y productos que usan este ingrediente</p>
+      <ul v-if="usedInModalIngredient?.products?.length" class="divide-y divide-slate-100">
+        <li
+          v-for="p in usedInModalIngredient.products"
+          :key="p.id"
+          class="flex items-center gap-2 py-2.5 text-sm text-slate-800"
+        >
+          <i class="pi pi-box shrink-0 text-orange-400" />
+          {{ p.name }}
+        </li>
+      </ul>
+      <p v-else class="py-4 text-center text-sm text-slate-400">
+        Este ingrediente no está en ninguna receta todavía.
+      </p>
+    </NxModal>
   </div>
 </template>

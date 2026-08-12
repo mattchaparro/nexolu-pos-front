@@ -66,6 +66,9 @@ export interface Ingredient {
   min_stock: number | null
   is_active: boolean
   created_at: string
+  // "Platos que lo usan" (ver IngredientController::index/show) - solo
+  // presente cuando el endpoint carga la relacion products.
+  products?: { id: number; name: string }[]
 }
 
 export interface ProductRecipeLineInput {
