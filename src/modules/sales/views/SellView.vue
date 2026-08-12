@@ -17,6 +17,7 @@ import type { BusinessTable } from '@/types/table'
 import { NxPageHeader } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
+import { hasFeature } from '@/utils/hasFeature'
 
 import TabClosedDialog from '../../open-tabs/components/TabClosedDialog.vue'
 import { useActiveTabItemActions } from '../../open-tabs/composables/useActiveTabItemActions'
@@ -52,8 +53,13 @@ const checkout = useSaleCheckout(
 )
 
 // --- Cuentas abiertas/mesas embebidas ---
-const tablesQuery = useTables()
-const openTabsQuery = useOpenTabsList()
+// Puerto de SalesTerminal.vue del legacy (prop openTabsEnabled): sin el
+// feature, ni la tira de chips ni las consultas de tables/open-tabs deben
+// dispararse - antes se mostraban igual y el negocio veia un toast de
+// "no tienes permiso" apenas abria Vender.
+const openTabsEnabled = computed(() => hasFeature(business.value, 'open_tabs'))
+const tablesQuery = useTables(openTabsEnabled)
+const openTabsQuery = useOpenTabsList(openTabsEnabled)
 const tabMutations = useOpenTabMutations()
 const tabCart = useNewItemsCart()
 
@@ -288,7 +294,7 @@ function handleNewSale(): void {
       {{ submitError }}
     </p>
 
-    <div class="mt-2">
+    <div v-if="openTabsEnabled" class="mt-2">
       <TabSwitcherStrip
         :tables="tablesQuery.data.value ?? []"
         :open-tabs-by-name="openTabsByName"
