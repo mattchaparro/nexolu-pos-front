@@ -58,6 +58,7 @@ function selectCategory(id: number | null): void {
       size="lg"
       icon="pi pi-search"
       clearable
+      blur-after-typing
     />
 
     <div v-if="categoriesInUse.length > 0" class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">

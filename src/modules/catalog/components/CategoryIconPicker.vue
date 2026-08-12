@@ -29,7 +29,7 @@ const groupedIcons = computed(() => {
 
 <template>
   <div class="flex flex-col gap-2">
-    <NxInput v-model="search" label="Buscar ícono" size="sm" icon="pi pi-search" clearable />
+    <NxInput v-model="search" label="Buscar ícono" size="sm" icon="pi pi-search" clearable blur-after-typing />
 
     <div class="max-h-56 overflow-y-auto rounded-xl border border-slate-200 p-2">
       <div v-if="groupedIcons.length === 0" class="py-4 text-center text-xs text-slate-400">

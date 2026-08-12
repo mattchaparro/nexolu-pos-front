@@ -82,7 +82,7 @@ function formatDate(value: string): string {
 
     <CatalogHubTabs />
 
-    <NxInput v-model="searchInput" label="Buscar por nombre, NIT o teléfono" size="lg" icon="pi pi-search" clearable />
+    <NxInput v-model="searchInput" label="Buscar por nombre, NIT o teléfono" size="lg" icon="pi pi-search" clearable blur-after-typing />
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
       <NxDataTable

@@ -184,13 +184,6 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
       <NxTabPanels>
         <NxTabPanel value="productos">
           <div class="flex flex-col gap-3">
-            <NxInput
-              v-model="productSearchInput"
-              label="Buscar producto o SKU"
-              size="lg"
-              icon="pi pi-search"
-              clearable
-            />
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
               <NxStatCard
                 v-if="productMeta"
@@ -228,6 +221,15 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                 />
               </template>
             </div>
+
+            <NxInput
+              v-model="productSearchInput"
+              label="Buscar producto o SKU"
+              size="lg"
+              icon="pi pi-search"
+              clearable
+              blur-after-typing
+            />
 
             <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
               <NxDataTable
@@ -388,13 +390,6 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
 
         <NxTabPanel v-if="ingredientsEnabled" value="ingredientes">
           <div class="flex flex-col gap-3">
-            <NxInput
-              v-model="ingredientSearchInput"
-              label="Buscar insumo"
-              size="lg"
-              icon="pi pi-search"
-              clearable
-            />
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <NxStatCard
                 v-if="ingredientMeta"
@@ -415,6 +410,15 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                 />
               </template>
             </div>
+
+            <NxInput
+              v-model="ingredientSearchInput"
+              label="Buscar insumo"
+              size="lg"
+              icon="pi pi-search"
+              clearable
+              blur-after-typing
+            />
 
             <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
               <NxDataTable

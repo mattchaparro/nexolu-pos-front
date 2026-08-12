@@ -82,7 +82,7 @@ function statusBadgeClass(order: ServiceOrder): string {
     </div>
 
     <div class="flex flex-wrap gap-3">
-      <NxInput v-model="searchInput" label="Buscar por servicio o cliente" class="min-w-[220px] flex-1" icon="pi pi-search" clearable />
+      <NxInput v-model="searchInput" label="Buscar por servicio o cliente" class="min-w-[220px] flex-1" icon="pi pi-search" clearable blur-after-typing />
       <NxSelect
         :model-value="status"
         :options="statusOptions"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, onBeforeUnmount, useId } from 'vue'
 import PrimeFloatLabel from 'primevue/floatlabel'
 import PrimeIconField from 'primevue/iconfield'
 import PrimeInputIcon from 'primevue/inputicon'
@@ -30,6 +30,14 @@ const props = withDefaults(
     icon?: string
     /** Muestra una X a la derecha para vaciar el campo cuando tiene texto. */
     clearable?: boolean
+    // Buscadores (Vender, Catalogo, etc): en movil, el teclado on-screen se
+    // queda tapando media pantalla de resultados hasta que el usuario lo
+    // cierra a mano. Con esto, el campo se auto-desenfoca solito un rato
+    // despues de la ultima tecla - el teclado se guarda sin que el usuario
+    // tenga que hacerlo. No usar en campos de formulario normales (nombre,
+    // telefono, etc.) donde perder el foco a mitad de escritura seria
+    // molesto - es opt-in a proposito, no el comportamiento por defecto.
+    blurAfterTyping?: boolean
   }>(),
   {
     modelValue: '',
@@ -45,10 +53,23 @@ const props = withDefaults(
     autocomplete: undefined,
     icon: undefined,
     clearable: false,
+    blurAfterTyping: false,
   },
 )
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+
+let blurTimer: ReturnType<typeof window.setTimeout> | undefined
+function handleUpdate(value: string): void {
+  emit('update:modelValue', value)
+  if (props.blurAfterTyping) {
+    window.clearTimeout(blurTimer)
+    blurTimer = window.setTimeout(() => {
+      ;(document.activeElement as HTMLElement | null)?.blur()
+    }, 1200)
+  }
+}
+onBeforeUnmount(() => window.clearTimeout(blurTimer))
 
 const generatedId = useId()
 const inputId = computed(() => props.id ?? generatedId)
@@ -109,7 +130,7 @@ const effectivePlaceholder = computed(() => {
           :size="primeSize"
           :style="fontSizeStyle"
           fluid
-          @update:model-value="(value) => emit('update:modelValue', value as string)"
+          @update:model-value="(value) => handleUpdate(value as string)"
         />
         <PrimeInputIcon
           v-if="showClear"
@@ -131,7 +152,7 @@ const effectivePlaceholder = computed(() => {
         :size="primeSize"
         :style="fontSizeStyle"
         fluid
-        @update:model-value="(value) => emit('update:modelValue', value as string)"
+        @update:model-value="(value) => handleUpdate(value as string)"
       />
       <label v-if="label" :for="inputId"
         >{{ label }}<span v-if="required" class="text-red-600"> *</span></label
