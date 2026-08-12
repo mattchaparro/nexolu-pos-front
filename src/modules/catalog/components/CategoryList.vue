@@ -8,7 +8,7 @@ import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
 import { useCategoryMutations } from '../composables/useCategoryMutations'
 
-const props = defineProps<{ categories: ProductCategory[] }>()
+const props = defineProps<{ categories: ProductCategory[]; canEdit?: boolean }>()
 
 const emit = defineEmits<{ edit: [category: ProductCategory] }>()
 
@@ -48,10 +48,16 @@ async function remove(category: ProductCategory): Promise<void> {
           <p class="truncate text-sm font-semibold text-slate-900">{{ root.name }}</p>
           <p v-if="root.description" class="truncate text-xs text-slate-500">{{ root.description }}</p>
         </div>
-        <button type="button" class="shrink-0 text-slate-400 hover:text-indigo-600" @click="emit('edit', root)">
+        <button
+          v-if="canEdit"
+          type="button"
+          class="shrink-0 text-slate-400 hover:text-indigo-600"
+          @click="emit('edit', root)"
+        >
           <i class="pi pi-pencil text-sm" />
         </button>
         <button
+          v-if="canEdit"
           type="button"
           class="shrink-0 text-slate-300 hover:text-red-500"
           :disabled="deleteMutation.isPending.value"
@@ -70,10 +76,16 @@ async function remove(category: ProductCategory): Promise<void> {
           <p class="truncate text-sm font-medium text-slate-700">{{ child.name }}</p>
           <p v-if="child.description" class="truncate text-xs text-slate-500">{{ child.description }}</p>
         </div>
-        <button type="button" class="shrink-0 text-slate-400 hover:text-indigo-600" @click="emit('edit', child)">
+        <button
+          v-if="canEdit"
+          type="button"
+          class="shrink-0 text-slate-400 hover:text-indigo-600"
+          @click="emit('edit', child)"
+        >
           <i class="pi pi-pencil text-sm" />
         </button>
         <button
+          v-if="canEdit"
           type="button"
           class="shrink-0 text-slate-300 hover:text-red-500"
           :disabled="deleteMutation.isPending.value"

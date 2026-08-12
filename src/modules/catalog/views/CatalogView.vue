@@ -7,6 +7,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useBusiness } from '@/composables/useBusiness'
+import { usePermissions } from '@/composables/usePermissions'
 import type { StockMovementType } from '@/types/inventory'
 import type { Ingredient, Product } from '@/types/product'
 import {
@@ -38,7 +39,10 @@ import { ingredientStockBadge, productStockBadge } from '../support/stockBadge'
 
 const router = useRouter()
 const { data: business } = useBusiness()
+const { hasPermission } = usePermissions()
 const ingredientsEnabled = computed(() => business.value?.feature_flags?.ingredients === true)
+const canAdd = computed(() => hasPermission('inventory.add'))
+const canAdjust = computed(() => hasPermission('inventory.adjust'))
 
 const activeArticleTab = ref<'productos' | 'ingredientes'>('productos')
 
@@ -134,6 +138,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
       <NxPageHeader title="Catálogo" icon="pi pi-shop" compact />
       <div class="flex items-center gap-2">
         <NxButton
+          v-if="canAdjust"
           variant="outline"
           icon="pi pi-table"
           @click="router.push({ name: 'catalog.bulk-update' })"
@@ -141,13 +146,13 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
           Edición masiva
         </NxButton>
         <NxButton
-          v-if="activeArticleTab === 'productos'"
+          v-if="canAdd && activeArticleTab === 'productos'"
           icon="pi pi-plus"
           @click="router.push({ name: 'catalog.products.create' })"
         >
           Producto
         </NxButton>
-        <NxButton v-else icon="pi pi-plus" @click="openNewIngredient">Insumo</NxButton>
+        <NxButton v-else-if="canAdd" icon="pi pi-plus" @click="openNewIngredient">Insumo</NxButton>
       </div>
     </div>
 
@@ -290,6 +295,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                     <div class="flex flex-wrap items-center justify-end gap-x-2 gap-y-1.5">
                       <template v-if="data.track_stock && !data.is_service && data.can_manage_stock">
                         <button
+                          v-if="canAdjust"
                           type="button"
                           class="text-emerald-500 hover:text-emerald-700"
                           title="Agregar stock"
@@ -303,6 +309,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                           <i class="pi pi-plus-circle text-sm" />
                         </button>
                         <button
+                          v-if="canAdjust"
                           type="button"
                           class="text-red-400 hover:text-red-600"
                           title="Retirar stock"
@@ -316,6 +323,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                           <i class="pi pi-minus-circle text-sm" />
                         </button>
                         <button
+                          v-if="canAdjust"
                           type="button"
                           class="text-slate-400 hover:text-indigo-600"
                           title="Ajustar stock"
@@ -345,6 +353,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                         }}
                       </span>
                       <RouterLink
+                        v-if="canAdd"
                         :to="{ name: 'catalog.products.edit', params: { id: data.id } }"
                         class="text-slate-400 hover:text-indigo-600"
                         title="Editar"
@@ -352,6 +361,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                         <i class="pi pi-pencil text-sm" />
                       </RouterLink>
                       <button
+                        v-if="canAdd"
                         type="button"
                         class="text-slate-300 hover:text-red-500"
                         title="Eliminar"
@@ -438,6 +448,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                   <template #body="{ data }: { data: Ingredient }">
                     <div class="flex flex-wrap items-center justify-end gap-x-2 gap-y-1.5">
                       <button
+                        v-if="canAdjust"
                         type="button"
                         class="text-emerald-500 hover:text-emerald-700"
                         title="Agregar stock"
@@ -457,6 +468,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                         <i class="pi pi-plus-circle text-sm" />
                       </button>
                       <button
+                        v-if="canAdjust"
                         type="button"
                         class="text-red-400 hover:text-red-600"
                         title="Retirar stock"
@@ -476,6 +488,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                         <i class="pi pi-minus-circle text-sm" />
                       </button>
                       <button
+                        v-if="canAdjust"
                         type="button"
                         class="text-slate-400 hover:text-indigo-600"
                         title="Ajustar stock"
@@ -510,6 +523,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                         <i class="pi pi-book text-sm" />
                       </button>
                       <button
+                        v-if="canAdd"
                         type="button"
                         class="text-slate-400 hover:text-indigo-600"
                         title="Editar"
@@ -518,6 +532,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                         <i class="pi pi-pencil text-sm" />
                       </button>
                       <button
+                        v-if="canAdd"
                         type="button"
                         class="text-slate-300 hover:text-red-500"
                         title="Eliminar"

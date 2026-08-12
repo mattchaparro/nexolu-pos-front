@@ -6,6 +6,7 @@
 // opcional), sin duplicar un CRUD completo que nadie pidio todavia.
 import { ref } from 'vue'
 
+import { usePermissions } from '@/composables/usePermissions'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import { NxButton, NxInput, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
@@ -23,6 +24,12 @@ const emit = defineEmits<{ 'update:modelValue': [value: number | null] }>()
 const search = ref('')
 const clientsQuery = useClientSearch(search)
 const { notify } = useSystemAlert()
+// GET /clients/search y POST /clients requieren clients.manage (ver
+// routes/api.php) - un empleado sin ese permiso puede igual gestionar la
+// orden/cita (permission distinto, appointments.manage) pero no puede
+// buscar ni crear clientes desde aca.
+const { hasPermission } = usePermissions()
+const canManageClients = hasPermission('clients.manage')
 
 const showQuickCreate = ref(false)
 const quickName = ref('')
@@ -65,13 +72,14 @@ async function quickCreate(): Promise<void> {
       @filter="search = $event"
     />
     <button
+      v-if="canManageClients"
       type="button"
       class="self-start text-xs font-semibold text-indigo-600 hover:text-indigo-800"
       @click="showQuickCreate = !showQuickCreate"
     >
       {{ showQuickCreate ? 'Cancelar' : '+ Nuevo cliente' }}
     </button>
-    <div v-if="showQuickCreate" class="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+    <div v-if="canManageClients && showQuickCreate" class="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
       <p v-if="quickCreateError" class="text-xs text-red-600">{{ quickCreateError }}</p>
       <NxInput v-model="quickName" label="Nombre" size="sm" />
       <NxInput v-model="quickPhone" label="Teléfono (opcional)" size="sm" />
