@@ -84,6 +84,12 @@ const router = createRouter({
           meta: { requiresPermission: 'inventory.view' },
         },
         {
+          path: 'clientes',
+          name: 'clients.index',
+          component: () => import('@/modules/clients/views/ClientsView.vue'),
+          meta: { requiresFeature: 'clients', requiresPermission: 'clients.manage' },
+        },
+        {
           path: 'catalogo/categorias',
           name: 'catalog.categories.index',
           component: () => import('@/modules/catalog/views/CategoriesView.vue'),

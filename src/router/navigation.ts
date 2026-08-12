@@ -16,6 +16,12 @@ export const adminNavItems: NavItem[] = [
   { label: 'Apartados', icon: 'pi pi-bookmark', disabled: true, featureKey: 'layaway' },
   { label: 'Comandera', icon: 'pi pi-list', disabled: true, featureKey: 'kitchen_board' },
   { label: 'Catálogo', icon: 'pi pi-shop', routeName: 'catalog.index' },
+  // Sin equivalente en admin.json del legacy a proposito: legacy tiene las
+  // rutas/controlador de clientes (Admin\ClientsController) pero ningun
+  // item de menu ni pantalla que enlace a ellas - el modulo era inalcanzable
+  // salvo escribiendo la URL a mano. Se agrega aca como item real, no un
+  // gap que se repite.
+  { label: 'Clientes', icon: 'pi pi-users', routeName: 'clients.index', featureKey: 'clients' },
   { label: 'Turnos de caja', icon: 'pi pi-clock', disabled: true, featureKey: 'cash_closing' },
   { label: 'Resumen del día', icon: 'pi pi-chart-bar', disabled: true },
   { label: 'Gastos', icon: 'pi pi-money-bill', disabled: true, featureKey: 'expenses' },
