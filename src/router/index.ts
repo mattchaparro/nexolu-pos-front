@@ -140,6 +140,11 @@ const router = createRouter({
           name: 'service-orders.edit',
           component: () => import('@/modules/service-orders/views/ServiceOrderFormView.vue'),
         },
+        {
+          path: 'agenda',
+          name: 'appointments.index',
+          component: () => import('@/modules/appointments/views/AgendaView.vue'),
+        },
       ],
     },
   ],

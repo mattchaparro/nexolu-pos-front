@@ -2,10 +2,11 @@ import { useQuery } from '@tanstack/vue-query'
 
 import { httpClient } from '@/services/http/client'
 
-// Lista minima de personal (para asignar quien atendio cada item) - GET
-// /employees no pagina restringido por permiso (ver comentario en
-// routes/api.php: cualquier usuario del negocio puede listar), no hace
-// falta un modulo de Empleados completo para este picker de solo lectura.
+// Lista minima de personal (para asignar quien atendio cada item, o quien
+// tiene la cita) - GET /employees no esta restringido por permiso (ver
+// comentario en routes/api.php: cualquier usuario del negocio puede
+// listar), no hace falta un modulo de Empleados completo para este picker
+// de solo lectura. Compartido por Ordenes de servicio y Agenda.
 export interface StaffOption {
   id: number
   name: string

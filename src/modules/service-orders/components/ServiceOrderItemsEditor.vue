@@ -6,11 +6,11 @@
 // producto real (ver items.*.name: string, sin product_id por item).
 import { computed } from 'vue'
 
+import type { StaffOption } from '@/composables/useStaffOptions'
 import type { Product } from '@/types/product'
 import { NxInput, NxInputNumber, NxSelect } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
-import type { StaffOption } from '../composables/useStaffOptions'
 import { newServiceOrderLineRow, type ServiceOrderLineRow } from '../support/serviceOrderLine'
 
 const props = defineProps<{

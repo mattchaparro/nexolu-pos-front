@@ -6,6 +6,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useStaffOptions } from '@/composables/useStaffOptions'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import { NxButton, NxPageHeader } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
@@ -14,7 +15,6 @@ import { formatCop } from '@/utils/formatCop'
 import PayServiceOrderModal from '../components/PayServiceOrderModal.vue'
 import { useServiceOrder } from '../composables/useServiceOrder'
 import { useServiceOrderMutations } from '../composables/useServiceOrderMutations'
-import { useStaffOptions } from '../composables/useStaffOptions'
 
 const route = useRoute()
 const router = useRouter()
