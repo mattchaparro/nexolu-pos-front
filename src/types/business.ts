@@ -23,4 +23,7 @@ export interface Business {
   payment_methods: BusinessPaymentMethod[]
   charges: BusinessChargesConfig
   feature_flags: Record<string, boolean> | null
+  // Computado en el backend (Business::canAccessPurchases()) - no replicar
+  // la logica de feature_flags/plan aca, ver BusinessResource.
+  can_access_purchases: boolean
 }

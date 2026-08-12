@@ -70,6 +70,11 @@ const router = createRouter({
           component: () => import('@/modules/catalog/views/StockMovementHistoryView.vue'),
           meta: { stockSubjectKind: 'ingredient' },
         },
+        {
+          path: 'proveedores',
+          name: 'suppliers.index',
+          component: () => import('@/modules/suppliers/views/SuppliersView.vue'),
+        },
       ],
     },
   ],

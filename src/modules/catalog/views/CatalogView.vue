@@ -2,8 +2,10 @@
 // Hub de Catalogo, calcado del hub real del legacy (CatalogHubLayout.vue):
 // tab "Articulos" (por defecto) con sub-tabs Productos/Ingredientes adentro
 // (Ingredientes solo si la feature "ingredients" esta activa), y tab
-// "Categorias" aparte. Compras/Servicios/Proveedores quedan fuera del
-// alcance de este modulo por ahora - ver docs/BACKEND_READINESS.md.
+// "Categorias" aparte. Compras/Proveedores viven como paginas propias,
+// enlazadas via CatalogHubTabs (franja de navegacion persistente, ver ese
+// componente) en vez de sub-tabs de esta pagina. Servicios queda fuera del
+// alcance por ahora - ver docs/BACKEND_READINESS.md.
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -28,6 +30,7 @@ import { formatCop } from '@/utils/formatCop'
 
 import CategoryFormModal from '../components/CategoryFormModal.vue'
 import CategoryList from '../components/CategoryList.vue'
+import CatalogHubTabs from '../components/CatalogHubTabs.vue'
 import IngredientFormModal from '../components/IngredientFormModal.vue'
 import StockMovementModal, { type StockSubject } from '../components/StockMovementModal.vue'
 import { useCategories } from '../composables/useCategories'
@@ -165,6 +168,8 @@ function openStockModal(subject: StockSubject, initialType: StockMovementType = 
         <NxButton v-else icon="pi pi-plus" @click="openNewCategory">Categoría</NxButton>
       </div>
     </div>
+
+    <CatalogHubTabs class="mt-3" />
 
     <NxTabs v-model:value="activeTab" class="mt-4">
       <NxTabList>
