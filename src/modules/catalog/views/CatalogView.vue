@@ -8,6 +8,7 @@ import { useRouter } from 'vue-router'
 
 import { useBusiness } from '@/composables/useBusiness'
 import { usePermissions } from '@/composables/usePermissions'
+import type { ProductStockFilter } from '@/types/catalogSummary'
 import type { StockMovementType } from '@/types/inventory'
 import type { Ingredient, Product } from '@/types/product'
 import {
@@ -17,6 +18,7 @@ import {
   NxInput,
   NxModal,
   NxPageHeader,
+  NxSelect,
   NxStatCard,
   NxTab,
   NxTabList,
@@ -30,6 +32,7 @@ import { formatCop } from '@/utils/formatCop'
 import CatalogHubTabs from '../components/CatalogHubTabs.vue'
 import IngredientFormModal from '../components/IngredientFormModal.vue'
 import StockMovementModal, { type StockSubject } from '../components/StockMovementModal.vue'
+import { useCategories } from '../composables/useCategories'
 import { useIngredientsSummary, useProductsSummary } from '../composables/useCatalogSummary'
 import { useIngredientMutations } from '../composables/useIngredientMutations'
 import { useIngredients } from '../composables/useIngredients'
@@ -60,7 +63,36 @@ watch(productSearchInput, (value) => {
   }, 300)
 })
 
-const productsQuery = useProducts(productSearch, productPage)
+// category_id: puerto directo de Admin\InventoryController del legacy.
+// filter (sin stock/inventario bajo/inactivos/venta unica/receta): no
+// existe como filtro real en legacy (solo como cards de resumen de solo
+// lectura, ver ProductController::summary()) - se agrega aca a pedido
+// explicito, no es un puerto.
+const categoriesQuery = useCategories()
+const productCategoryId = ref<number | null>(null)
+const productFilter = ref<ProductStockFilter | null>(null)
+
+const categoryOptions = computed(() => {
+  const all = categoriesQuery.data.value ?? []
+  return [
+    { id: null, label: 'Todas las categorías' },
+    ...all.map((c) => ({
+      id: c.id,
+      label: c.parent_id ? `${all.find((p) => p.id === c.parent_id)?.name ?? ''} › ${c.name}` : c.name,
+    })),
+  ]
+})
+
+function toggleProductFilter(filter: ProductStockFilter): void {
+  productFilter.value = productFilter.value === filter ? null : filter
+  productPage.value = 1
+}
+
+watch(productCategoryId, () => {
+  productPage.value = 1
+})
+
+const productsQuery = useProducts(productSearch, productPage, productCategoryId, productFilter)
 const { deleteMutation: deleteProductMutation } = useProductMutations()
 const productMeta = computed(() => productsQuery.data.value?.meta)
 const productsSummaryQuery = useProductsSummary()
@@ -196,22 +228,42 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                   label="Inventario bajo"
                   :value="String(productsSummaryQuery.data.value.low_stock_count)"
                   icon="pi pi-exclamation-triangle"
+                  clickable
+                  :active="productFilter === 'low_stock'"
+                  @click="toggleProductFilter('low_stock')"
                 />
                 <NxStatCard
                   label="Sin stock"
                   :value="String(productsSummaryQuery.data.value.out_of_stock_count)"
                   icon="pi pi-ban"
+                  clickable
+                  :active="productFilter === 'out_of_stock'"
+                  @click="toggleProductFilter('out_of_stock')"
+                />
+                <NxStatCard
+                  label="Inactivos"
+                  :value="String(productsSummaryQuery.data.value.inactive_count)"
+                  icon="pi pi-eye-slash"
+                  clickable
+                  :active="productFilter === 'inactive'"
+                  @click="toggleProductFilter('inactive')"
                 />
                 <NxStatCard
                   label="Venta única"
                   :value="String(productsSummaryQuery.data.value.single_sale_count)"
                   icon="pi pi-bolt"
+                  clickable
+                  :active="productFilter === 'single_sale'"
+                  @click="toggleProductFilter('single_sale')"
                 />
                 <NxStatCard
                   v-if="ingredientsEnabled"
                   label="Con receta"
                   :value="String(productsSummaryQuery.data.value.with_recipe_count)"
                   icon="pi pi-book"
+                  clickable
+                  :active="productFilter === 'recipe'"
+                  @click="toggleProductFilter('recipe')"
                 />
                 <NxStatCard
                   v-if="productsSummaryQuery.data.value.show_inventory_value_card"
@@ -222,14 +274,26 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
               </template>
             </div>
 
-            <NxInput
-              v-model="productSearchInput"
-              label="Buscar producto o SKU"
-              size="lg"
-              icon="pi pi-search"
-              clearable
-              blur-after-typing
-            />
+            <div class="flex flex-col gap-3 sm:flex-row">
+              <NxInput
+                v-model="productSearchInput"
+                label="Buscar producto o SKU"
+                size="lg"
+                icon="pi pi-search"
+                clearable
+                blur-after-typing
+                class="flex-1"
+              />
+              <NxSelect
+                v-model="productCategoryId"
+                :options="categoryOptions"
+                option-label="label"
+                option-value="id"
+                label="Categoría"
+                filter
+                class="sm:w-64"
+              />
+            </div>
 
             <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
               <NxDataTable

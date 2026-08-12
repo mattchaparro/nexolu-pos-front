@@ -8,9 +8,16 @@ export interface ProductsSummary {
   out_of_stock_count: number
   single_sale_count: number
   with_recipe_count: number
+  inactive_count: number
   show_inventory_value_card: boolean
   inventory_value_cop: number | null
 }
+
+// Valores de ?filter en GET /products (ver ProductController::index() en
+// nexolu-pos-api) - a diferencia de category_id/search (puerto directo de
+// legacy), esto es nuevo: legacy solo muestra estos estados como cards de
+// resumen de solo lectura, nunca como filtros reales del listado.
+export type ProductStockFilter = 'out_of_stock' | 'low_stock' | 'inactive' | 'single_sale' | 'recipe'
 
 export interface IngredientsSummary {
   active_count: number

@@ -1,5 +1,5 @@
 import { httpClient } from '@/services/http/client'
-import type { IngredientsSummary, ProductsSummary, ServicesSummary } from '@/types/catalogSummary'
+import type { IngredientsSummary, ProductsSummary, ProductStockFilter, ServicesSummary } from '@/types/catalogSummary'
 import type { PaginatedResponse } from '@/types/pagination'
 import type {
   Ingredient,
@@ -40,6 +40,10 @@ export interface FetchProductsParams {
   // = solo bienes (Catalogo, Compras, edicion masiva), true = solo
   // servicios (pestaña Servicios) - ver ProductController::index().
   is_service?: boolean
+  // Incluye subcategorias (ver ProductCategory::idsIncludingChildren en el
+  // backend) - puerto directo de Admin\InventoryController del legacy.
+  category_id?: number
+  filter?: ProductStockFilter
 }
 
 export async function fetchProducts(params: FetchProductsParams = {}): Promise<PaginatedResponse<Product>> {
