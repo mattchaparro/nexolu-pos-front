@@ -86,17 +86,17 @@ function isActive(item: NavItem): boolean {
         <RouterLink
           v-if="!item.disabled && item.routeName"
           :to="{ name: item.routeName }"
-          class="flex min-h-[52px] min-w-[60px] flex-col items-center justify-center rounded-xl px-2.5 py-2"
+          class="flex min-h-[60px] min-w-[68px] flex-col items-center justify-center rounded-xl px-2.5 py-2"
         >
           <i
             :class="[
               item.icon,
-              'text-xl leading-none',
+              'text-2xl leading-none',
               isActive(item) ? 'text-indigo-700' : 'text-slate-500',
             ]"
           />
           <span
-            class="mt-0.5 max-w-[4.5rem] truncate text-center text-[10px] font-medium leading-tight"
+            class="mt-1 max-w-[5rem] truncate text-center text-xs font-medium leading-tight"
             :class="isActive(item) ? 'text-indigo-800 font-bold' : 'text-slate-500'"
           >
             {{ item.label }}
@@ -104,12 +104,12 @@ function isActive(item: NavItem): boolean {
         </RouterLink>
         <span
           v-else
-          class="flex min-h-[52px] min-w-[60px] flex-col items-center justify-center rounded-xl px-2.5 py-2"
+          class="flex min-h-[60px] min-w-[68px] flex-col items-center justify-center rounded-xl px-2.5 py-2"
           :title="item.disabled ? 'Próximamente' : undefined"
         >
-          <i :class="item.icon" class="text-xl leading-none text-slate-300" />
+          <i :class="item.icon" class="text-2xl leading-none text-slate-300" />
           <span
-            class="mt-0.5 max-w-[4.5rem] truncate text-center text-[10px] font-medium leading-tight text-slate-300"
+            class="mt-1 max-w-[5rem] truncate text-center text-xs font-medium leading-tight text-slate-300"
           >
             {{ item.label }}
           </span>
