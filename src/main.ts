@@ -43,3 +43,16 @@ app.use(VueQueryPlugin, { queryClient })
 app.use(ToastService)
 
 app.mount('#app')
+
+// Revela los iconos de Material Icons (ver .material-icons/.fonts-ready en
+// style.css) recien cuando la fuente termino de cargar, para no mostrar el
+// nombre crudo del icono como texto de respaldo (font-display: swap de
+// @fontsource). Promise.race con un timeout: si document.fonts.ready no
+// resuelve por lo que sea, los iconos igual se revelan a los 2s en vez de
+// quedar invisibles para siempre.
+Promise.race([
+  document.fonts.ready,
+  new Promise((resolve) => setTimeout(resolve, 2000)),
+]).then(() => {
+  document.documentElement.classList.add('fonts-ready')
+})

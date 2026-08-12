@@ -64,4 +64,15 @@ body {
   text-rendering: optimizeLegibility;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'liga';
+  /* @fontsource declara font-display: swap, que para una fuente de
+     ligaduras significa mostrar el nombre crudo del icono ("local_bar")
+     como texto de respaldo mientras carga - se ve como un bug (texto
+     suelto en vez de un icono) en vez de una carga progresiva razonable.
+     Arrancar en opacity:0 y revelar recien cuando la fuente esta lista
+     (ver main.ts, clase .fonts-ready en <html>) cambia ese flash de texto
+     por, en el peor caso, un hueco vacio muy breve - mucho menos notorio. */
+  opacity: 0;
+}
+.fonts-ready .material-icons {
+  opacity: 1;
 }
