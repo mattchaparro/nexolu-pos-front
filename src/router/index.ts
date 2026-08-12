@@ -211,6 +211,15 @@ const router = createRouter({
           component: () => import('@/modules/appointments/views/AgendaView.vue'),
           meta: { requiresFeature: 'scheduling', requiresPermission: 'appointments.manage' },
         },
+        {
+          // Sin requiresFeature/requiresPermission: a diferencia de los modulos
+          // de arriba, Ajustes no depende de un feature flag propio - cada
+          // seccion adentro decide si aplica segun el negocio (ver
+          // BusinessSettingsView.vue).
+          path: 'ajustes',
+          name: 'business-settings.index',
+          component: () => import('@/modules/settings/views/BusinessSettingsView.vue'),
+        },
       ],
     },
     {

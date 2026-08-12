@@ -1,8 +1,7 @@
 // Refleja BusinessResource (app/Http/Resources/Api/V1/BusinessResource.php)
 // en nexolu-pos-api - mantener sincronizado si el endpoint cambia. Solo se
 // tipan los campos que el frontend consume hasta ahora (header del
-// Dashboard + configuracion que usa Vender); se amplia cuando exista el
-// modulo de Ajustes/Mi negocio.
+// Dashboard, configuracion que usa Vender, y el modulo de Ajustes).
 export interface BusinessPaymentMethod {
   id: string
   label: string
@@ -33,4 +32,8 @@ export interface Business {
   can_access_scheduling: boolean
   // Idem, para el feature flag 'layaway' (modulo Apartados).
   can_access_layaways: boolean
+  // Configuracion del formulario de "Nueva orden de servicio" (modulo
+  // Ajustes) - ver ServiceOrderFormView.vue.
+  service_orders_show_catalog: boolean
+  service_orders_default_service_name: string | null
 }

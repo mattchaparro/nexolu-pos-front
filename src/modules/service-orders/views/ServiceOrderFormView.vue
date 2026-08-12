@@ -53,6 +53,19 @@ const registerInitialPayment = ref(false)
 const initialPayment = ref<number | null>(null)
 const initialPaymentMethod = ref<string | null>(null)
 
+// Nombre por defecto configurado en Ajustes > Ordenes de servicio (ver
+// BusinessSettingsView.vue) - solo aplica al crear, nunca pisa el nombre
+// ya guardado de una orden existente.
+watch(
+  () => business.value?.service_orders_default_service_name,
+  (defaultName) => {
+    if (!isEdit.value && !serviceName.value && defaultName) {
+      serviceName.value = defaultName
+    }
+  },
+  { immediate: true },
+)
+
 watch(
   () => orderQuery.data.value,
   (order) => {
@@ -174,7 +187,7 @@ async function submit(): Promise<void> {
         <div class="flex flex-col gap-3">
           <ClientPicker v-model="clientId" :error="fieldErrors.client_id" />
           <NxSelect
-            v-if="(servicesQuery.data.value?.length ?? 0) > 0"
+            v-if="(servicesQuery.data.value?.length ?? 0) > 0 && business?.service_orders_show_catalog !== false"
             :model-value="productId"
             :options="servicesQuery.data.value ?? []"
             option-label="name"
