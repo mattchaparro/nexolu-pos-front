@@ -8,8 +8,12 @@ import type { AuthResponse, LoginCredentials, User } from '@/types/auth'
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const token = ref<string | null>(tokenStorage.get())
+  // Token del super admin guardado mientras impersona (ver tokenStorage) -
+  // su sola presencia es lo que dice "hay una sesion real detras de esta".
+  const impersonatorToken = ref<string | null>(tokenStorage.getImpersonator())
 
   const isAuthenticated = computed(() => Boolean(token.value))
+  const isImpersonating = computed(() => Boolean(impersonatorToken.value))
 
   function setSession(data: AuthResponse): void {
     token.value = data.token
@@ -21,6 +25,8 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     user.value = null
     tokenStorage.clear()
+    impersonatorToken.value = null
+    tokenStorage.clearImpersonator()
   }
 
   async function login(credentials: LoginCredentials): Promise<void> {
@@ -43,13 +49,47 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // ImpersonateController::start (SuperAdmin) devuelve un token nuevo para
+  // el usuario destino - no hay "sesion" que cambiar en una API stateless,
+  // asi que impersonar es guardar el token actual del super admin aparte y
+  // adoptar el nuevo como si fuera un login normal.
+  function impersonate(data: AuthResponse): void {
+    if (token.value) {
+      impersonatorToken.value = token.value
+      tokenStorage.setImpersonator(token.value)
+    }
+    setSession(data)
+  }
+
+  /** Vuelve a la sesion del super admin sin pedir contraseña de nuevo. */
+  async function stopImpersonating(): Promise<void> {
+    const original = impersonatorToken.value
+    if (!original) {
+      return
+    }
+    try {
+      await httpClient.post('/logout')
+    } catch {
+      // El token de impersonacion puede ya haber expirado - no bloquea volver.
+    }
+    impersonatorToken.value = null
+    tokenStorage.clearImpersonator()
+    token.value = original
+    tokenStorage.set(original)
+    user.value = null
+    await fetchCurrentUser()
+  }
+
   return {
     user,
     token,
     isAuthenticated,
+    isImpersonating,
     login,
     logout,
     fetchCurrentUser,
     clearSession,
+    impersonate,
+    stopImpersonating,
   }
 })

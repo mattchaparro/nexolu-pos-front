@@ -1,9 +1,9 @@
 <script setup lang="ts">
 // Panel de super admin - area separada del menu de negocio (mismo enfoque
 // que el legacy, ver Sidebar.vue: el rol determina un menu entero distinto,
-// no items mezclados en el de un negocio). Por ahora solo tiene Workflows;
-// una barra secundaria simple (no un NxSidebar completo) alcanza mientras
-// sea la unica seccion - ver README.md "Modulos independientes".
+// no items mezclados en el de un negocio). Por ahora solo tiene Negocios y
+// Workflows; una barra secundaria simple (no un NxSidebar completo) alcanza
+// mientras sean pocas secciones - ver README.md "Modulos independientes".
 import { useRouter } from 'vue-router'
 
 import logo from '@/assets/nexolu-logo.png'
@@ -34,7 +34,17 @@ async function handleLogout(): Promise<void> {
     </NxNavbar>
     <div class="border-b border-slate-200 bg-white px-4 sm:px-6">
       <nav class="flex h-12 items-center gap-1">
-        <span class="mr-4 text-xs font-semibold tracking-wide text-slate-400 uppercase">Super Admin</span>
+        <span class="mr-4 text-xs font-semibold tracking-wide text-slate-400 uppercase"
+          >Super Admin</span
+        >
+        <RouterLink
+          :to="{ name: 'superadmin.businesses.index' }"
+          class="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100"
+          active-class="!bg-indigo-50 !text-indigo-700"
+        >
+          <i class="pi pi-building mr-1.5" />
+          Negocios
+        </RouterLink>
         <RouterLink
           :to="{ name: 'superadmin.workflows.index' }"
           class="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100"

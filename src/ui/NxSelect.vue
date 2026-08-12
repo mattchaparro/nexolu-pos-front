@@ -52,6 +52,20 @@ const generatedId = useId()
 const inputId = computed(() => props.id ?? generatedId)
 const isInvalid = computed(() => props.invalid || Boolean(props.error))
 
+// PrimeSelect solo se marca "filled" (float del label) cuando modelValue no
+// es null/undefined - pero varios selects de la app usan null a proposito
+// como una opcion real con texto visible (ej. { id: null, name: 'Sin
+// proveedor' } en PurchaseFormView), asi que Prime muestra ese texto sin
+// flotar el label, y quedan superpuestos ("dos campos en uno"). Si el
+// modelValue actual matchea alguna opcion de la lista (null incluido), hay
+// texto real dibujado en el campo -> forzar la misma clase que Prime usa
+// para flotar el label (.p-inputwrapper-filled, ver FloatLabel CSS).
+const hasMatchingOption = computed(() =>
+  props.options.some(
+    (option) => (option as Record<string, unknown>)[props.optionValue] === props.modelValue,
+  ),
+)
+
 const primeSize = computed<'small' | 'large' | undefined>(() => {
   if (props.size === 'sm') {
     return 'small'
@@ -79,12 +93,17 @@ const fontSizeStyle = { fontSize: '16px' }
         :size="primeSize"
         :style="fontSizeStyle"
         :filter="filter"
+        :class="{ 'p-inputwrapper-filled': hasMatchingOption }"
         fluid
         @update:model-value="(value) => emit('update:modelValue', value)"
         @filter="(event: { value: string }) => emit('filter', event.value)"
       />
-      <label v-if="label" :for="inputId">{{ label }}<span v-if="required" class="text-red-600"> *</span></label>
+      <label v-if="label" :for="inputId"
+        >{{ label }}<span v-if="required" class="text-red-600"> *</span></label
+      >
     </PrimeFloatLabel>
-    <PrimeMessage v-if="error" severity="error" size="small" variant="simple">{{ error }}</PrimeMessage>
+    <PrimeMessage v-if="error" severity="error" size="small" variant="simple">{{
+      error
+    }}</PrimeMessage>
   </div>
 </template>

@@ -1,6 +1,18 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth.store'
+import type { User } from '@/types/auth'
+
+// Compartido con LoginView (redirige aca justo despues de loguearse) y el
+// guard de aca abajo (redirige aca si un usuario ya autenticado visita
+// /iniciar-sesion) - un solo lugar que decide "a donde va cada rol" para
+// que no queden dos copias de esta regla desincronizadas (ver bug real:
+// el guard tenia 'dashboard' fijo, asi que un super admin ya autenticado
+// que volvia a /iniciar-sesion terminaba en el dashboard de negocio, que
+// le rompe por no tener business_id).
+export function homeRouteFor(user: User | null): { name: string } {
+  return { name: user?.roles?.includes('superadmin') ? 'superadmin.businesses.index' : 'dashboard' }
+}
 
 const router = createRouter({
   history: createWebHistory(),
@@ -156,14 +168,28 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresSuperAdmin: true },
       children: [
         {
+          path: 'negocios',
+          name: 'superadmin.businesses.index',
+          component: () =>
+            import('@/modules/superadmin-businesses/views/SuperAdminBusinessesView.vue'),
+        },
+        {
+          path: 'negocios/:id',
+          name: 'superadmin.businesses.show',
+          component: () =>
+            import('@/modules/superadmin-businesses/views/SuperAdminBusinessShowView.vue'),
+        },
+        {
           path: 'workflows',
           name: 'superadmin.workflows.index',
-          component: () => import('@/modules/superadmin-workflows/views/SuperAdminWorkflowsView.vue'),
+          component: () =>
+            import('@/modules/superadmin-workflows/views/SuperAdminWorkflowsView.vue'),
         },
         {
           path: 'workflows/:id',
           name: 'superadmin.workflows.show',
-          component: () => import('@/modules/superadmin-workflows/views/SuperAdminWorkflowShowView.vue'),
+          component: () =>
+            import('@/modules/superadmin-workflows/views/SuperAdminWorkflowShowView.vue'),
         },
       ],
     },
@@ -173,25 +199,26 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return { name: 'login' }
-  }
-
   // auth.user solo se llena en memoria al hacer login() - una recarga de
   // pagina conserva el token (localStorage) pero pierde el store de Pinia,
   // asi que sin esto cualquier guard/gate basado en auth.user (roles,
-  // permisos) fallaria en falso tras un F5 con sesion todavia valida.
-  if (to.meta.requiresAuth && auth.isAuthenticated && !auth.user) {
+  // permisos) fallaria en falso tras un F5 con sesion todavia valida. Va
+  // antes de los checks de abajo (no solo bajo requiresAuth) porque el
+  // redirect de /iniciar-sesion tambien depende de auth.user.roles.
+  if (auth.isAuthenticated && !auth.user) {
     try {
       await auth.fetchCurrentUser()
     } catch {
       auth.clearSession()
-      return { name: 'login' }
     }
   }
 
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    return { name: 'login' }
+  }
+
   if (to.name === 'login' && auth.isAuthenticated) {
-    return { name: 'dashboard' }
+    return homeRouteFor(auth.user)
   }
 
   if (to.meta.requiresSuperAdmin && !auth.user?.roles?.includes('superadmin')) {

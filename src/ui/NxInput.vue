@@ -76,7 +76,21 @@ const fontSizeStyle = { fontSize: '16px' }
 // Con label, el label flotante hace de placeholder (queda centrado hasta
 // foco/valor) - pasar los dos a la vez deja el label "flotado" fijo desde
 // el arranque (regla CSS :has(input[placeholder]) de FloatLabel).
-const effectivePlaceholder = computed(() => (props.label ? undefined : props.placeholder))
+//
+// date/time/etc: el navegador dibuja sus propios segmentos (dd/mm/aaaa)
+// dentro del input SIEMPRE, esten vacios o no - eso no es un placeholder
+// que FloatLabel pueda detectar (no hay :placeholder-shown real, y sin
+// valor el input no tiene la clase .p-filled), asi que sin esto el label
+// se queda centrado en reposo tapando esos segmentos nativos ("dos campos
+// superpuestos"). Forzar el atributo placeholder (aunque sea vacio) activa
+// la regla :has(input[placeholder]) y deja el label flotado siempre.
+const alwaysFloatingTypes = ['date', 'time', 'datetime-local', 'month', 'week']
+const effectivePlaceholder = computed(() => {
+  if (alwaysFloatingTypes.includes(props.type)) {
+    return props.placeholder ?? ''
+  }
+  return props.label ? undefined : props.placeholder
+})
 </script>
 
 <template>
@@ -119,8 +133,12 @@ const effectivePlaceholder = computed(() => (props.label ? undefined : props.pla
         fluid
         @update:model-value="(value) => emit('update:modelValue', value as string)"
       />
-      <label v-if="label" :for="inputId">{{ label }}<span v-if="required" class="text-red-600"> *</span></label>
+      <label v-if="label" :for="inputId"
+        >{{ label }}<span v-if="required" class="text-red-600"> *</span></label
+      >
     </PrimeFloatLabel>
-    <PrimeMessage v-if="error" severity="error" size="small" variant="simple">{{ error }}</PrimeMessage>
+    <PrimeMessage v-if="error" severity="error" size="small" variant="simple">{{
+      error
+    }}</PrimeMessage>
   </div>
 </template>

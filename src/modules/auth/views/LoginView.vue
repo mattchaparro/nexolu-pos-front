@@ -18,6 +18,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { z } from 'zod'
 
+import { homeRouteFor } from '@/router'
 import { useAuthStore } from '@/stores/auth.store'
 import { NxButton, NxInput } from '@/ui'
 
@@ -59,9 +60,9 @@ const onSubmit = handleSubmit(async (values) => {
     })
     // Un usuario superadmin no tiene business_id (ver DatabaseSeeder) - el
     // dashboard de negocio le rompe (fetches business-scoped sin negocio),
-    // asi que entra directo a su propio panel.
-    const destination = authStore.user?.roles?.includes('superadmin') ? 'superadmin.workflows.index' : 'dashboard'
-    await router.push({ name: destination })
+    // asi que entra directo a su propio panel (ver homeRouteFor, misma
+    // regla que usa el guard del router).
+    await router.push(homeRouteFor(authStore.user))
   } catch (error) {
     submitError.value =
       isAxiosError<{ message?: string }>(error) && error.response?.status === 401
