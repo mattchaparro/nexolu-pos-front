@@ -1,17 +1,14 @@
 <script setup lang="ts">
-// Hub de Catalogo. Productos/Ingredientes/Categorias son sub-tabs de un
-// mismo nivel aca (no un tab "Articulos" con Categorias como hermano
-// aparte, como el legacy - esa separacion no aportaba nada y obligaba a
-// dos clicks para llegar a categorias). Compras/Proveedores viven como
-// paginas propias, enlazadas via CatalogHubTabs (franja de navegacion
-// persistente, ver ese componente) en vez de sub-tabs de esta pagina.
-// Servicios queda fuera del alcance por ahora - ver docs/BACKEND_READINESS.md.
+// Hub de Catalogo (tab "Articulos"). Productos e Ingredientes son sub-tabs
+// de un mismo nivel aca - Categorias NO vive aca, es su propia pagina de
+// nivel superior junto a Compras/Servicios/Proveedores (ver
+// CatalogHubTabs y CategoriesView), igual que el legacy.
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useBusiness } from '@/composables/useBusiness'
 import type { StockMovementType } from '@/types/inventory'
-import type { Ingredient, Product, ProductCategory } from '@/types/product'
+import type { Ingredient, Product } from '@/types/product'
 import {
   NxButton,
   NxColumn,
@@ -28,12 +25,9 @@ import {
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 
-import CategoryFormModal from '../components/CategoryFormModal.vue'
-import CategoryList from '../components/CategoryList.vue'
 import CatalogHubTabs from '../components/CatalogHubTabs.vue'
 import IngredientFormModal from '../components/IngredientFormModal.vue'
 import StockMovementModal, { type StockSubject } from '../components/StockMovementModal.vue'
-import { useCategories } from '../composables/useCategories'
 import { useIngredientsSummary, useProductsSummary } from '../composables/useCatalogSummary'
 import { useIngredientMutations } from '../composables/useIngredientMutations'
 import { useIngredients } from '../composables/useIngredients'
@@ -45,7 +39,7 @@ const router = useRouter()
 const { data: business } = useBusiness()
 const ingredientsEnabled = computed(() => business.value?.feature_flags?.ingredients === true)
 
-const activeArticleTab = ref<'productos' | 'ingredientes' | 'categorias'>('productos')
+const activeArticleTab = ref<'productos' | 'ingredientes'>('productos')
 
 // --- Productos ---
 const productSearchInput = ref('')
@@ -118,21 +112,6 @@ function onIngredientPage(event: { page: number }): void {
   ingredientPage.value = event.page + 1
 }
 
-// --- Categorias ---
-const categoriesQuery = useCategories()
-const categoryModalOpen = ref(false)
-const editingCategory = ref<ProductCategory | null>(null)
-
-function openNewCategory(): void {
-  editingCategory.value = null
-  categoryModalOpen.value = true
-}
-
-function openEditCategory(category: ProductCategory): void {
-  editingCategory.value = category
-  categoryModalOpen.value = true
-}
-
 // --- Ajustar stock (productos e insumos) ---
 const stockModalOpen = ref(false)
 const stockSubject = ref<StockSubject | null>(null)
@@ -151,7 +130,6 @@ function openStockModal(subject: StockSubject, initialType: StockMovementType = 
       <NxPageHeader title="Catálogo" icon="pi pi-shop" compact />
       <div class="flex items-center gap-2">
         <NxButton
-          v-if="activeArticleTab !== 'categorias'"
           variant="outline"
           icon="pi pi-table"
           @click="router.push({ name: 'catalog.bulk-update' })"
@@ -165,13 +143,7 @@ function openStockModal(subject: StockSubject, initialType: StockMovementType = 
         >
           Producto
         </NxButton>
-        <NxButton
-          v-else-if="activeArticleTab === 'ingredientes'"
-          icon="pi pi-plus"
-          @click="openNewIngredient"
-          >Insumo</NxButton
-        >
-        <NxButton v-else icon="pi pi-plus" @click="openNewCategory">Categoría</NxButton>
+        <NxButton v-else icon="pi pi-plus" @click="openNewIngredient">Insumo</NxButton>
       </div>
     </div>
 
@@ -183,7 +155,6 @@ function openStockModal(subject: StockSubject, initialType: StockMovementType = 
         <NxTab v-if="ingredientsEnabled" value="ingredientes" icon="pi pi-shopping-bag"
           >Ingredientes</NxTab
         >
-        <NxTab value="categorias" icon="pi pi-tags">Categorías</NxTab>
       </NxTabList>
       <NxTabPanels>
         <NxTabPanel value="productos">
@@ -262,13 +233,29 @@ function openStockModal(subject: StockSubject, initialType: StockMovementType = 
                         {{ data.category?.icon || 'inventory_2' }}
                       </span>
                       <div class="min-w-0">
-                        <p class="truncate text-sm font-semibold text-slate-900">
-                          {{ data.name }}
+                        <p
+                          class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm font-semibold text-slate-900"
+                        >
+                          <span class="truncate">{{ data.name }}</span>
                           <span
                             v-if="!data.is_active"
-                            class="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500"
+                            class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500"
                           >
                             Inactivo
+                          </span>
+                          <span
+                            v-if="data.is_single_sale"
+                            class="inline-flex items-center rounded border border-amber-200 bg-amber-50 px-1.5 py-px text-[10px] leading-none font-medium whitespace-nowrap text-amber-700"
+                            title="Venta única: una sola unidad en inventario"
+                          >
+                            Venta única
+                          </span>
+                          <span
+                            v-if="data.has_recipe"
+                            class="rounded border border-indigo-200 bg-indigo-50 px-1 py-0.5 text-[10px] font-medium text-indigo-600"
+                            title="Descuenta inventario desde ingredientes de receta"
+                          >
+                            Receta
                           </span>
                         </p>
                         <p class="truncate text-xs text-slate-400">
@@ -297,7 +284,7 @@ function openStockModal(subject: StockSubject, initialType: StockMovementType = 
                 <NxColumn>
                   <template #body="{ data }: { data: Product }">
                     <div class="flex flex-wrap items-center justify-end gap-x-2 gap-y-1.5">
-                      <template v-if="data.track_stock && !data.is_service">
+                      <template v-if="data.track_stock && !data.is_service && data.can_manage_stock">
                         <button
                           type="button"
                           class="text-emerald-500 hover:text-emerald-700"
@@ -345,6 +332,14 @@ function openStockModal(subject: StockSubject, initialType: StockMovementType = 
                           <i class="pi pi-history text-sm" />
                         </RouterLink>
                       </template>
+                      <span
+                        v-else-if="data.track_stock && !data.is_service"
+                        class="text-[11px] whitespace-nowrap text-slate-400"
+                      >
+                        {{
+                          data.is_single_sale ? 'No maneja stock (venta única)' : 'Se gestiona desde Ingredientes'
+                        }}
+                      </span>
                       <RouterLink
                         :to="{ name: 'catalog.products.edit', params: { id: data.id } }"
                         class="text-slate-400 hover:text-indigo-600"
@@ -526,30 +521,9 @@ function openStockModal(subject: StockSubject, initialType: StockMovementType = 
             </div>
           </div>
         </NxTabPanel>
-
-        <NxTabPanel value="categorias">
-          <template v-if="categoriesQuery.isPending.value">
-            <div class="flex flex-col gap-2">
-              <div v-for="n in 4" :key="n" class="h-14 animate-pulse rounded-xl bg-slate-100" />
-            </div>
-          </template>
-          <p v-else-if="categoriesQuery.isError.value" class="text-sm text-red-700">
-            No pudimos cargar las categorías. Intenta de nuevo más tarde.
-          </p>
-          <CategoryList
-            v-else
-            :categories="categoriesQuery.data.value ?? []"
-            @edit="openEditCategory"
-          />
-        </NxTabPanel>
       </NxTabPanels>
     </NxTabs>
 
-    <CategoryFormModal
-      v-model="categoryModalOpen"
-      :category="editingCategory"
-      :categories="categoriesQuery.data.value ?? []"
-    />
     <IngredientFormModal v-model="ingredientModalOpen" :ingredient="editingIngredient" />
     <StockMovementModal
       v-model="stockModalOpen"

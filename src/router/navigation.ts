@@ -27,3 +27,27 @@ export const adminNavItems: NavItem[] = [
   { label: 'Ajustes', icon: 'pi pi-cog', disabled: true },
   { label: 'Mi negocio', icon: 'pi pi-building', disabled: true },
 ]
+
+// Menu de super admin portado 1:1 de pos-saas-legacy/resources/js/menu/superadmin.json
+// (mismo orden, mismos labels) - mismo criterio que adminNavItems: la
+// mayoria queda `disabled` hasta que ese modulo exista en el frontend
+// nuevo. "Asistente IA" en el legacy es un item con 2 hijos (Uso y costos,
+// Ajustes de IA) - NavItem no soporta anidamiento (ningun menu lo necesito
+// hasta ahora), asi que quedan como dos items planos.
+export const superadminNavItems: NavItem[] = [
+  { label: 'Dashboard', icon: 'pi pi-th-large', disabled: true },
+  { label: 'Negocios', icon: 'pi pi-building', routeName: 'superadmin.businesses.index' },
+  { label: 'Finanzas', icon: 'pi pi-wallet', disabled: true },
+  { label: 'Uso y costos IA', icon: 'pi pi-comments', disabled: true },
+  { label: 'Ajustes de IA', icon: 'pi pi-comments', disabled: true },
+  { label: 'Usuarios (plataforma)', icon: 'pi pi-users', disabled: true },
+  { label: 'Auditoría', icon: 'pi pi-history', disabled: true },
+  { label: 'Sistema', icon: 'pi pi-server', disabled: true },
+  { label: 'Tickets soporte', icon: 'pi pi-ticket', disabled: true },
+  { label: 'Guías ayuda', icon: 'pi pi-book', disabled: true },
+  { label: 'Ajustes globales', icon: 'pi pi-cog', disabled: true },
+  { label: 'Transacciones suscripción', icon: 'pi pi-receipt', disabled: true },
+  { label: 'Correos', icon: 'pi pi-envelope', disabled: true },
+  { label: 'Cron jobs', icon: 'pi pi-clock', disabled: true },
+  { label: 'Workflows servicio', icon: 'pi pi-sitemap', routeName: 'superadmin.workflows.index' },
+]

@@ -56,6 +56,11 @@ const router = createRouter({
           component: () => import('@/modules/catalog/views/CatalogView.vue'),
         },
         {
+          path: 'catalogo/categorias',
+          name: 'catalog.categories.index',
+          component: () => import('@/modules/catalog/views/CategoriesView.vue'),
+        },
+        {
           path: 'catalogo/edicion-masiva',
           name: 'catalog.bulk-update',
           component: () => import('@/modules/catalog/views/BulkStockUpdateView.vue'),

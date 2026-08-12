@@ -1,11 +1,10 @@
 <script setup lang="ts">
 // Franja de navegacion entre las secciones del "hub" de Catalogo/Compras -
-// puerto liviano de CatalogHubLayout.vue del legacy (que envuelve paginas
-// separadas con una barra de tabs persistente). A diferencia del legacy no
-// incluye Articulos/Categorias como tabs propias aca: esas viven como
-// sub-tabs internas de CatalogView (ver ese archivo) - esta franja es solo
-// para saltar entre las secciones que SI son paginas separadas (Catalogo,
-// Compras, Servicios, Proveedores).
+// puerto de CatalogHubLayout.vue del legacy (mismas 5 pestañas: Articulos,
+// Compras, Servicios, Proveedores, Categorias). Articulos por dentro tiene
+// sus propias sub-tabs Productos/Ingredientes (ver CatalogView.vue), pero
+// Categorias es una pagina de nivel superior aca, igual que en el legacy -
+// no una sub-tab mas de Articulos.
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -28,13 +27,16 @@ const showServicesTab = computed(() => business.value?.can_access_services === t
 // prefijo de rutas 'catalog.' pero pertenece visualmente a la seccion
 // Servicios, no a Articulos - se resuelve la seccion activa explicito en
 // vez de un simple startsWith(prefijo) para no marcar las dos tabs a la vez.
-const activeSection = computed<'catalog' | 'purchases' | 'suppliers' | 'services' | null>(() => {
+const activeSection = computed<'catalog' | 'purchases' | 'suppliers' | 'services' | 'categories' | null>(() => {
   const name = route.name
   if (typeof name !== 'string') {
     return null
   }
   if (name === 'catalog.services.create' || name.startsWith('services.')) {
     return 'services'
+  }
+  if (name === 'catalog.categories.index') {
+    return 'categories'
   }
   if (name.startsWith('catalog.')) {
     return 'catalog'
@@ -85,6 +87,14 @@ const activeSection = computed<'catalog' | 'purchases' | 'suppliers' | 'services
     >
       <i class="pi pi-truck text-sm" />
       Proveedores
+    </RouterLink>
+    <RouterLink
+      :to="{ name: 'catalog.categories.index' }"
+      class="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors sm:px-4"
+      :class="activeSection === 'categories' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:bg-white/60'"
+    >
+      <i class="pi pi-tags text-sm" />
+      Categorías
     </RouterLink>
   </nav>
 </template>

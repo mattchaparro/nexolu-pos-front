@@ -49,6 +49,10 @@ export interface Product {
   // ProductResource los carga condicionalmente (whenLoaded).
   ingredients?: ProductIngredient[]
   has_recipe?: boolean
+  // Falso para venta-unica y para productos con receta: en ambos casos el
+  // stock no se puede escribir a mano (venta-unica es siempre 1/0, receta
+  // se calcula desde los ingredientes - ver ProductResource/StockService).
+  can_manage_stock?: boolean
 }
 
 // Insumo (IngredientResource) - modulo Catalogo, feature "ingredients".
