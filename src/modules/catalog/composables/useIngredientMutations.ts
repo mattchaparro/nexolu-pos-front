@@ -12,6 +12,7 @@ export function useIngredientMutations() {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['ingredients', 'admin'] })
     queryClient.invalidateQueries({ queryKey: ['ingredients', 'options'] })
+    queryClient.invalidateQueries({ queryKey: ['ingredients', 'summary'] })
   }
 
   const createMutation = useMutation({

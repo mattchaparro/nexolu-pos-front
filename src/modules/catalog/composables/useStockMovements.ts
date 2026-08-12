@@ -47,6 +47,9 @@ export function useStockMovements(
       queryClient.invalidateQueries({
         queryKey: kind.value === 'product' ? ['products', 'admin'] : ['ingredients', 'admin'],
       })
+      queryClient.invalidateQueries({
+        queryKey: kind.value === 'product' ? ['products', 'summary'] : ['ingredients', 'summary'],
+      })
       if (kind.value === 'product') {
         queryClient.invalidateQueries({ queryKey: ['products', 'catalog'] })
       } else {

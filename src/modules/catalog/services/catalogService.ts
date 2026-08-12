@@ -1,4 +1,5 @@
 import { httpClient } from '@/services/http/client'
+import type { IngredientsSummary, ProductsSummary } from '@/types/catalogSummary'
 import type { PaginatedResponse } from '@/types/pagination'
 import type {
   Ingredient,
@@ -42,6 +43,14 @@ export async function fetchProducts(params: FetchProductsParams = {}): Promise<P
   return data
 }
 
+// Cards de resumen (inventario bajo, sin stock, venta unica, con receta,
+// valor de inventario) - agregados sobre el catalogo completo, no la
+// pagina visible de fetchProducts.
+export async function fetchProductsSummary(): Promise<ProductsSummary> {
+  const { data } = await httpClient.get<ProductsSummary>('/products/summary')
+  return data
+}
+
 export async function fetchProduct(id: number): Promise<Product> {
   const { data } = await httpClient.get<Product>(`/products/${id}`)
   return data
@@ -81,6 +90,11 @@ export interface FetchIngredientsParams {
 // de fetchIngredientOptions, que trae todo para el picker de receta).
 export async function fetchIngredients(params: FetchIngredientsParams = {}): Promise<PaginatedResponse<Ingredient>> {
   const { data } = await httpClient.get<PaginatedResponse<Ingredient>>('/ingredients', { params })
+  return data
+}
+
+export async function fetchIngredientsSummary(): Promise<IngredientsSummary> {
+  const { data } = await httpClient.get<IngredientsSummary>('/ingredients/summary')
   return data
 }
 

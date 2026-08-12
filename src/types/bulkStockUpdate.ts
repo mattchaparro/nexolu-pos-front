@@ -15,6 +15,7 @@ export interface BulkUpdateIngredientItem {
   ingredient_id: number
   new_name?: string | null
   new_stock?: number | null
+  new_cost?: number | null
 }
 
 export interface BulkUpdateProductsResult {
@@ -27,4 +28,5 @@ export interface BulkUpdateProductsResult {
 export interface BulkUpdateIngredientsResult {
   name_count: number
   stock_count: number
+  cost_count: number
 }

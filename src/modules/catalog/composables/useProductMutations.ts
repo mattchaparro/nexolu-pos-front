@@ -13,6 +13,7 @@ export function useProductMutations() {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['products', 'admin'] })
     queryClient.invalidateQueries({ queryKey: ['products', 'catalog'] })
+    queryClient.invalidateQueries({ queryKey: ['products', 'summary'] })
   }
 
   const createMutation = useMutation({

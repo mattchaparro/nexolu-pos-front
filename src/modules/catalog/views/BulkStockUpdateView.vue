@@ -44,8 +44,10 @@ interface IngredientRow {
   name: string
   unit: string
   current_stock: number
+  current_cost: number
   new_name: string | null
   new_stock: number | null
+  new_cost: number | null
 }
 
 function toProductRow(product: Product): ProductRow {
@@ -69,8 +71,10 @@ function toIngredientRow(ingredient: Ingredient): IngredientRow {
     name: ingredient.name,
     unit: ingredient.unit,
     current_stock: Number(ingredient.stock),
+    current_cost: Number(ingredient.cost_price ?? 0),
     new_name: null,
     new_stock: null,
+    new_cost: null,
   }
 }
 
@@ -129,9 +133,9 @@ const filteredIngredients = computed(() => {
 
 // --- Edicion inline (doble clic + tab) ---
 type ProductField = 'name' | 'stock' | 'cost' | 'price'
-type IngredientField = 'name' | 'stock'
+type IngredientField = 'name' | 'stock' | 'cost'
 const PRODUCT_FIELDS: ProductField[] = ['name', 'stock', 'cost', 'price']
-const INGREDIENT_FIELDS: IngredientField[] = ['name', 'stock']
+const INGREDIENT_FIELDS: IngredientField[] = ['name', 'stock', 'cost']
 
 const editingId = ref<number | null>(null)
 const editingField = ref<string | null>(null)
@@ -144,7 +148,7 @@ function dispName(row: ProductRow | IngredientRow): string {
 function dispStock(row: ProductRow | IngredientRow): number {
   return row.new_stock ?? row.current_stock
 }
-function dispCost(row: ProductRow): number {
+function dispCost(row: ProductRow | IngredientRow): number {
   return row.new_cost ?? row.current_cost
 }
 function dispPrice(row: ProductRow): number {
@@ -178,7 +182,7 @@ function startEdit(row: ProductRow | IngredientRow, field: string): void {
   } else if (field === 'stock') {
     value = String(dispStock(row))
   } else if (field === 'cost') {
-    value = String(dispCost(row as ProductRow))
+    value = String(dispCost(row))
   } else {
     value = String(dispPrice(row as ProductRow))
   }
@@ -240,7 +244,12 @@ function applyIngredientEdit(row: IngredientRow, field: IngredientField, val: st
     return
   }
   const n = parseFloat(val.replace(/[^\d.]/g, ''))
-  row.new_stock = Number.isFinite(n) ? Math.max(0, n) : null
+  const parsed = Number.isFinite(n) ? Math.max(0, n) : null
+  if (field === 'cost') {
+    row.new_cost = parsed
+  } else {
+    row.new_stock = parsed
+  }
 }
 
 function cancelEdit(): void {
@@ -289,7 +298,8 @@ function productRowHasChange(row: ProductRow): boolean {
 function ingredientRowHasChange(row: IngredientRow): boolean {
   return (
     (row.new_name !== null && row.new_name !== row.name) ||
-    (row.new_stock !== null && row.new_stock !== row.current_stock)
+    (row.new_stock !== null && row.new_stock !== row.current_stock) ||
+    (row.new_cost !== null && row.new_cost !== row.current_cost)
   )
 }
 
@@ -329,12 +339,13 @@ async function submit(): Promise<void> {
         ingredient_id: row.ingredient_id,
         ...(row.new_name !== null && row.new_name !== row.name ? { new_name: row.new_name } : {}),
         ...(row.new_stock !== null && row.new_stock !== row.current_stock ? { new_stock: row.new_stock } : {}),
+        ...(row.new_cost !== null && row.new_cost !== row.current_cost ? { new_cost: row.new_cost } : {}),
       }))
       if (items.length === 0) {
         return
       }
       const result = await ingredientsMutation.mutateAsync({ items, notes: notes.value.trim() || undefined })
-      notify(`Ajuste aplicado: nombre en ${result.name_count} y stock en ${result.stock_count} insumo(s).`)
+      notify(summarizeIngredientResult(result))
     }
     notes.value = ''
   } catch (error) {
@@ -349,6 +360,14 @@ function summarizeProductResult(result: { name_count: number; stock_count: numbe
   if (result.cost_count > 0) parts.push(`costo en ${result.cost_count}`)
   if (result.price_count > 0) parts.push(`precio en ${result.price_count}`)
   return `Ajuste aplicado: ${parts.join(', ')} producto(s).`
+}
+
+function summarizeIngredientResult(result: { name_count: number; stock_count: number; cost_count: number }): string {
+  const parts: string[] = []
+  if (result.name_count > 0) parts.push(`nombre en ${result.name_count}`)
+  if (result.stock_count > 0) parts.push(`stock en ${result.stock_count}`)
+  if (result.cost_count > 0) parts.push(`costo en ${result.cost_count}`)
+  return `Ajuste aplicado: ${parts.join(', ')} insumo(s).`
 }
 
 function goBack(): void {
@@ -500,6 +519,7 @@ function goBack(): void {
             <th class="px-4 py-3 text-left">Insumo</th>
             <th class="w-20 px-4 py-3 text-center">Unidad</th>
             <th class="w-28 px-4 py-3 text-center">Stock</th>
+            <th class="w-32 px-4 py-3 text-center">Costo</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
@@ -538,9 +558,24 @@ function goBack(): void {
               />
               <span v-else class="font-semibold text-slate-800">{{ dispStock(row) }}</span>
             </td>
+            <td class="cursor-default select-none px-4 py-2.5 text-center" @dblclick="startEdit(row, 'cost')">
+              <input
+                v-if="isEditing(row, 'cost')"
+                ref="editInputRef"
+                v-model="editValue"
+                type="text"
+                inputmode="numeric"
+                class="w-full rounded-lg border border-indigo-500 px-2 py-1 text-right tabular-nums outline-none focus:ring-2 focus:ring-indigo-200"
+                @blur="commitEdit"
+                @keydown.enter.prevent="commitEdit"
+                @keydown.escape="cancelEdit"
+                @keydown.tab="handleTab($event, row, 'cost')"
+              />
+              <span v-else class="tabular-nums text-slate-700">{{ formatCop(dispCost(row)) }}</span>
+            </td>
           </tr>
           <tr v-if="!filteredIngredients.length">
-            <td colspan="3" class="px-4 py-10 text-center text-sm text-slate-400">Sin resultados.</td>
+            <td colspan="4" class="px-4 py-10 text-center text-sm text-slate-400">Sin resultados.</td>
           </tr>
         </tbody>
       </table>

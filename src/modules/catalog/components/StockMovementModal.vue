@@ -24,10 +24,15 @@ export interface StockSubject {
   unit?: string
 }
 
-const props = defineProps<{
-  modelValue: boolean
-  subject: StockSubject | null
-}>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: boolean
+    subject: StockSubject | null
+    /** Tipo preseleccionado al abrir (ej. accesos rapidos "Agregar"/"Retirar" de la tabla). */
+    initialType?: StockMovementType
+  }>(),
+  { initialType: 'entry' },
+)
 
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
@@ -46,7 +51,7 @@ const notes = ref('')
 const formError = ref<string | null>(null)
 
 function resetForm(): void {
-  type.value = 'entry'
+  type.value = props.initialType
   quantity.value = null
   reasonId.value = null
   unitCost.value = null
