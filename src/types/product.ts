@@ -77,6 +77,20 @@ export interface ProductCategoryPayload {
   parent_id?: number | null
 }
 
+// Payload de Store/UpdateIngredientRequest. "stock" solo se envia al crear
+// (inicial) - despues de eso el stock se ajusta con movimientos, igual que
+// Product (aunque el backend tecnicamente permite pisarlo via update, el
+// formulario de Catalogo no expone ese campo en edicion a proposito, para
+// no perder la trazabilidad de StockMovement).
+export interface IngredientPayload {
+  name: string
+  unit: string
+  stock?: number
+  min_stock?: number | null
+  cost_price?: number | null
+  is_active?: boolean
+}
+
 // Payloads que esperan Store/UpdateProductRequest en nexolu-pos-api.
 export interface ProductPayload {
   name: string

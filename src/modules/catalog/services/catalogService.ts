@@ -2,6 +2,7 @@ import { httpClient } from '@/services/http/client'
 import type { PaginatedResponse } from '@/types/pagination'
 import type {
   Ingredient,
+  IngredientPayload,
   Product,
   ProductCategory,
   ProductCategoryPayload,
@@ -69,4 +70,30 @@ export async function fetchIngredientOptions(): Promise<Ingredient[]> {
     params: { per_page: 200 },
   })
   return data.data
+}
+
+export interface FetchIngredientsParams {
+  page?: number
+  per_page?: number
+}
+
+// Listado paginado para la pestaña Ingredientes del Catalogo (a diferencia
+// de fetchIngredientOptions, que trae todo para el picker de receta).
+export async function fetchIngredients(params: FetchIngredientsParams = {}): Promise<PaginatedResponse<Ingredient>> {
+  const { data } = await httpClient.get<PaginatedResponse<Ingredient>>('/ingredients', { params })
+  return data
+}
+
+export async function createIngredient(payload: IngredientPayload): Promise<Ingredient> {
+  const { data } = await httpClient.post<Ingredient>('/ingredients', payload)
+  return data
+}
+
+export async function updateIngredient(id: number, payload: Partial<IngredientPayload>): Promise<Ingredient> {
+  const { data } = await httpClient.put<Ingredient>(`/ingredients/${id}`, payload)
+  return data
+}
+
+export async function deleteIngredient(id: number): Promise<void> {
+  await httpClient.delete(`/ingredients/${id}`)
 }

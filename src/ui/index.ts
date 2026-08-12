@@ -5,6 +5,10 @@ export type { NxButtonSize, NxButtonVariant } from './NxButton.vue'
 
 export { default as NxCard } from './NxCard.vue'
 
+export { default as NxColumn } from './NxColumn.vue'
+
+export { default as NxDataTable } from './NxDataTable.vue'
+
 export { default as NxInput } from './NxInput.vue'
 export type { NxInputSize } from './NxInput.vue'
 
