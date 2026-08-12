@@ -4,8 +4,9 @@
 // separadas con una barra de tabs persistente). A diferencia del legacy no
 // incluye Articulos/Categorias como tabs propias aca: esas viven como
 // sub-tabs internas de CatalogView (ver ese archivo) - esta franja es solo
-// para saltar entre las secciones que SI son paginas separadas
-// (Catalogo, Compras, Proveedores).
+// para saltar entre las secciones que SI son paginas separadas (Catalogo,
+// Compras, Proveedores). Servicios queda fuera por ahora, se agrega cuando
+// ese modulo exista.
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -21,8 +22,8 @@ const { hasPermission } = usePermissions()
 // viene computado del modelo, no se replica la logica de feature_flags/plan.
 const showPurchasesTabs = computed(() => business.value?.can_access_purchases === true && hasPermission('purchases.manage'))
 
-function isActive(routeName: string): boolean {
-  return route.name === routeName
+function isActive(prefix: string): boolean {
+  return typeof route.name === 'string' && route.name.startsWith(prefix)
 }
 </script>
 
@@ -31,16 +32,25 @@ function isActive(routeName: string): boolean {
     <RouterLink
       :to="{ name: 'catalog.index' }"
       class="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors sm:px-4"
-      :class="isActive('catalog.index') ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:bg-white/60'"
+      :class="isActive('catalog.') ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:bg-white/60'"
     >
       <i class="pi pi-box text-sm" />
       Artículos
     </RouterLink>
     <RouterLink
       v-if="showPurchasesTabs"
+      :to="{ name: 'purchases.index' }"
+      class="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors sm:px-4"
+      :class="isActive('purchases.') ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:bg-white/60'"
+    >
+      <i class="pi pi-shopping-cart text-sm" />
+      Compras
+    </RouterLink>
+    <RouterLink
+      v-if="showPurchasesTabs"
       :to="{ name: 'suppliers.index' }"
       class="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors sm:px-4"
-      :class="isActive('suppliers.index') ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:bg-white/60'"
+      :class="isActive('suppliers.') ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:bg-white/60'"
     >
       <i class="pi pi-truck text-sm" />
       Proveedores

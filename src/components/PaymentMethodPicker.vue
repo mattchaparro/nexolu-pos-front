@@ -1,7 +1,10 @@
 <script setup lang="ts">
+// Compartido entre modulos (Vender/Cuentas abiertas via PaymentModal,
+// Compras via PurchasePaymentModal) - promovido desde modules/sales/ a
+// components/ cuando dejo de ser exclusivo de Vender, ver README.md
+// "Modulos independientes".
 import type { BusinessPaymentMethod } from '@/types/business'
-
-import { resolvePaymentMethodIcon } from '../support/paymentMethodIcon'
+import { resolvePaymentMethodIcon } from '@/utils/paymentMethodIcon'
 
 defineProps<{
   methods: BusinessPaymentMethod[]

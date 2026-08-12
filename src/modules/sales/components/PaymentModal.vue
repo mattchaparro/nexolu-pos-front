@@ -24,6 +24,7 @@
 // flujos.
 import { computed, ref, watch } from 'vue'
 
+import PaymentMethodPicker from '@/components/PaymentMethodPicker.vue'
 import type { Business } from '@/types/business'
 import type { Sale } from '@/types/sale'
 import {
@@ -44,7 +45,6 @@ import { isCashPaymentMethodId, isCreditPaymentMethodId } from '@/utils/paymentM
 
 import type { CloseOpenTabPayload, PaymentSplitInput, RecordPartialPaymentPayload } from '../../open-tabs/types'
 import { round2 } from '../support/saleMath'
-import PaymentMethodPicker from './PaymentMethodPicker.vue'
 
 const props = withDefaults(
   defineProps<{

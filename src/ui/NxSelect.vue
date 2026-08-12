@@ -26,6 +26,8 @@ const props = withDefaults(
     required?: boolean
     size?: NxInputSize
     id?: string
+    /** Buscador dentro del dropdown - para listas largas (ej. productos/insumos en una linea de compra). */
+    filter?: boolean
   }>(),
   {
     label: undefined,
@@ -36,6 +38,7 @@ const props = withDefaults(
     required: false,
     size: 'md',
     id: undefined,
+    filter: false,
   },
 )
 
@@ -71,6 +74,7 @@ const fontSizeStyle = { fontSize: '16px' }
         :invalid="isInvalid"
         :size="primeSize"
         :style="fontSizeStyle"
+        :filter="filter"
         fluid
         @update:model-value="(value) => emit('update:modelValue', value)"
       />

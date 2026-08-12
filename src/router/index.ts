@@ -75,6 +75,21 @@ const router = createRouter({
           name: 'suppliers.index',
           component: () => import('@/modules/suppliers/views/SuppliersView.vue'),
         },
+        {
+          path: 'compras',
+          name: 'purchases.index',
+          component: () => import('@/modules/purchases/views/PurchasesView.vue'),
+        },
+        {
+          path: 'compras/nueva',
+          name: 'purchases.create',
+          component: () => import('@/modules/purchases/views/PurchaseFormView.vue'),
+        },
+        {
+          path: 'compras/:id',
+          name: 'purchases.show',
+          component: () => import('@/modules/purchases/views/PurchaseShowView.vue'),
+        },
       ],
     },
   ],
