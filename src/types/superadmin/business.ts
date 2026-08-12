@@ -21,6 +21,7 @@ export interface SuperAdminBusiness {
   subscription_status: SubscriptionStatus
   days_remaining: number
   custom_price_cop: number | null
+  feature_flags: Record<string, boolean> | null
   users_count?: number
   products_count?: number
   sales_count?: number

@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 
 import { httpClient } from '@/services/http/client'
 import { tokenStorage } from '@/services/http/tokenStorage'
+import { queryClient } from '@/services/query/queryClient'
 import type { AuthResponse, LoginCredentials, User } from '@/types/auth'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -15,13 +16,22 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => Boolean(token.value))
   const isImpersonating = computed(() => Boolean(impersonatorToken.value))
 
+  // Los queryKey (['business'], ['products','admin',...], etc.) no estan
+  // scopeados por negocio/usuario - son el mismo cache en memoria durante
+  // toda la vida de la SPA. Sin limpiarlo en cada cambio de identidad, un
+  // super admin que impersona el negocio A y despues el negocio B podia
+  // seguir viendo el menu/feature-gating de A (cache todavia "fresco" por
+  // staleTime) hasta que algo forzara un refetch - el bug real reportado
+  // ("veo modulos que se que el negocio no tiene habilitados").
   function setSession(data: AuthResponse): void {
+    queryClient.clear()
     token.value = data.token
     user.value = data.user
     tokenStorage.set(data.token)
   }
 
   function clearSession(): void {
+    queryClient.clear()
     token.value = null
     user.value = null
     tokenStorage.clear()
@@ -72,6 +82,7 @@ export const useAuthStore = defineStore('auth', () => {
     } catch {
       // El token de impersonacion puede ya haber expirado - no bloquea volver.
     }
+    queryClient.clear()
     impersonatorToken.value = null
     tokenStorage.clearImpersonator()
     token.value = original
