@@ -29,6 +29,8 @@ export interface Business {
   // Idem, pero para el feature flag 'services' (pestaña Servicios del hub
   // de Catalogo y el modulo de Ordenes de servicio) - ver BusinessResource.
   can_access_services: boolean
+  // Agenda/citas - feature independiente de 'services' (ver BusinessResource).
+  can_access_scheduling: boolean
   // Idem, para el feature flag 'layaway' (modulo Apartados).
   can_access_layaways: boolean
 }

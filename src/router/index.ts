@@ -209,7 +209,7 @@ const router = createRouter({
           path: 'agenda',
           name: 'appointments.index',
           component: () => import('@/modules/appointments/views/AgendaView.vue'),
-          meta: { requiresFeature: 'services', requiresPermission: 'appointments.manage' },
+          meta: { requiresFeature: 'scheduling', requiresPermission: 'appointments.manage' },
         },
       ],
     },

@@ -26,10 +26,15 @@ export function useNavItems() {
   const { data: business } = useBusiness()
   const { hasPermission } = usePermissions()
 
-  // Servicios y Agenda comparten el mismo gate en el backend
-  // (feature:services + permission:appointments.manage, ver routes/api.php).
-  const showServicesAndAgenda = computed(
+  // Servicios (feature:services) y Agenda (feature:scheduling) son features
+  // independientes del negocio, ambos con el mismo permiso de empleado
+  // (permission:appointments.manage, ver routes/api.php) - un negocio puede
+  // tener uno sin el otro (ej. reparaciones a domicilio sin calendario).
+  const showServices = computed(
     () => business.value?.can_access_services === true && hasPermission('appointments.manage'),
+  )
+  const showAgenda = computed(
+    () => business.value?.can_access_scheduling === true && hasPermission('appointments.manage'),
   )
   const showLayaways = computed(() => business.value?.can_access_layaways === true && hasPermission('layaways.manage'))
 
@@ -37,10 +42,10 @@ export function useNavItems() {
     adminNavItems
       .filter((item) => !item.featureKey || hasFeature(business.value, item.featureKey))
       .map((item) => {
-        if (item.label === 'Servicios' && showServicesAndAgenda.value) {
+        if (item.label === 'Servicios' && showServices.value) {
           return { ...item, routeName: 'service-orders.index', disabled: false }
         }
-        if (item.label === 'Agenda' && showServicesAndAgenda.value) {
+        if (item.label === 'Agenda' && showAgenda.value) {
           return { ...item, routeName: 'appointments.index', disabled: false }
         }
         if (item.label === 'Apartados' && showLayaways.value) {
