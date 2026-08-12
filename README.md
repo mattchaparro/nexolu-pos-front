@@ -48,7 +48,9 @@ Query, no en stores.
 
 Ninguna pantalla importa `primevue` directamente. Todo pasa por `src/ui`
 (`NxButton`, `NxInput`, `NxInputNumber`, `NxSelect`, `NxCard`, `NxTabs` +
-`NxTabList`/`NxTab`/`NxTabPanels`/`NxTabPanel`, `NxToggleButton`, ...): por
+`NxTabList`/`NxTab`/`NxTabPanels`/`NxTabPanel`, `NxToggleButton`,
+`NxDataTable`/`NxColumn` -listas paginadas server-side, ej. Productos e
+Ingredientes en Catalogo-, ...): por
 dentro usan PrimeVue con un tema propio (Aura + indigo de marca,
 `src/theme/nexoluPreset.ts`), pero cada wrapper decide que props expone y
 aporta el resto del estilo con Tailwind. Esto desacopla la app de PrimeVue
@@ -145,11 +147,13 @@ npm run build         # type-check + build de produccion
 - [x] Modulo Catalogo, fase 1 (categorias con subcategorias de un nivel +
       selector de icono; productos con precio/costo, tipo - servicio/venta
       unica/controla inventario -, receta de insumos cuando la feature
-      "ingredients" esta activa). Insumos (CRUD propio) y movimientos de
-      stock quedan para una fase 2 - el backend ya esta listo
-      (`ingredients`, `ingredient-stock-movements`) pero falta el endpoint
-      `GET /stock-movement-reasons` para el dropdown de motivos del
-      formulario de movimientos - ver `docs/BACKEND_READINESS.md`.
+      "ingredients" esta activa)
+- [x] Modulo Catalogo, fase 2 (Articulos con sub-pestañas Productos/
+      Ingredientes; CRUD de insumos; ajuste de stock unificado
+      -entrada/salida/ajuste, con motivo obligatorio en salidas y
+      ultimos movimientos- para productos e insumos; listas de
+      Productos/Ingredientes migradas a `NxDataTable`/`NxColumn` con
+      paginacion server-side)
 - [ ] Resto de modulos: customers, expenses, cash, reports, settings
 
 Antes de arrancar el siguiente modulo, revisar `docs/BACKEND_READINESS.md`:
