@@ -57,7 +57,11 @@ const onSubmit = handleSubmit(async (values) => {
       password: result.data.password,
       device_name: 'nexolu-pos-front',
     })
-    await router.push({ name: 'dashboard' })
+    // Un usuario superadmin no tiene business_id (ver DatabaseSeeder) - el
+    // dashboard de negocio le rompe (fetches business-scoped sin negocio),
+    // asi que entra directo a su propio panel.
+    const destination = authStore.user?.roles?.includes('superadmin') ? 'superadmin.workflows.index' : 'dashboard'
+    await router.push({ name: destination })
   } catch (error) {
     submitError.value =
       isAxiosError<{ message?: string }>(error) && error.response?.status === 401

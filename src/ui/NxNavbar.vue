@@ -21,6 +21,7 @@ const emit = defineEmits<{ logout: [] }>()
   <header class="flex h-16 items-center justify-between bg-indigo-900 px-4 sm:px-6">
     <img :src="logo" alt="Nexolú POS" class="h-9 w-auto rounded-lg bg-white px-2 py-1 lg:hidden" />
     <div class="ml-auto flex items-center gap-3">
+      <slot name="actions" />
       <span class="hidden text-sm text-white/80 sm:inline">{{ userName }}</span>
       <button
         type="button"

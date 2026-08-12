@@ -147,17 +147,54 @@ const router = createRouter({
         },
       ],
     },
+    {
+      // Panel aparte, no una seccion del menu de negocio: mismo enfoque que
+      // el legacy (Sidebar.vue cambia todo el menu segun el rol en vez de
+      // mezclar items de super admin en el de negocio, ver menu/superadmin.json).
+      path: '/superadmin',
+      component: () => import('@/layouts/SuperAdminLayout.vue'),
+      meta: { requiresAuth: true, requiresSuperAdmin: true },
+      children: [
+        {
+          path: 'workflows',
+          name: 'superadmin.workflows.index',
+          component: () => import('@/modules/superadmin-workflows/views/SuperAdminWorkflowsView.vue'),
+        },
+        {
+          path: 'workflows/:id',
+          name: 'superadmin.workflows.show',
+          component: () => import('@/modules/superadmin-workflows/views/SuperAdminWorkflowShowView.vue'),
+        },
+      ],
+    },
   ],
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return { name: 'login' }
   }
 
+  // auth.user solo se llena en memoria al hacer login() - una recarga de
+  // pagina conserva el token (localStorage) pero pierde el store de Pinia,
+  // asi que sin esto cualquier guard/gate basado en auth.user (roles,
+  // permisos) fallaria en falso tras un F5 con sesion todavia valida.
+  if (to.meta.requiresAuth && auth.isAuthenticated && !auth.user) {
+    try {
+      await auth.fetchCurrentUser()
+    } catch {
+      auth.clearSession()
+      return { name: 'login' }
+    }
+  }
+
   if (to.name === 'login' && auth.isAuthenticated) {
+    return { name: 'dashboard' }
+  }
+
+  if (to.meta.requiresSuperAdmin && !auth.user?.roles?.includes('superadmin')) {
     return { name: 'dashboard' }
   }
 })
