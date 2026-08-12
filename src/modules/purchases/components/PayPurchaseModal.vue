@@ -93,8 +93,8 @@ async function submit(): Promise<void> {
 
     <template #footer>
       <div class="flex gap-2">
-        <NxButton variant="outline" class="flex-1" @click="emit('update:modelValue', false)">Cancelar</NxButton>
-        <NxButton class="flex-[2]" :disabled="!canSubmit" :loading="payMutation.isPending.value" @click="submit">
+        <NxButton variant="outline" class="flex-none" @click="emit('update:modelValue', false)">Cancelar</NxButton>
+        <NxButton class="flex-1" :disabled="!canSubmit" :loading="payMutation.isPending.value" @click="submit">
           Confirmar abono
         </NxButton>
       </div>

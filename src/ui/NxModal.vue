@@ -49,3 +49,19 @@ const sizeClasses: Record<'sm' | 'md' | 'lg', string> = {
     </template>
   </PrimeDialog>
 </template>
+
+<style scoped>
+/* PrimeVue le pone autofocus al boton de cerrar cuando el modal no tiene
+   ningun otro elemento [autofocus] (ver Dialog.vue: focus() cae al close
+   button si no encuentra otro foco). Eso deja el anillo de foco por
+   defecto (negro/gris, no viene del tema de Nexolu) visible apenas se
+   abre cualquier modal - se ve como un circulo alrededor de la X aunque
+   nadie haya tocado nada todavia. Un anillo indigo sutil, consistente con
+   el resto del tema, en vez de ocultarlo del todo (rompe accesibilidad
+   de teclado).
+*/
+:deep(.p-dialog-close-button:focus-visible) {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--p-primary-200);
+}
+</style>
