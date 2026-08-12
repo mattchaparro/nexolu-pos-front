@@ -6,6 +6,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import ReceiptActionsModal from '@/components/ReceiptActionsModal.vue'
 import StageBadge from '@/components/StageBadge.vue'
 import { useServiceWorkflow } from '@/composables/useServiceWorkflow'
 import { useStaffOptions } from '@/composables/useStaffOptions'
@@ -32,6 +33,7 @@ const stageOptions = computed(() => workflowQuery.data.value?.stages ?? [])
 const { cancelMutation, setStageMutation } = useServiceOrderMutations()
 const actionError = ref<string | null>(null)
 const payModalOpen = ref(false)
+const receiptModalOpen = ref(false)
 
 async function changeStage(stageId: number): Promise<void> {
   if (!order.value || stageId === order.value.stage_id) {
@@ -137,10 +139,13 @@ function formatDateTime(value: string): string {
         @update:model-value="changeStage($event as number)"
       />
 
-      <div v-if="order.status !== 'cancelled'" class="flex flex-wrap gap-2">
-        <NxButton v-if="order.status !== 'paid'" @click="payModalOpen = true">Registrar abono</NxButton>
-        <NxButton variant="outline" @click="router.push({ name: 'service-orders.edit', params: { id: order.id } })">Editar</NxButton>
-        <NxButton variant="outline" :loading="cancelMutation.isPending.value" @click="cancelOrder">Cancelar orden</NxButton>
+      <div class="flex flex-wrap gap-2">
+        <template v-if="order.status !== 'cancelled'">
+          <NxButton v-if="order.status !== 'paid'" @click="payModalOpen = true">Registrar abono</NxButton>
+          <NxButton variant="outline" @click="router.push({ name: 'service-orders.edit', params: { id: order.id } })">Editar</NxButton>
+          <NxButton variant="outline" :loading="cancelMutation.isPending.value" @click="cancelOrder">Cancelar orden</NxButton>
+        </template>
+        <NxButton variant="outline" icon="pi pi-receipt" @click="receiptModalOpen = true">Comprobante</NxButton>
       </div>
 
       <div v-if="order.items.length" class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
@@ -194,6 +199,14 @@ function formatDateTime(value: string): string {
       </div>
 
       <PayServiceOrderModal v-model="payModalOpen" :order="order" />
+      <ReceiptActionsModal
+        v-model="receiptModalOpen"
+        entity-type="service-order"
+        :entity-id="order.id"
+        document-title="Comprobante de orden de servicio"
+        :default-phone="order.client?.phone ?? null"
+        :default-email="order.client?.email ?? null"
+      />
     </template>
   </div>
 </template>

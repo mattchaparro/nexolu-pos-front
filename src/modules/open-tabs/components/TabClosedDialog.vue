@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+
 import type { Sale } from '@/types/sale'
 import { NxButton, NxModal } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
+
+import ReceiptActionsModal from '@/components/ReceiptActionsModal.vue'
 
 defineProps<{
   modelValue: boolean
@@ -9,6 +13,8 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
+
+const receiptModalOpen = ref(false)
 </script>
 
 <template>
@@ -28,7 +34,19 @@ const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
     </div>
 
     <template #footer>
-      <NxButton class="w-full" size="lg" @click="emit('update:modelValue', false)">Listo</NxButton>
+      <div class="flex w-full gap-2">
+        <NxButton v-if="sale" variant="outline" icon="pi pi-receipt" @click="receiptModalOpen = true">Comprobante</NxButton>
+        <NxButton class="flex-1" size="lg" @click="emit('update:modelValue', false)">Listo</NxButton>
+      </div>
     </template>
   </NxModal>
+
+  <ReceiptActionsModal
+    v-if="sale"
+    v-model="receiptModalOpen"
+    entity-type="sale"
+    :entity-id="sale.id"
+    document-title="Recibo de venta"
+    :default-phone="sale.customer_phone"
+  />
 </template>

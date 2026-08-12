@@ -5,6 +5,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import ReceiptActionsModal from '@/components/ReceiptActionsModal.vue'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import { NxButton, NxPageHeader } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
@@ -28,6 +29,7 @@ const actionError = ref<string | null>(null)
 
 const payModalOpen = ref(false)
 const editItemsModalOpen = ref(false)
+const receiptModalOpen = ref(false)
 
 async function completeLayaway(): Promise<void> {
   if (!layaway.value) {
@@ -129,10 +131,12 @@ function formatDateTime(value: string): string {
           </NxButton>
           <NxButton variant="outline" @click="editItemsModalOpen = true">Cambiar productos</NxButton>
           <NxButton variant="outline" :loading="cancelMutation.isPending.value" @click="cancelLayaway">Cancelar apartado</NxButton>
+          <NxButton variant="outline" icon="pi pi-receipt" @click="receiptModalOpen = true">Comprobante</NxButton>
         </div>
       </div>
       <div v-else-if="layaway.status === 'completed'" class="flex gap-2">
         <NxButton variant="outline" :loading="cancelMutation.isPending.value" @click="cancelLayaway">Cancelar apartado</NxButton>
+        <NxButton variant="outline" icon="pi pi-receipt" @click="receiptModalOpen = true">Comprobante</NxButton>
       </div>
 
       <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
@@ -182,6 +186,13 @@ function formatDateTime(value: string): string {
 
       <AddLayawayPaymentModal v-model="payModalOpen" :layaway="layaway" />
       <EditLayawayItemsModal v-model="editItemsModalOpen" :layaway="layaway" />
+      <ReceiptActionsModal
+        v-model="receiptModalOpen"
+        entity-type="layaway"
+        :entity-id="layaway.id"
+        document-title="Comprobante de apartado"
+        :default-phone="layaway.customer_phone"
+      />
     </template>
   </div>
 </template>
