@@ -71,6 +71,16 @@ const router = createRouter({
           meta: { stockSubjectKind: 'ingredient' },
         },
         {
+          path: 'servicios',
+          name: 'services.index',
+          component: () => import('@/modules/catalog/views/ServicesView.vue'),
+        },
+        {
+          path: 'catalogo/servicios/nuevo',
+          name: 'catalog.services.create',
+          component: () => import('@/modules/catalog/views/ProductFormView.vue'),
+        },
+        {
           path: 'proveedores',
           name: 'suppliers.index',
           component: () => import('@/modules/suppliers/views/SuppliersView.vue'),

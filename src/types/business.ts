@@ -26,4 +26,7 @@ export interface Business {
   // Computado en el backend (Business::canAccessPurchases()) - no replicar
   // la logica de feature_flags/plan aca, ver BusinessResource.
   can_access_purchases: boolean
+  // Idem, pero para el feature flag 'services' (pestaña Servicios del hub
+  // de Catalogo) - ver BusinessResource.
+  can_access_services: boolean
 }

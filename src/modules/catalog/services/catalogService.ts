@@ -1,5 +1,5 @@
 import { httpClient } from '@/services/http/client'
-import type { IngredientsSummary, ProductsSummary } from '@/types/catalogSummary'
+import type { IngredientsSummary, ProductsSummary, ServicesSummary } from '@/types/catalogSummary'
 import type { PaginatedResponse } from '@/types/pagination'
 import type {
   Ingredient,
@@ -36,6 +36,10 @@ export interface FetchProductsParams {
   search?: string
   page?: number
   per_page?: number
+  // Sin definir: trae bienes y servicios juntos (lo necesita Vender). false
+  // = solo bienes (Catalogo, Compras, edicion masiva), true = solo
+  // servicios (pestaña Servicios) - ver ProductController::index().
+  is_service?: boolean
 }
 
 export async function fetchProducts(params: FetchProductsParams = {}): Promise<PaginatedResponse<Product>> {
@@ -48,6 +52,14 @@ export async function fetchProducts(params: FetchProductsParams = {}): Promise<P
 // pagina visible de fetchProducts.
 export async function fetchProductsSummary(): Promise<ProductsSummary> {
   const { data } = await httpClient.get<ProductsSummary>('/products/summary')
+  return data
+}
+
+// Cards de resumen de la pestaña Servicios (total, precio variable vs.
+// fijo) - solo se llama cuando business.can_access_services es true (la
+// ruta esta detras de middleware('feature:services')).
+export async function fetchServicesSummary(): Promise<ServicesSummary> {
+  const { data } = await httpClient.get<ServicesSummary>('/products/services-summary')
   return data
 }
 

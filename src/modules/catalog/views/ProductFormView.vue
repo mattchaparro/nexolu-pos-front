@@ -27,6 +27,10 @@ const { data: business } = useBusiness()
 
 const productId = computed(() => (route.params.id ? Number(route.params.id) : null))
 const isEdit = computed(() => productId.value !== null)
+// Entrar por "Nuevo servicio" fuerza is_service=true y bloquea el toggle -
+// al editar, is_service ya lo trae el producto cargado (mismo formulario
+// para ambos casos, la ruta solo importa para una creacion nueva).
+const forcedService = computed(() => !isEdit.value && route.name === 'catalog.services.create')
 
 const categoriesQuery = useCategories()
 const productQuery = useProduct(productId)
@@ -53,7 +57,7 @@ const stock = ref<number | null>(0)
 const lowStockAlertThreshold = ref<number | null>(null)
 const trackStock = ref(true)
 const isSingleSale = ref(false)
-const isService = ref(false)
+const isService = ref(forcedService.value)
 const priceVariesAtSale = ref(false)
 const durationMinutes = ref<number | null>(null)
 const sku = ref('')
@@ -133,7 +137,15 @@ const recipeCost = computed(() => {
 })
 
 const isSaving = computed(() => createMutation.isPending.value || updateMutation.isPending.value)
-const pageTitle = computed(() => (isEdit.value ? 'Editar producto' : 'Nuevo producto'))
+// Un servicio vuelve a la pestaña Servicios, no a Catalogo - isService ya
+// refleja el producto cargado en edicion, o la ruta forzada en creacion.
+const returnRoute = computed(() => ({ name: isService.value ? 'services.index' : 'catalog.index' }))
+const pageTitle = computed(() => {
+  if (isEdit.value) {
+    return isService.value ? 'Editar servicio' : 'Editar producto'
+  }
+  return isService.value ? 'Nuevo servicio' : 'Nuevo producto'
+})
 
 async function submit(): Promise<void> {
   fieldErrors.value = {}
@@ -179,7 +191,7 @@ async function submit(): Promise<void> {
       await createMutation.mutateAsync(payload)
       notify('Producto creado')
     }
-    router.push({ name: 'catalog.index' })
+    router.push(returnRoute.value)
   } catch (error) {
     const fields = extractFieldErrors(error)
     if (Object.keys(fields).length > 0) {
@@ -194,10 +206,10 @@ async function submit(): Promise<void> {
 <template>
   <div class="flex flex-col gap-4 pb-20 lg:pb-0">
     <div class="flex items-center gap-2">
-      <button type="button" class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" @click="router.push({ name: 'catalog.index' })">
+      <button type="button" class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" @click="router.push(returnRoute)">
         <i class="pi pi-arrow-left" />
       </button>
-      <NxPageHeader :title="pageTitle" icon="pi pi-box" compact />
+      <NxPageHeader :title="pageTitle" :icon="isService ? 'pi pi-wrench' : 'pi pi-box'" compact />
     </div>
 
     <p v-if="formError" class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ formError }}</p>
@@ -233,17 +245,25 @@ async function submit(): Promise<void> {
         <div class="rounded-xl border border-slate-200 bg-white p-4">
           <p class="mb-3 text-sm font-semibold text-slate-700">Precio y costo</p>
           <div class="flex flex-col gap-3">
-            <NxInputNumber v-model="price" label="Precio de venta" :min="0" required :error="fieldErrors.price" />
             <NxInputNumber
-              :model-value="recipeCost ?? costPrice"
-              label="Costo"
+              v-model="price"
+              :label="priceVariesAtSale ? 'Precio de referencia' : 'Precio de venta'"
               :min="0"
-              :disabled="recipeCost !== null"
-              @update:model-value="costPrice = $event"
+              required
+              :error="fieldErrors.price"
             />
-            <p v-if="recipeCost !== null" class="-mt-2 text-[11px] text-slate-400">
-              Se calcula automático según la receta de insumos.
-            </p>
+            <template v-if="!isService">
+              <NxInputNumber
+                :model-value="recipeCost ?? costPrice"
+                label="Costo"
+                :min="0"
+                :disabled="recipeCost !== null"
+                @update:model-value="costPrice = $event"
+              />
+              <p v-if="recipeCost !== null" class="-mt-2 text-[11px] text-slate-400">
+                Se calcula automático según la receta de insumos.
+              </p>
+            </template>
             <NxToggleButton v-model="priceVariesAtSale" label="Precio varía al vender" icon="pi pi-sliders-h" />
           </div>
         </div>
@@ -254,15 +274,17 @@ async function submit(): Promise<void> {
           <p class="mb-3 text-sm font-semibold text-slate-700">Tipo de producto</p>
           <div class="flex flex-col gap-3">
             <div class="grid grid-cols-2 gap-2">
-              <NxToggleButton v-model="isService" label="Es un servicio" icon="pi pi-wrench" />
-              <NxToggleButton v-model="isSingleSale" label="Venta única" icon="pi pi-verified" :disabled="isService" />
-              <NxToggleButton
-                v-model="trackStock"
-                label="Controla inventario"
-                icon="pi pi-box"
-                :disabled="isService || isSingleSale || ingredients.length > 0"
-              />
-              <NxToggleButton v-model="isActive" label="Producto activo" icon="pi pi-check-circle" />
+              <NxToggleButton v-model="isService" label="Es un servicio" icon="pi pi-wrench" :disabled="forcedService" />
+              <template v-if="!isService">
+                <NxToggleButton v-model="isSingleSale" label="Venta única" icon="pi pi-verified" />
+                <NxToggleButton
+                  v-model="trackStock"
+                  label="Controla inventario"
+                  icon="pi pi-box"
+                  :disabled="isSingleSale || ingredients.length > 0"
+                />
+              </template>
+              <NxToggleButton v-model="isActive" :label="isService ? 'Servicio activo' : 'Producto activo'" icon="pi pi-check-circle" />
             </div>
             <NxInputNumber
               v-if="isService"

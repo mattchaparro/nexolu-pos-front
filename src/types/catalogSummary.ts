@@ -16,3 +16,10 @@ export interface IngredientsSummary {
   active_count: number
   low_stock_count: number
 }
+
+// Refleja GET /products/services-summary (ProductController::servicesSummary()).
+export interface ServicesSummary {
+  total_count: number
+  variable_price_count: number
+  fixed_price_count: number
+}
