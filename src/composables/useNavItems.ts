@@ -10,9 +10,15 @@ import { usePermissions } from './usePermissions'
 
 // adminNavItems es la lista estatica portada del menu legacy (ver ese
 // archivo) - la mayoria queda disabled hasta que exista el modulo. Esta
-// capa habilita en vivo los items ya migrados que ademas dependen de un
-// feature flag y/o permiso del negocio, sin tocar la lista base. Mismos
-// gates que routes/api.php en la API y que el meta requiresFeature/
+// capa hace 2 cosas sin tocar la lista base:
+//  1. Saca del menu por completo cualquier item cuyo featureKey el
+//     negocio no tenga habilitado - grisado ("proximamente") es solo para
+//     un modulo que SI esta en su plan pero que el frontend aun no
+//     construyo; un feature que el negocio ni siquiera contrato no
+//     deberia aparecer ni grisado.
+//  2. Habilita en vivo los items ya migrados que ademas dependen de un
+//     permiso del negocio (Servicios/Agenda/Apartados).
+// Mismos gates que routes/api.php en la API y que el meta requiresFeature/
 // requiresPermission del router (ver router/index.ts) - la nav solo
 // decide que MOSTRAR, el guard del router y el backend siguen siendo la
 // autoridad real si alguien escribe la URL a mano.
@@ -26,23 +32,21 @@ export function useNavItems() {
     () => business.value?.can_access_services === true && hasPermission('appointments.manage'),
   )
   const showLayaways = computed(() => business.value?.can_access_layaways === true && hasPermission('layaways.manage'))
-  const showOpenTabs = computed(() => hasFeature(business.value, 'open_tabs'))
 
   return computed<NavItem[]>(() =>
-    adminNavItems.map((item) => {
-      if (item.label === 'Cuentas abiertas' && !showOpenTabs.value) {
-        return { ...item, disabled: true }
-      }
-      if (item.label === 'Servicios' && showServicesAndAgenda.value) {
-        return { ...item, routeName: 'service-orders.index', disabled: false }
-      }
-      if (item.label === 'Agenda' && showServicesAndAgenda.value) {
-        return { ...item, routeName: 'appointments.index', disabled: false }
-      }
-      if (item.label === 'Apartados' && showLayaways.value) {
-        return { ...item, routeName: 'layaways.index', disabled: false }
-      }
-      return item
-    }),
+    adminNavItems
+      .filter((item) => !item.featureKey || hasFeature(business.value, item.featureKey))
+      .map((item) => {
+        if (item.label === 'Servicios' && showServicesAndAgenda.value) {
+          return { ...item, routeName: 'service-orders.index', disabled: false }
+        }
+        if (item.label === 'Agenda' && showServicesAndAgenda.value) {
+          return { ...item, routeName: 'appointments.index', disabled: false }
+        }
+        if (item.label === 'Apartados' && showLayaways.value) {
+          return { ...item, routeName: 'layaways.index', disabled: false }
+        }
+        return item
+      }),
   )
 }
