@@ -1,11 +1,13 @@
 <script setup lang="ts">
 // Ordenes de servicio - listado con filtro de estado + busqueda. Puerto de
-// Admin/ServiceOrders/Index.vue del legacy, sin el sistema de
-// etapas/kanban (deliberadamente fuera de este primer corte, ver
-// ServiceOrderService.php).
+// Admin/ServiceOrders/Index.vue del legacy. La columna de etapa solo
+// aparece si el negocio tiene un ServiceWorkflow asignado (ver
+// useServiceWorkflow) - igual que el legacy, que tampoco la muestra sin uno.
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
+import StageBadge from '@/components/StageBadge.vue'
+import { useServiceWorkflow } from '@/composables/useServiceWorkflow'
 import type { ServiceOrder, ServiceOrderStatus } from '@/types/serviceOrder'
 import { NxButton, NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
@@ -14,6 +16,9 @@ import PayServiceOrderModal from '../components/PayServiceOrderModal.vue'
 import { useServiceOrders } from '../composables/useServiceOrders'
 
 const router = useRouter()
+
+const workflowQuery = useServiceWorkflow()
+const hasWorkflow = computed(() => (workflowQuery.data.value?.stages.length ?? 0) > 0)
 
 const statusOptions = [
   { label: 'Todos', value: '' },
@@ -120,6 +125,11 @@ function statusBadgeClass(order: ServiceOrder): string {
             <span class="rounded-full px-2 py-0.5 text-xs font-semibold" :class="statusBadgeClass(data)">
               {{ data.status_label }}
             </span>
+          </template>
+        </NxColumn>
+        <NxColumn v-if="hasWorkflow" header="Etapa">
+          <template #body="{ data }: { data: ServiceOrder }">
+            <StageBadge :stage="data.stage" />
           </template>
         </NxColumn>
         <NxColumn>

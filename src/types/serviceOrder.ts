@@ -1,6 +1,7 @@
 // Refleja ServiceOrderResource/ServiceOrderItemResource/ServicePaymentResource
 // (app/Http/Resources/Api/V1) en nexolu-pos-api.
 import type { Client } from './client'
+import type { ServiceWorkflowStage } from './serviceWorkflow'
 
 export type ServiceOrderStatus = 'pending' | 'partial' | 'paid' | 'cancelled'
 
@@ -30,6 +31,7 @@ export interface ServiceOrder {
   appointment_id: number | null
   product_id: number | null
   user_id: number
+  stage_id: number | null
   service_name: string
   total: number
   amount_paid: number
@@ -43,6 +45,9 @@ export interface ServiceOrder {
   // whenLoaded en un objeto sin client_id serializa como recurso con todos
   // los campos en null, no como JSON null - comprobar client?.id != null.
   client: Partial<Client> | null
+  // Solo tiene valor si el negocio tiene un ServiceWorkflow asignado (ver
+  // useServiceWorkflow) - mismo cuidado de whenLoaded que client.
+  stage: Partial<ServiceWorkflowStage> | null
   created_at: string
 }
 

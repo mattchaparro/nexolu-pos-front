@@ -41,3 +41,8 @@ export async function payServiceOrder(id: number, payload: PayServiceOrderPayloa
 export async function cancelServiceOrder(id: number): Promise<void> {
   await httpClient.post(`/service-orders/${id}/cancel`)
 }
+
+export async function setServiceOrderStage(id: number, stageId: number): Promise<ServiceOrder> {
+  const { data } = await httpClient.patch<ServiceOrder>(`/service-orders/${id}/stage`, { stage_id: stageId })
+  return data
+}

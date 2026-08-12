@@ -6,9 +6,11 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import StageBadge from '@/components/StageBadge.vue'
+import { useServiceWorkflow } from '@/composables/useServiceWorkflow'
 import { useStaffOptions } from '@/composables/useStaffOptions'
 import { useSystemAlert } from '@/composables/useSystemAlert'
-import { NxButton, NxPageHeader } from '@/ui'
+import { NxButton, NxPageHeader, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 
@@ -24,10 +26,25 @@ const orderId = computed(() => (route.params.id ? Number(route.params.id) : null
 const orderQuery = useServiceOrder(orderId)
 const order = computed(() => orderQuery.data.value ?? null)
 const staffQuery = useStaffOptions()
+const workflowQuery = useServiceWorkflow()
+const stageOptions = computed(() => workflowQuery.data.value?.stages ?? [])
 
-const { cancelMutation } = useServiceOrderMutations()
+const { cancelMutation, setStageMutation } = useServiceOrderMutations()
 const actionError = ref<string | null>(null)
 const payModalOpen = ref(false)
+
+async function changeStage(stageId: number): Promise<void> {
+  if (!order.value || stageId === order.value.stage_id) {
+    return
+  }
+  actionError.value = null
+  try {
+    await setStageMutation.mutateAsync({ id: order.value.id, stageId })
+    notify('Etapa actualizada')
+  } catch (error) {
+    actionError.value = extractErrorMessage(error, 'No pudimos cambiar la etapa.')
+  }
+}
 
 // ServiceOrderItem::quantity es decimal:2 en el backend (a diferencia de
 // LayawayItem, entero) - llega como string "1.00"; Number() + toString()
@@ -104,8 +121,21 @@ function formatDateTime(value: string): string {
         </p>
         <p v-if="order.client?.id != null"><span class="text-slate-500">Cliente:</span> {{ order.client.name }}</p>
         <p><span class="text-slate-500">Total:</span> {{ formatCop(order.total) }}</p>
+        <p v-if="stageOptions.length"><span class="text-slate-500">Etapa:</span> <StageBadge :stage="order.stage" class="ml-1" /></p>
         <p v-if="order.notes" class="border-t border-slate-100 pt-2"><span class="text-slate-500">Notas:</span> {{ order.notes }}</p>
       </div>
+
+      <NxSelect
+        v-if="stageOptions.length && order.status !== 'cancelled'"
+        :model-value="order.stage_id"
+        :options="stageOptions"
+        option-label="label"
+        option-value="id"
+        label="Mover a otra etapa"
+        :disabled="setStageMutation.isPending.value"
+        class="max-w-xs"
+        @update:model-value="changeStage($event as number)"
+      />
 
       <div v-if="order.status !== 'cancelled'" class="flex flex-wrap gap-2">
         <NxButton v-if="order.status !== 'paid'" @click="payModalOpen = true">Registrar abono</NxButton>

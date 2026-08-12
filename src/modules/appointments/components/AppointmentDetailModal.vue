@@ -7,6 +7,8 @@
 // PayServiceOrderModal, reusado tal cual del modulo de Ordenes de servicio).
 import { computed, ref } from 'vue'
 
+import StageBadge from '@/components/StageBadge.vue'
+import { useServiceWorkflow } from '@/composables/useServiceWorkflow'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { Appointment, AppointmentStatus } from '@/types/appointment'
 import type { ServiceOrder } from '@/types/serviceOrder'
@@ -14,6 +16,7 @@ import { NxButton, NxModal, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 
+import { useServiceOrderMutations } from '@/modules/service-orders/composables/useServiceOrderMutations'
 import PayServiceOrderModal from '@/modules/service-orders/components/PayServiceOrderModal.vue'
 import { useAppointmentMutations } from '../composables/useAppointmentMutations'
 import AppointmentFormModal from './AppointmentFormModal.vue'
@@ -28,6 +31,9 @@ const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
 const { notify } = useSystemAlert()
 const { updateStatusMutation } = useAppointmentMutations()
+const { setStageMutation } = useServiceOrderMutations()
+const workflowQuery = useServiceWorkflow()
+const stageOptions = computed(() => workflowQuery.data.value?.stages ?? [])
 
 const statusOptions = [
   { label: 'Pendiente', value: 'pending' },
@@ -58,6 +64,19 @@ async function changeStatus(status: AppointmentStatus): Promise<void> {
     notify('Estado actualizado')
   } catch (error) {
     actionError.value = extractErrorMessage(error, 'No pudimos actualizar el estado.')
+  }
+}
+
+async function changeOrderStage(stageId: number): Promise<void> {
+  if (!linkedOrder.value || stageId === linkedOrder.value.stage_id) {
+    return
+  }
+  actionError.value = null
+  try {
+    await setStageMutation.mutateAsync({ id: linkedOrder.value.id, stageId })
+    notify('Etapa actualizada')
+  } catch (error) {
+    actionError.value = extractErrorMessage(error, 'No pudimos cambiar la etapa.')
   }
 }
 
@@ -96,7 +115,19 @@ function formatDateTime(value: string): string {
         <p class="text-slate-500">Orden de servicio: {{ formatCop(linkedOrder.total) }}</p>
         <p v-if="linkedOrder.balance > 0" class="font-semibold text-amber-600">Saldo pendiente: {{ formatCop(linkedOrder.balance) }}</p>
         <p v-else class="font-semibold text-emerald-600">Pagado</p>
+        <p v-if="stageOptions.length"><span class="text-slate-500">Etapa:</span> <StageBadge :stage="linkedOrder.stage" class="ml-1" /></p>
       </div>
+
+      <NxSelect
+        v-if="linkedOrder && stageOptions.length && linkedOrder.status !== 'cancelled'"
+        :model-value="linkedOrder.stage_id"
+        :options="stageOptions"
+        option-label="label"
+        option-value="id"
+        label="Mover a otra etapa"
+        :disabled="setStageMutation.isPending.value"
+        @update:model-value="changeOrderStage($event as number)"
+      />
 
       <NxSelect
         :model-value="appointment.status"

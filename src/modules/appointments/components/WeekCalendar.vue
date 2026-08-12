@@ -43,6 +43,14 @@ function appointmentsForDay(day: Date): Appointment[] {
   return props.appointments.filter((a) => isSameDay(new Date(a.starts_at), day))
 }
 
+// Punto de color de la etapa del workflow (si la cita tiene una orden de
+// servicio vinculada con una) - detalle completo (badge + selector) vive en
+// AppointmentDetailModal, aca solo un indicador para no saturar bloques
+// cortos del calendario.
+function stageColor(appointment: Appointment): string | null {
+  return appointment.service_order?.stage?.id != null ? (appointment.service_order.stage.color ?? null) : null
+}
+
 function statusColorClass(appointment: Appointment): string {
   if (appointment.status === 'cancelled') {
     return 'bg-slate-100 text-slate-400 line-through'
@@ -113,6 +121,11 @@ function onColumnClick(day: Date, event: MouseEvent): void {
             :style="{ top: `${topOffsetPx(new Date(appt.starts_at))}px`, height: `${heightPx(new Date(appt.starts_at), new Date(appt.ends_at))}px` }"
             @click.stop="emit('appointment-click', appt)"
           >
+            <span
+              v-if="stageColor(appt)"
+              class="absolute top-1 right-1 h-1.5 w-1.5 rounded-full"
+              :style="{ background: stageColor(appt) as string }"
+            />
             <p class="truncate font-semibold">{{ appt.client_name }}</p>
             <p class="truncate">{{ appt.service?.name ?? '' }}</p>
           </button>
