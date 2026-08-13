@@ -10,15 +10,17 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { SuperAdminBusinessTeamMember } from '@/types/superadmin/business'
-import { NxButton, NxPageHeader, NxStatCard, NxSwitch, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs } from '@/ui'
+import { NxButton, NxModal, NxPageHeader, NxStatCard, NxSwitch, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs } from '@/ui'
 import { FEATURE_FLAGS, resolveFeatureFlag } from '@/utils/businessFeaturePresets'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 
 import SubscriptionActionsModal from '../components/SubscriptionActionsModal.vue'
+import TeamMemberFormModal from '../components/TeamMemberFormModal.vue'
 import { useBusiness } from '../composables/useBusiness'
 import { useBusinessMutations } from '../composables/useBusinessMutations'
 import { useImpersonate } from '../composables/useImpersonate'
+import { useUserMutations } from '../composables/useUserMutations'
 
 const route = useRoute()
 const router = useRouter()
@@ -28,6 +30,8 @@ const businessQuery = useBusiness(businessId)
 const detail = computed(() => businessQuery.data.value ?? null)
 const activeTab = ref<'resumen' | 'equipo' | 'pagos' | 'features'>('resumen')
 const subscriptionModalOpen = ref(false)
+const teamMemberModalOpen = ref(false)
+const resetPasswordResult = ref<{ name: string; password: string } | null>(null)
 
 // Sin restricciones configuradas (feature_flags null/vacio) = negocio
 // viejo, todo habilitado por retrocompatibilidad - ver Business::hasFeature()
@@ -113,6 +117,47 @@ async function impersonate(member: SuperAdminBusinessTeamMember): Promise<void> 
   }
 }
 
+const { toggleUserMutation, resetPasswordMutation } = useUserMutations()
+
+async function toggleTeamMember(member: SuperAdminBusinessTeamMember): Promise<void> {
+  if (!detail.value) {
+    return
+  }
+  const verb = member.is_active ? 'desactivar' : 'activar'
+  if (!window.confirm(`¿Seguro que quieres ${verb} a "${member.name}"?`)) {
+    return
+  }
+  try {
+    await toggleUserMutation.mutateAsync({ userId: member.id, businessId: detail.value.business.id })
+  } catch (error) {
+    window.alert(extractErrorMessage(error, 'No pudimos cambiar el estado de este usuario.'))
+  }
+}
+
+async function resetTeamMemberPassword(member: SuperAdminBusinessTeamMember): Promise<void> {
+  if (!window.confirm(`¿Generar una contraseña nueva para "${member.name}"? La actual dejará de servir.`)) {
+    return
+  }
+  try {
+    const password = await resetPasswordMutation.mutateAsync(member.id)
+    resetPasswordResult.value = { name: member.name, password }
+  } catch (error) {
+    window.alert(extractErrorMessage(error, 'No pudimos restablecer la contraseña.'))
+  }
+}
+
+async function copyPassword(): Promise<void> {
+  if (!resetPasswordResult.value) {
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(resetPasswordResult.value.password)
+    notify('Contraseña copiada.')
+  } catch {
+    window.alert('No pudimos copiarla automáticamente - selecciónala a mano.')
+  }
+}
+
 function formatDate(value: string | null): string {
   if (!value) {
     return '—'
@@ -148,6 +193,17 @@ function formatDate(value: string | null): string {
       </div>
 
       <SubscriptionActionsModal v-if="detail" v-model="subscriptionModalOpen" :business="detail.business" />
+      <TeamMemberFormModal v-model="teamMemberModalOpen" :business-id="detail.business.id" />
+
+      <NxModal :model-value="resetPasswordResult !== null" title="Contraseña generada" size="sm" @update:model-value="resetPasswordResult = null">
+        <div v-if="resetPasswordResult" class="flex flex-col gap-3 text-sm">
+          <p class="text-slate-600">
+            Nueva contraseña de <strong>{{ resetPasswordResult.name }}</strong> - se muestra una sola vez, cópiala ahora:
+          </p>
+          <p class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-base tracking-wide">{{ resetPasswordResult.password }}</p>
+          <NxButton size="sm" icon="pi pi-copy" @click="copyPassword">Copiar</NxButton>
+        </div>
+      </NxModal>
 
       <NxTabs v-model:value="activeTab">
         <NxTabList>
@@ -169,6 +225,9 @@ function formatDate(value: string | null): string {
           </NxTabPanel>
 
           <NxTabPanel value="equipo">
+            <div class="mb-3 flex justify-end">
+              <NxButton size="sm" icon="pi pi-plus" @click="teamMemberModalOpen = true">Agregar usuario</NxButton>
+            </div>
             <div class="rounded-xl border border-slate-200 bg-white">
               <ul class="divide-y divide-slate-100">
                 <li v-for="member in detail.team" :key="member.id" class="flex items-center justify-between gap-3 px-4 py-3 text-sm">
@@ -180,16 +239,32 @@ function formatDate(value: string | null): string {
                     </p>
                     <p class="truncate text-xs text-slate-400">{{ member.email }} · {{ member.roles.join(', ') || 'sin rol' }}</p>
                   </div>
-                  <NxButton
-                    v-if="member.is_active"
-                    size="sm"
-                    variant="outline"
-                    icon="pi pi-user"
-                    :loading="impersonateMutation.isPending.value"
-                    @click="impersonate(member)"
-                  >
-                    Impersonar
-                  </NxButton>
+                  <div class="flex shrink-0 gap-2">
+                    <NxButton
+                      v-if="member.is_active"
+                      size="sm"
+                      variant="outline"
+                      icon="pi pi-user"
+                      :loading="impersonateMutation.isPending.value"
+                      @click="impersonate(member)"
+                    >
+                      Impersonar
+                    </NxButton>
+                    <NxButton
+                      size="sm"
+                      variant="outline"
+                      icon="pi pi-key"
+                      :loading="resetPasswordMutation.isPending.value"
+                      @click="resetTeamMemberPassword(member)"
+                    />
+                    <NxButton
+                      size="sm"
+                      :variant="member.is_active ? 'danger' : 'outline'"
+                      :icon="member.is_active ? 'pi pi-ban' : 'pi pi-check'"
+                      :loading="toggleUserMutation.isPending.value"
+                      @click="toggleTeamMember(member)"
+                    />
+                  </div>
                 </li>
               </ul>
             </div>

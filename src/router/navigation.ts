@@ -53,7 +53,7 @@ export const superadminNavItems: NavItem[] = [
   { label: 'Guías ayuda', icon: 'pi pi-book', disabled: true },
   { label: 'Ajustes globales', icon: 'pi pi-cog', disabled: true },
   { label: 'Transacciones suscripción', icon: 'pi pi-receipt', disabled: true },
-  { label: 'Correos', icon: 'pi pi-envelope', disabled: true },
+  { label: 'Comunicaciones', icon: 'pi pi-envelope', routeName: 'superadmin.communications.index' },
   { label: 'Cron jobs', icon: 'pi pi-clock', disabled: true },
   { label: 'Workflows servicio', icon: 'pi pi-sitemap', routeName: 'superadmin.workflows.index' },
 ]

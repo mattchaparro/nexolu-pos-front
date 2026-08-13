@@ -1,14 +1,13 @@
 <script setup lang="ts">
-// Listado de negocios (solo lectura) - puerto acotado de
-// SuperAdmin/Businesses/Index.vue del legacy: busqueda + estado de
-// suscripcion, sin las acciones de edicion (activar, extender trial,
-// cambiar plan) que ese modulo tambien tiene - ver la conversacion sobre
-// alcance de este panel.
+// Listado de negocios - puerto de SuperAdmin/Businesses/Index.vue del
+// legacy: busqueda + filtro de estado de suscripcion. Las acciones de
+// edicion (activar, extender trial, cambiar plan, features) viven en el
+// detalle de cada negocio (SuperAdminBusinessShowView.vue), no aca.
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import type { SuperAdminBusiness } from '@/types/superadmin/business'
-import { NxColumn, NxDataTable, NxInput, NxPageHeader } from '@/ui'
+import { NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
 import { useBusinesses } from '../composables/useBusinesses'
@@ -17,8 +16,17 @@ const router = useRouter()
 
 const searchInput = ref('')
 const search = ref('')
+const status = ref('')
 const page = ref(1)
 let debounce: number | undefined
+
+const statusOptions = [
+  { value: '', label: 'Todos los estados' },
+  { value: 'trial', label: 'Prueba' },
+  { value: 'paid', label: 'Pagando' },
+  { value: 'expired', label: 'Vencido' },
+  { value: 'inactive', label: 'Inactivo' },
+]
 
 watch(searchInput, (value) => {
   window.clearTimeout(debounce)
@@ -28,7 +36,11 @@ watch(searchInput, (value) => {
   }, 300)
 })
 
-const businessesQuery = useBusinesses(search, page)
+watch(status, () => {
+  page.value = 1
+})
+
+const businessesQuery = useBusinesses(search, status, page)
 const meta = computed(() => businessesQuery.data.value?.meta)
 
 function onPage(event: { page: number }): void {
@@ -58,7 +70,26 @@ function statusBadge(business: SuperAdminBusiness): { label: string; class: stri
   <div class="flex flex-col gap-4">
     <NxPageHeader title="Negocios" icon="pi pi-building" compact />
 
-    <NxInput v-model="searchInput" label="Buscar por nombre, dueño o teléfono" size="lg" icon="pi pi-search" clearable blur-after-typing />
+    <div class="flex flex-col gap-2 sm:flex-row">
+      <NxInput
+        v-model="searchInput"
+        label="Buscar por nombre, dueño o teléfono"
+        size="lg"
+        icon="pi pi-search"
+        clearable
+        blur-after-typing
+        class="flex-1"
+      />
+      <NxSelect
+        v-model="status"
+        label="Estado"
+        size="lg"
+        :options="statusOptions"
+        option-label="label"
+        option-value="value"
+        class="sm:w-56"
+      />
+    </div>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
       <NxDataTable

@@ -5,6 +5,7 @@ import type { SuperAdminBusiness, SuperAdminBusinessDetail } from '@/types/super
 
 export interface FetchBusinessesParams {
   search?: string
+  status?: string
   page?: number
 }
 

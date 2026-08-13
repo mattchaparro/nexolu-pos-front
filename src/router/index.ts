@@ -271,6 +271,12 @@ const router = createRouter({
             import('@/modules/superadmin-businesses/views/SuperAdminBusinessShowView.vue'),
         },
         {
+          path: 'comunicaciones',
+          name: 'superadmin.communications.index',
+          component: () =>
+            import('@/modules/superadmin-communications/views/SuperAdminCommunicationsView.vue'),
+        },
+        {
           path: 'workflows',
           name: 'superadmin.workflows.index',
           component: () =>
