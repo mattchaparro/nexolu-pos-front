@@ -22,6 +22,26 @@ export interface LoginCredentials {
   device_name: string
 }
 
+// Refleja RegisterRequest (nexolu-pos-api) - plan + feature_flags son el
+// camino "plan primero" del wizard publico: el usuario elige basic/full y
+// feature_flags solo puede apagar banderas que ese plan trae encendidas por
+// defecto (el backend clampa cualquier intento de prender una fuera del
+// plan - ver BusinessRegistrationService::register()).
+export interface RegisterPayload {
+  business_name: string
+  owner_name: string
+  email: string
+  password: string
+  password_confirmation: string
+  phone?: string
+  whatsapp_number?: string
+  nit?: string
+  address?: string
+  plan: 'basic' | 'full'
+  feature_flags: Record<string, boolean>
+  device_name: string
+}
+
 export interface AuthResponse {
   token: string
   user: User

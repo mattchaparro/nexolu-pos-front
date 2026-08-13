@@ -4,7 +4,7 @@ import { defineStore } from 'pinia'
 import { httpClient } from '@/services/http/client'
 import { tokenStorage } from '@/services/http/tokenStorage'
 import { queryClient } from '@/services/query/queryClient'
-import type { AuthResponse, LoginCredentials, User } from '@/types/auth'
+import type { AuthResponse, LoginCredentials, RegisterPayload, User } from '@/types/auth'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -41,6 +41,13 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function login(credentials: LoginCredentials): Promise<void> {
     const { data } = await httpClient.post<AuthResponse>('/login', credentials)
+    setSession(data)
+  }
+
+  // Responde igual que login() (token + user) - deja al dueño autenticado
+  // de una vez, sin pedirle iniciar sesion despues de registrarse.
+  async function register(payload: RegisterPayload): Promise<void> {
+    const { data } = await httpClient.post<AuthResponse>('/register', payload)
     setSession(data)
   }
 
@@ -115,6 +122,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     isImpersonating,
     login,
+    register,
     logout,
     forgotPassword,
     resetPassword,

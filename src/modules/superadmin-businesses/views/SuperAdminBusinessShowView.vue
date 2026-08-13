@@ -9,9 +9,9 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
+import { useFeatureCatalog } from '@/modules/superadmin-feature-catalog/composables/useFeatureCatalog'
 import type { SuperAdminBusinessTeamMember } from '@/types/superadmin/business'
 import { NxButton, NxModal, NxPageHeader, NxStatCard, NxSwitch, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs } from '@/ui'
-import { FEATURE_FLAGS, resolveFeatureFlag } from '@/utils/businessFeaturePresets'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 
@@ -33,6 +33,12 @@ const subscriptionModalOpen = ref(false)
 const teamMemberModalOpen = ref(false)
 const resetPasswordResult = ref<{ name: string; password: string } | null>(null)
 
+// Catalogo global de banderas (clave/label/descripcion/default por plan) -
+// misma fuente que la pantalla "Planes y Funciones", en vez de mantener un
+// segundo listado hardcodeado aca (ver git blame: antes vivia duplicado en
+// utils/businessFeaturePresets.ts, con riesgo de desincronizarse del backend).
+const catalogQuery = useFeatureCatalog()
+
 // Sin restricciones configuradas (feature_flags null/vacio) = negocio
 // viejo, todo habilitado por retrocompatibilidad - ver Business::hasFeature()
 // en el backend y resolveFeatureFlag() aca.
@@ -40,14 +46,39 @@ const hasCustomFlags = computed(() => {
   const flags = detail.value?.business.feature_flags
   return !!flags && Object.keys(flags).length > 0
 })
+
+// Mismas 3 ramas que Business::hasFeature() en el backend: flags null/vacio
+// = todo habilitado, clave presente = su valor, clave ausente con plan
+// definido = default del plan ('full' trae full(), cualquier otro string
+// trae basic() - igual que BusinessFeaturePresets::fromPlan()), si no, apagado.
+function resolveFeatureFlag(
+  flags: Record<string, boolean> | null | undefined,
+  plan: string | null | undefined,
+  key: string,
+  planDefaults: { basic: boolean; full: boolean },
+): boolean {
+  if (!flags || Object.keys(flags).length === 0) {
+    return true
+  }
+  if (key in flags) {
+    return flags[key]
+  }
+  if (plan) {
+    return plan === 'full' ? planDefaults.full : planDefaults.basic
+  }
+  return false
+}
+
 const featureRows = computed(() => {
-  if (!detail.value) {
+  if (!detail.value || !catalogQuery.data.value) {
     return []
   }
   const { feature_flags: flags, subscription_plan: plan } = detail.value.business
-  return FEATURE_FLAGS.map((feature) => ({
-    ...feature,
-    enabled: resolveFeatureFlag(flags, plan, feature.key),
+  return catalogQuery.data.value.features.map((feature) => ({
+    key: feature.key,
+    label: feature.label,
+    description: feature.description,
+    enabled: resolveFeatureFlag(flags, plan, feature.key, feature),
   }))
 })
 
@@ -303,7 +334,10 @@ function formatDate(value: string | null): string {
             <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
               <ul class="divide-y divide-slate-100">
                 <li v-for="feature in featureRows" :key="feature.key" class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
-                  <span class="text-slate-700">{{ feature.label }}</span>
+                  <div class="min-w-0">
+                    <p class="text-slate-700">{{ feature.label }}</p>
+                    <p class="text-xs text-slate-400">{{ feature.description }}</p>
+                  </div>
                   <NxSwitch v-model="editableFlags[feature.key]" />
                 </li>
               </ul>

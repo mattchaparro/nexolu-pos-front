@@ -59,6 +59,11 @@ export const superadminNavItems: NavItem[] = [
   // 'Clientes' en adminNavItems): pantalla nueva de solo lectura sobre las
   // plantillas/flows de WhatsApp ya configurados en config/services.php.
   { label: 'Plantillas WhatsApp', icon: 'pi pi-file-edit', routeName: 'superadmin.whatsapp-templates.index' },
+  // Idem: documentacion de solo lectura de que trae cada plan (Basico/Full)
+  // y para que sirve cada bandera - sin equivalente en el legacy (ahi la
+  // comparacion de planes solo vive en la landing publica, desconectada del
+  // panel de superadmin).
+  { label: 'Planes y Funciones', icon: 'pi pi-sitemap', routeName: 'superadmin.feature-catalog.index' },
   { label: 'Cron jobs', icon: 'pi pi-clock', disabled: true },
   { label: 'Workflows servicio', icon: 'pi pi-sitemap', routeName: 'superadmin.workflows.index' },
 ]

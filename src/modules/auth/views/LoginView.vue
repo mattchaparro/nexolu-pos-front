@@ -113,6 +113,11 @@ const onSubmit = handleSubmit(async (values) => {
       </div>
 
       <NxButton type="submit" class="w-full" :loading="isSubmitting"> Ingresar </NxButton>
+
+      <p class="text-center text-sm text-slate-500">
+        ¿No tienes cuenta?
+        <RouterLink :to="{ name: 'register' }" class="font-semibold text-indigo-600 hover:text-indigo-800">Regístrate</RouterLink>
+      </p>
     </form>
   </div>
 </template>

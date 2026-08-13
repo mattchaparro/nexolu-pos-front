@@ -57,6 +57,14 @@ const router = createRouter({
       ],
     },
     {
+      // Fuera de AuthLayout a proposito: el paso 2 (tarjetas de plan +
+      // panel de resumen) necesita mas ancho que el formulario angosto de
+      // AuthLayout (max-w-md) - RegisterView.vue trae su propio layout.
+      path: '/registro',
+      name: 'register',
+      component: () => import('@/modules/auth/views/RegisterView.vue'),
+    },
+    {
       path: '/olvide-mi-contrasena',
       component: () => import('@/layouts/AuthLayout.vue'),
       children: [
@@ -289,6 +297,12 @@ const router = createRouter({
           name: 'superadmin.whatsapp-templates.index',
           component: () =>
             import('@/modules/superadmin-whatsapp-templates/views/SuperAdminWhatsAppTemplatesView.vue'),
+        },
+        {
+          path: 'planes-y-funciones',
+          name: 'superadmin.feature-catalog.index',
+          component: () =>
+            import('@/modules/superadmin-feature-catalog/views/SuperAdminFeatureCatalogView.vue'),
         },
         {
           path: 'workflows',
