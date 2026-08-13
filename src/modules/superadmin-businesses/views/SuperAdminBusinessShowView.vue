@@ -1,20 +1,23 @@
 <script setup lang="ts">
-// Detalle de un negocio (solo lectura) - stats de los ultimos 30 dias,
-// equipo (con boton de impersonar por usuario activo) y pagos de
-// suscripcion recientes. Puerto acotado de SuperAdmin/Businesses/Show.vue
-// del legacy - ver la conversacion sobre alcance de este panel para lo
-// que queda deliberadamente afuera (activar/desactivar, extender trial,
-// cambiar plan, precio personalizado, bloqueo de IA).
-import { computed, ref } from 'vue'
+// Detalle de un negocio - stats de los ultimos 30 dias, equipo (con boton de
+// impersonar por usuario activo), pagos de suscripcion recientes, toggles de
+// features y acciones de suscripcion (activar/extender trial/precio
+// especial/cambiar plan). Puerto de SuperAdmin/Businesses/Show.vue del
+// legacy - ver docs/MIGRATION_BACKLOG.md (seccion SuperAdmin) para lo que
+// sigue afuera (comunicaciones por negocio, addon de IA con cupo/paquetes).
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { SuperAdminBusinessTeamMember } from '@/types/superadmin/business'
-import { NxButton, NxPageHeader, NxStatCard, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs } from '@/ui'
+import { NxButton, NxPageHeader, NxStatCard, NxSwitch, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs } from '@/ui'
 import { FEATURE_FLAGS, resolveFeatureFlag } from '@/utils/businessFeaturePresets'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 
+import SubscriptionActionsModal from '../components/SubscriptionActionsModal.vue'
 import { useBusiness } from '../composables/useBusiness'
+import { useBusinessMutations } from '../composables/useBusinessMutations'
 import { useImpersonate } from '../composables/useImpersonate'
 
 const route = useRoute()
@@ -24,6 +27,7 @@ const businessId = computed(() => (route.params.id ? Number(route.params.id) : n
 const businessQuery = useBusiness(businessId)
 const detail = computed(() => businessQuery.data.value ?? null)
 const activeTab = ref<'resumen' | 'equipo' | 'pagos' | 'features'>('resumen')
+const subscriptionModalOpen = ref(false)
 
 // Sin restricciones configuradas (feature_flags null/vacio) = negocio
 // viejo, todo habilitado por retrocompatibilidad - ver Business::hasFeature()
@@ -42,6 +46,59 @@ const featureRows = computed(() => {
     enabled: resolveFeatureFlag(flags, plan, feature.key),
   }))
 })
+
+// Copia editable de los flags resueltos - los toggles cambian esto en
+// memoria, no se guarda hasta hacer clic en "Guardar cambios" (una escritura
+// por vez, no una por cada click, ver updateConfig).
+const editableFlags = reactive<Record<string, boolean>>({})
+watch(
+  featureRows,
+  (rows) => {
+    if (rows.length === 0) {
+      return
+    }
+    // No pisar mientras hay cambios sin guardar (evita perder el toggle que
+    // el usuario acaba de tocar si el detalle se refresca de fondo).
+    if (!featuresAreDirty.value) {
+      rows.forEach((row) => {
+        editableFlags[row.key] = row.enabled
+      })
+    }
+  },
+  { immediate: true },
+)
+const featuresAreDirty = computed(() =>
+  featureRows.value.some((row) => editableFlags[row.key] !== undefined && editableFlags[row.key] !== row.enabled),
+)
+
+const { updateConfigMutation } = useBusinessMutations()
+// notify() debe pedirse en setup(), no dentro de una funcion async despues
+// de un await - ver el mismo comentario en SubscriptionActionsModal.vue.
+const { notify } = useSystemAlert()
+
+async function saveFeatureFlags(): Promise<void> {
+  if (!detail.value) {
+    return
+  }
+  try {
+    await updateConfigMutation.mutateAsync({
+      id: detail.value.business.id,
+      payload: {
+        subscription_plan: detail.value.business.subscription_plan ?? 'basic',
+        feature_flags: { ...editableFlags },
+      },
+    })
+    notify('Features actualizados.')
+  } catch (error) {
+    window.alert(extractErrorMessage(error, 'No pudimos guardar los features.'))
+  }
+}
+
+function discardFeatureChanges(): void {
+  featureRows.value.forEach((row) => {
+    editableFlags[row.key] = row.enabled
+  })
+}
 
 const { impersonateMutation } = useImpersonate()
 
@@ -85,7 +142,12 @@ function formatDate(value: string | null): string {
         <p v-if="detail.business.address"><span class="text-slate-500">Dirección:</span> {{ detail.business.address }}</p>
         <p><span class="text-slate-500">Plan:</span> {{ detail.business.subscription_plan ?? '—' }}</p>
         <p><span class="text-slate-500">Última actividad:</span> {{ formatDate(detail.business.last_activity_at) }}</p>
+        <NxButton size="sm" variant="outline" icon="pi pi-credit-card" class="self-start" @click="subscriptionModalOpen = true">
+          Gestionar suscripción
+        </NxButton>
       </div>
+
+      <SubscriptionActionsModal v-if="detail" v-model="subscriptionModalOpen" :business="detail.business" />
 
       <NxTabs v-model:value="activeTab">
         <NxTabList>
@@ -160,20 +222,22 @@ function formatDate(value: string | null): string {
           <NxTabPanel value="features">
             <p v-if="!hasCustomFlags" class="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
               Este negocio no tiene restricciones configuradas (feature_flags vacío) - por retrocompatibilidad, tiene
-              <strong>todo habilitado</strong> sin importar el plan.
+              <strong>todo habilitado</strong> sin importar el plan. Apagar cualquier interruptor de abajo y guardar crea el JSON de
+              restricciones por primera vez.
             </p>
             <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
               <ul class="divide-y divide-slate-100">
                 <li v-for="feature in featureRows" :key="feature.key" class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
                   <span class="text-slate-700">{{ feature.label }}</span>
-                  <span
-                    class="rounded-full px-2.5 py-1 text-xs font-semibold"
-                    :class="feature.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'"
-                  >
-                    {{ feature.enabled ? 'Habilitado' : 'Deshabilitado' }}
-                  </span>
+                  <NxSwitch v-model="editableFlags[feature.key]" />
                 </li>
               </ul>
+            </div>
+            <div class="mt-3 flex justify-end gap-2">
+              <NxButton v-if="featuresAreDirty" variant="outline" size="sm" @click="discardFeatureChanges">Descartar cambios</NxButton>
+              <NxButton size="sm" :disabled="!featuresAreDirty" :loading="updateConfigMutation.isPending.value" @click="saveFeatureFlags">
+                Guardar cambios
+              </NxButton>
             </div>
           </NxTabPanel>
         </NxTabPanels>

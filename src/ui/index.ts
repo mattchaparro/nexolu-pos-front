@@ -33,6 +33,8 @@ export { default as NxSidebar } from './NxSidebar.vue'
 
 export { default as NxStatCard } from './NxStatCard.vue'
 
+export { default as NxSwitch } from './NxSwitch.vue'
+
 export { default as NxTab } from './NxTab.vue'
 
 export { default as NxTabList } from './NxTabList.vue'
