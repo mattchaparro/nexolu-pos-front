@@ -1,0 +1,234 @@
+<script setup lang="ts">
+// "Mi suscripcion" - puerto de Subscription/Billing.vue del legacy: estado
+// de la suscripcion, promo activa, pago en linea via el widget de Wompi
+// (Nexolu Payments Core por detras, ver useSubscriptionCheckout) e
+// historial de pagos. Sin la seccion de addon de IA del legacy (ya no se
+// factura aparte, ver docs/MIGRATION_BACKLOG.md) ni el fallback de pago
+// manual/WhatsApp (no hay precedente de esos datos en este repo todavia).
+import { computed, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+import { useAuthStore } from '@/stores/auth.store'
+import type { SubscriptionPayment, SubscriptionStatus } from '@/types/subscription'
+import { NxButton, NxCard, NxPageHeader } from '@/ui'
+import { formatCop } from '@/utils/formatCop'
+
+import { useSubscriptionCheckout } from '../composables/useSubscriptionCheckout'
+import { useSubscriptionStatus } from '../composables/useSubscriptionStatus'
+
+const route = useRoute()
+const router = useRouter()
+const auth = useAuthStore()
+
+const statusQuery = useSubscriptionStatus()
+const data = computed(() => statusQuery.data.value ?? null)
+const isActive = computed(() => data.value?.status === 'paid' || data.value?.status === 'trial')
+
+const statusConfig: Record<SubscriptionStatus, { label: string; class: string; icon: string }> = {
+  paid: { label: 'Activa', class: 'bg-emerald-100 text-emerald-700', icon: 'pi pi-check-circle' },
+  trial: { label: 'En prueba', class: 'bg-sky-100 text-sky-700', icon: 'pi pi-hourglass' },
+  expired: { label: 'Vencida', class: 'bg-red-100 text-red-700', icon: 'pi pi-times-circle' },
+  inactive: { label: 'Inactiva', class: 'bg-slate-100 text-slate-500', icon: 'pi pi-pause-circle' },
+}
+
+const checkout = useSubscriptionCheckout()
+
+function formatDate(value: string | null): string {
+  if (!value) {
+    return '—'
+  }
+  return new Date(`${value}T00:00:00`).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+const methodLabels: Record<string, string> = { wompi: 'Wompi', wava: 'Wava', manual: 'Transferencia', nequi: 'Nequi' }
+function methodLabel(payment: SubscriptionPayment): string {
+  return methodLabels[payment.payment_method ?? ''] ?? payment.payment_method ?? 'Manual'
+}
+
+async function payNow(): Promise<void> {
+  if (!auth.user) {
+    return
+  }
+  await checkout.pay({ email: auth.user.email, fullName: auth.user.full_name })
+}
+
+onMounted(() => {
+  // Fallback de navegacion (mobile): Wompi redirigio de vuelta con
+  // ?wompi_paid=1 en vez de solo devolver el resultado al callback del widget.
+  if (route.query.wompi_paid === '1') {
+    checkout.startPolling()
+    router.replace({ query: {} })
+  }
+})
+
+onUnmounted(() => checkout.stop())
+</script>
+
+<template>
+  <div class="mx-auto flex max-w-2xl flex-col gap-4">
+    <NxPageHeader title="Mi suscripción" icon="pi pi-credit-card" compact />
+
+    <template v-if="statusQuery.isPending.value">
+      <div class="h-48 animate-pulse rounded-xl bg-slate-100" />
+    </template>
+
+    <template v-else-if="data">
+      <!-- Tarjeta de estado -->
+      <NxCard>
+        <div class="flex items-start justify-between gap-4">
+          <div class="min-w-0">
+            <p class="text-xs font-semibold tracking-wide text-slate-500 uppercase">Estado</p>
+            <p class="mt-1 text-lg font-bold text-slate-900">{{ auth.user?.full_name ?? '—' }}</p>
+          </div>
+          <span
+            class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold"
+            :class="statusConfig[data.status].class"
+          >
+            <i :class="statusConfig[data.status].icon" />
+            {{ statusConfig[data.status].label }}
+          </span>
+        </div>
+
+        <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+            <p class="mb-0.5 text-xs text-slate-500">Días restantes</p>
+            <p class="text-2xl font-extrabold" :class="data.days_remaining <= 5 ? 'text-red-700' : 'text-slate-900'">
+              {{ data.days_remaining }}
+            </p>
+          </div>
+          <div v-if="data.paid_until" class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+            <p class="mb-0.5 text-xs text-slate-500">{{ isActive ? 'Activa hasta' : 'Venció el' }}</p>
+            <p class="text-sm font-bold text-slate-900">{{ formatDate(data.paid_until) }}</p>
+          </div>
+          <div v-else-if="data.trial_ends_at" class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+            <p class="mb-0.5 text-xs text-slate-500">Prueba hasta</p>
+            <p class="text-sm font-bold text-slate-900">{{ formatDate(data.trial_ends_at) }}</p>
+          </div>
+          <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+            <p class="mb-0.5 text-xs text-slate-500">Plan mensual</p>
+            <div v-if="data.pricing.has_custom_price" class="flex flex-col gap-0.5">
+              <p class="text-xs text-slate-400 line-through">{{ formatCop(data.pricing.plan_standard_cop) }}</p>
+              <p class="text-sm font-bold text-indigo-700">{{ formatCop(data.pricing.plan_base_cop) }}</p>
+            </div>
+            <p v-else class="text-sm font-bold text-slate-900">{{ formatCop(data.pricing.plan_base_cop) }}</p>
+          </div>
+        </div>
+
+        <div v-if="data.pricing.is_promo_eligible" class="mt-3 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+          <i class="pi pi-tag shrink-0 text-emerald-600" />
+          <p class="text-sm text-emerald-800">
+            <strong>Promo {{ data.pricing.promo_discount_percent }}% dto</strong>
+            aplicada · mes {{ data.pricing.paid_cycles + 1 }} de {{ data.pricing.promo_months }} · pagas
+            <strong>{{ formatCop(data.pricing.total_cop) }}</strong> este ciclo
+          </p>
+        </div>
+      </NxCard>
+
+      <!-- Verificando pago -->
+      <div v-if="checkout.verifying.value" class="flex items-center gap-4 rounded-xl border border-sky-200 bg-sky-50 p-5">
+        <i class="pi pi-spin pi-spinner text-2xl text-sky-500" />
+        <div>
+          <p class="font-semibold text-sky-800">Verificando tu pago...</p>
+          <p class="mt-0.5 text-sm text-sky-700">Espera un momento mientras confirmamos con Wompi que todo quedó bien.</p>
+        </div>
+      </div>
+
+      <!-- Pago confirmado -->
+      <div v-else-if="checkout.activated.value" class="flex items-start gap-3 rounded-xl border border-emerald-300 bg-emerald-50 p-5">
+        <i class="pi pi-check-circle mt-0.5 text-2xl text-emerald-500" />
+        <div>
+          <p class="font-semibold text-emerald-800">Pago confirmado</p>
+          <p class="mt-0.5 text-sm text-emerald-700">Tu suscripción está activa.</p>
+        </div>
+      </div>
+
+      <!-- Timeout esperando el webhook -->
+      <div v-else-if="checkout.timedOut.value" class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-5">
+        <i class="pi pi-clock mt-0.5 text-2xl text-amber-500" />
+        <div>
+          <p class="font-semibold text-amber-800">Pago en proceso</p>
+          <p class="mt-0.5 text-sm text-amber-700">
+            Tu pago fue recibido pero la activación está tardando. Si ya te cobraron, el acceso se activará en los próximos minutos.
+          </p>
+          <NxButton size="sm" variant="outline" class="mt-2" @click="statusQuery.refetch()">Verificar de nuevo</NxButton>
+        </div>
+      </div>
+
+      <!-- Todo al dia -->
+      <div v-else-if="isActive" class="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+        <i class="pi pi-verified mt-0.5 text-2xl text-emerald-500" />
+        <div>
+          <p class="font-semibold text-emerald-800">Todo al día</p>
+          <p class="mt-0.5 text-sm text-emerald-700">
+            Tu suscripción está activa.
+            <span v-if="data.paid_until"
+              >Vence el <strong>{{ formatDate(data.paid_until) }}</strong
+              >.</span
+            >
+            <span v-else-if="data.trial_ends_at"
+              >Tu periodo de prueba termina el <strong>{{ formatDate(data.trial_ends_at) }}</strong
+              >.</span
+            >
+          </p>
+        </div>
+      </div>
+
+      <!-- Pago en linea -->
+      <NxCard v-if="!checkout.verifying.value && !checkout.activated.value">
+        <p class="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+          {{ isActive ? 'Pagar siguiente periodo' : 'Realizar pago' }}
+        </p>
+        <p v-if="isActive && data.paid_until" class="mb-4 text-xs text-slate-400">
+          Los días se acumulan a partir del <strong>{{ formatDate(data.paid_until) }}</strong
+          >.
+        </p>
+
+        <div class="mb-5 flex items-end justify-between gap-4">
+          <div>
+            <p class="mb-1 text-xs text-slate-400">Valor a pagar</p>
+            <p class="text-4xl font-extrabold text-slate-900">{{ formatCop(data.pricing.total_cop) }}</p>
+            <p v-if="data.pricing.is_promo_eligible" class="mt-1 text-xs text-emerald-700">
+              Desc. {{ data.pricing.promo_discount_percent }}% · regular {{ formatCop(data.pricing.plan_base_cop) }}
+            </p>
+          </div>
+        </div>
+
+        <NxButton class="w-full" size="lg" icon="pi pi-credit-card" :loading="checkout.paying.value" @click="payNow">
+          {{ checkout.paying.value ? 'Abriendo pasarela de pago...' : 'Pagar en línea' }}
+        </NxButton>
+
+        <p v-if="checkout.error.value" class="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {{ checkout.error.value }}
+        </p>
+
+        <p class="mt-3 flex items-center justify-center gap-1 text-center text-xs text-slate-400">
+          <i class="pi pi-lock text-[11px]" />
+          Pago seguro vía Wompi · Tarjeta, Nequi, PSE, Bancolombia
+        </p>
+      </NxCard>
+
+      <!-- Historial de pagos -->
+      <NxCard v-if="data.payments.length" :padded="false">
+        <template #header>
+          <p class="text-xs font-semibold tracking-wide text-slate-500 uppercase">Historial de pagos</p>
+        </template>
+        <ul class="divide-y divide-slate-100">
+          <li v-for="payment in data.payments" :key="payment.id" class="flex items-center justify-between gap-3 px-5 py-3">
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-slate-900">{{ formatCop(payment.amount_cop) }}</p>
+              <p class="text-xs text-slate-500">
+                {{ formatDate(payment.paid_at) }} · {{ methodLabel(payment) }}
+                <span v-if="payment.days_granted"> · {{ payment.days_granted }} días</span>
+              </p>
+            </div>
+            <span class="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+              <i class="pi pi-check text-[10px]" />
+              Pagado
+            </span>
+          </li>
+        </ul>
+      </NxCard>
+      <p v-else class="py-4 text-center text-xs text-slate-400">Sin pagos registrados todavía.</p>
+    </template>
+  </div>
+</template>

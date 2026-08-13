@@ -31,6 +31,7 @@ export const adminNavItems: NavItem[] = [
   { label: 'Usuarios', icon: 'pi pi-users', disabled: true, featureKey: 'permissions_management' },
   { label: 'Auditoría', icon: 'pi pi-history', disabled: true, featureKey: 'audit_logs' },
   { label: 'Ajustes', icon: 'pi pi-cog', routeName: 'business-settings.index' },
+  { label: 'Mi suscripción', icon: 'pi pi-credit-card', routeName: 'subscription.index' },
   { label: 'Mi negocio', icon: 'pi pi-building', disabled: true },
 ]
 

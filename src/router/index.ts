@@ -248,6 +248,14 @@ const router = createRouter({
           name: 'business-settings.index',
           component: () => import('@/modules/settings/views/BusinessSettingsView.vue'),
         },
+        {
+          // Tampoco depende de un feature flag - cualquier usuario del
+          // negocio puede ver/pagar la suscripcion, igual que en el legacy
+          // (SubscriptionController::billing no restringe por rol).
+          path: 'suscripcion',
+          name: 'subscription.index',
+          component: () => import('@/modules/subscription/views/SubscriptionView.vue'),
+        },
       ],
     },
     {
