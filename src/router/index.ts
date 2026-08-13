@@ -285,6 +285,12 @@ const router = createRouter({
             import('@/modules/superadmin-communications/views/SuperAdminCommunicationsView.vue'),
         },
         {
+          path: 'plantillas-whatsapp',
+          name: 'superadmin.whatsapp-templates.index',
+          component: () =>
+            import('@/modules/superadmin-whatsapp-templates/views/SuperAdminWhatsAppTemplatesView.vue'),
+        },
+        {
           path: 'workflows',
           name: 'superadmin.workflows.index',
           component: () =>

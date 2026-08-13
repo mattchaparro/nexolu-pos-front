@@ -55,6 +55,10 @@ export const superadminNavItems: NavItem[] = [
   { label: 'Ajustes globales', icon: 'pi pi-cog', disabled: true },
   { label: 'Transacciones suscripción', icon: 'pi pi-receipt', disabled: true },
   { label: 'Comunicaciones', icon: 'pi pi-envelope', routeName: 'superadmin.communications.index' },
+  // Sin equivalente en superadmin.json del legacy a proposito (igual que
+  // 'Clientes' en adminNavItems): pantalla nueva de solo lectura sobre las
+  // plantillas/flows de WhatsApp ya configurados en config/services.php.
+  { label: 'Plantillas WhatsApp', icon: 'pi pi-file-edit', routeName: 'superadmin.whatsapp-templates.index' },
   { label: 'Cron jobs', icon: 'pi pi-clock', disabled: true },
   { label: 'Workflows servicio', icon: 'pi pi-sitemap', routeName: 'superadmin.workflows.index' },
 ]
