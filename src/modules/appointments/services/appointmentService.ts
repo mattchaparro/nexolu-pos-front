@@ -8,6 +8,7 @@ export interface FetchAppointmentsParams {
   status?: AppointmentStatus | ''
   user_id?: number
   page?: number
+  per_page?: number
 }
 
 export async function fetchAppointments(params: FetchAppointmentsParams = {}): Promise<PaginatedResponse<Appointment>> {

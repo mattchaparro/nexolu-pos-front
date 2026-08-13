@@ -1,10 +1,11 @@
 <script setup lang="ts">
-// Grilla semanal de la Agenda - columnas por dia (lun-dom) x horas (07:00-21:00),
-// citas posicionadas por hora de inicio/duracion. Puerto simplificado del
-// calendario CSS-grid de Admin/Appointments/Index.vue del legacy (alli
-// tambien soporta una vista de un solo dia para mobile - aca se resuelve
-// con scroll horizontal en vez de un modo separado, alcance acotado para
-// esta primera version).
+// Grilla de horas de la Agenda - columnas por dia x horas (07:00-21:00),
+// citas posicionadas por hora de inicio/duracion. Generico en el numero de
+// columnas (`days`): la vista Semana le pasa 7 dias, la vista Dia le pasa
+// uno solo - mismo componente, mismo posicionamiento por hora, para no
+// duplicar la logica de render de citas entre las dos vistas. Puerto
+// simplificado del calendario CSS-grid de Admin/Appointments/Index.vue del
+// legacy (alli Dia y Semana son dos layouts separados).
 import { computed } from 'vue'
 
 import type { Appointment } from '@/types/appointment'
@@ -13,13 +14,12 @@ import {
   AGENDA_CELL_HEIGHT_PX,
   AGENDA_END_HOUR,
   AGENDA_START_HOUR,
-  addDays,
   heightPx,
   topOffsetPx,
 } from '../support/appointmentTime'
 
 const props = defineProps<{
-  weekStart: Date
+  days: Date[]
   appointments: Appointment[]
   loading?: boolean
 }>()
@@ -29,9 +29,9 @@ const emit = defineEmits<{
   'appointment-click': [appointment: Appointment]
 }>()
 
-const days = computed(() => Array.from({ length: 7 }, (_, i) => addDays(props.weekStart, i)))
 const hours = computed(() => Array.from({ length: AGENDA_END_HOUR - AGENDA_START_HOUR }, (_, i) => AGENDA_START_HOUR + i))
 const totalHeight = (AGENDA_END_HOUR - AGENDA_START_HOUR) * AGENDA_CELL_HEIGHT_PX
+const gridColumns = computed(() => `56px repeat(${props.days.length}, 1fr)`)
 
 const dayFormatter = new Intl.DateTimeFormat('es-CO', { weekday: 'short', day: '2-digit' })
 
@@ -81,14 +81,14 @@ function onColumnClick(day: Date, event: MouseEvent): void {
     <div v-if="loading" class="absolute inset-0 z-10 flex items-center justify-center bg-white/60">
       <i class="pi pi-spin pi-spinner text-xl text-slate-400" />
     </div>
-    <div class="min-w-[880px]">
-      <div class="grid border-b border-slate-200" style="grid-template-columns: 56px repeat(7, 1fr)">
+    <div :class="days.length > 1 ? 'min-w-[880px]' : ''">
+      <div class="grid border-b border-slate-200" :style="{ gridTemplateColumns: gridColumns }">
         <div />
         <div v-for="day in days" :key="day.toISOString()" class="border-l border-slate-100 py-2 text-center text-xs font-semibold text-slate-600">
           {{ dayFormatter.format(day) }}
         </div>
       </div>
-      <div class="grid" style="grid-template-columns: 56px repeat(7, 1fr)">
+      <div class="grid" :style="{ gridTemplateColumns: gridColumns }">
         <div class="relative">
           <div
             v-for="hour in hours"
