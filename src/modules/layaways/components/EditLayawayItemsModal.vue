@@ -25,7 +25,9 @@ const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
 const { notify } = useSystemAlert()
 const { updateItemsMutation } = useLayawayMutations()
-const productsQuery = useLayawayProductOptions()
+const productsQuery = useLayawayProductOptions(
+  () => props.layaway?.items.map((item) => item.product?.id).filter((id): id is number => id !== undefined) ?? [],
+)
 
 const rows = ref<LayawayLineRow[]>([newLayawayLineRow()])
 const fieldErrors = ref<Record<string, string>>({})

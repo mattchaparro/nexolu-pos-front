@@ -44,6 +44,12 @@ export interface FetchProductsParams {
   // backend) - puerto directo de Admin\InventoryController del legacy.
   category_id?: number
   filter?: ProductStockFilter
+  // for_layaway/include_ids: filtro de elegibilidad para apartar (sin
+  // servicios/inactivos/sin-stock, respeta layaway_allowed_category_ids) -
+  // ver useLayawayProductOptions.ts, puerto de LayawaysController del
+  // legacy.
+  for_layaway?: boolean
+  include_ids?: number[]
 }
 
 export async function fetchProducts(params: FetchProductsParams = {}): Promise<PaginatedResponse<Product>> {
