@@ -92,6 +92,11 @@ export async function deleteProduct(id: number): Promise<void> {
   await httpClient.delete(`/products/${id}`)
 }
 
+export async function duplicateProduct(id: number): Promise<Product> {
+  const { data } = await httpClient.post<Product>(`/products/${id}/duplicate`)
+  return data
+}
+
 // Solo se llama cuando business.feature_flags.ingredients esta activo (la
 // ruta esta detras de middleware('feature:ingredients') - ver
 // routes/api.php). per_page alto: el picker de receta del formulario de

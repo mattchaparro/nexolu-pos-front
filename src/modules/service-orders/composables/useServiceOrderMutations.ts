@@ -5,6 +5,7 @@ import type { PayServiceOrderPayload, ServiceOrderPayload } from '@/types/servic
 import {
   cancelServiceOrder,
   createServiceOrder,
+  deleteServiceOrder,
   payServiceOrder,
   setServiceOrderStage,
   updateServiceOrder,
@@ -46,5 +47,10 @@ export function useServiceOrderMutations() {
     onSuccess: invalidate,
   })
 
-  return { createMutation, updateMutation, payMutation, cancelMutation, setStageMutation }
+  const deleteMutation = useMutation({
+    mutationFn: deleteServiceOrder,
+    onSuccess: invalidate,
+  })
+
+  return { createMutation, updateMutation, payMutation, cancelMutation, setStageMutation, deleteMutation }
 }

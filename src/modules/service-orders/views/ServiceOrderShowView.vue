@@ -1,8 +1,9 @@
 <script setup lang="ts">
 // Detalle de una orden de servicio - items o total plano, abonos, y las
-// acciones de estado (abonar/editar/cancelar). Puerto de
-// Admin/ServiceOrders/Show.vue del legacy (sin el menu de "eliminar
-// permanentemente": esta API no tiene esa accion, solo cancelar).
+// acciones de estado (abonar/editar/cancelar/eliminar). Puerto de
+// Admin/ServiceOrders/Show.vue del legacy - a diferencia de alla (un
+// delete() sin más), eliminar acá reembolsa los abonos primero (mismo
+// patrón que cancelar, ver ServiceOrderService::delete()).
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -30,7 +31,7 @@ const staffQuery = useStaffOptions()
 const workflowQuery = useServiceWorkflow()
 const stageOptions = computed(() => workflowQuery.data.value?.stages ?? [])
 
-const { cancelMutation, setStageMutation } = useServiceOrderMutations()
+const { cancelMutation, setStageMutation, deleteMutation } = useServiceOrderMutations()
 const actionError = ref<string | null>(null)
 const payModalOpen = ref(false)
 const receiptModalOpen = ref(false)
@@ -75,6 +76,23 @@ async function cancelOrder(): Promise<void> {
     notify('Orden cancelada')
   } catch (error) {
     actionError.value = extractErrorMessage(error, 'No pudimos cancelar la orden.')
+  }
+}
+
+async function deleteOrder(): Promise<void> {
+  if (!order.value) {
+    return
+  }
+  if (!window.confirm('¿Eliminar esta orden? Se reembolsarán los abonos registrados y no podrá deshacerse.')) {
+    return
+  }
+  actionError.value = null
+  try {
+    await deleteMutation.mutateAsync(order.value.id)
+    notify('Orden eliminada')
+    router.push({ name: 'service-orders.index' })
+  } catch (error) {
+    actionError.value = extractErrorMessage(error, 'No pudimos eliminar la orden.')
   }
 }
 
@@ -146,6 +164,9 @@ function formatDateTime(value: string): string {
           <NxButton variant="outline" :loading="cancelMutation.isPending.value" @click="cancelOrder">Cancelar orden</NxButton>
         </template>
         <NxButton variant="outline" icon="pi pi-receipt" @click="receiptModalOpen = true">Comprobante</NxButton>
+        <NxButton variant="outline" class="text-red-600 hover:bg-red-50" :loading="deleteMutation.isPending.value" @click="deleteOrder">
+          Eliminar orden
+        </NxButton>
       </div>
 
       <div v-if="order.items.length" class="overflow-x-auto rounded-xl border border-slate-200 bg-white">

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
 import type { ProductPayload } from '@/types/product'
 
-import { createProduct, deleteProduct, updateProduct } from '../services/catalogService'
+import { createProduct, deleteProduct, duplicateProduct, updateProduct } from '../services/catalogService'
 
 export function useProductMutations() {
   const queryClient = useQueryClient()
@@ -32,5 +32,10 @@ export function useProductMutations() {
     onSuccess: invalidate,
   })
 
-  return { createMutation, updateMutation, deleteMutation }
+  const duplicateMutation = useMutation({
+    mutationFn: duplicateProduct,
+    onSuccess: invalidate,
+  })
+
+  return { createMutation, updateMutation, deleteMutation, duplicateMutation }
 }

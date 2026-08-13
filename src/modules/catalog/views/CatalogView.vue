@@ -93,7 +93,7 @@ watch(productCategoryId, () => {
 })
 
 const productsQuery = useProducts(productSearch, productPage, productCategoryId, productFilter)
-const { deleteMutation: deleteProductMutation } = useProductMutations()
+const { deleteMutation: deleteProductMutation, duplicateMutation: duplicateProductMutation } = useProductMutations()
 const productMeta = computed(() => productsQuery.data.value?.meta)
 const productsSummaryQuery = useProductsSummary()
 
@@ -105,6 +105,14 @@ async function removeProduct(product: Product): Promise<void> {
     await deleteProductMutation.mutateAsync(product.id)
   } catch (error) {
     window.alert(extractErrorMessage(error, 'No pudimos eliminar el producto.'))
+  }
+}
+
+async function duplicateProductRow(product: Product): Promise<void> {
+  try {
+    await duplicateProductMutation.mutateAsync(product.id)
+  } catch (error) {
+    window.alert(extractErrorMessage(error, 'No pudimos duplicar el producto.'))
   }
 }
 
@@ -434,6 +442,16 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                       >
                         <i class="pi pi-pencil text-sm" />
                       </RouterLink>
+                      <button
+                        v-if="canAdd"
+                        type="button"
+                        class="text-slate-400 hover:text-indigo-600"
+                        title="Duplicar"
+                        :disabled="duplicateProductMutation.isPending.value"
+                        @click="duplicateProductRow(data)"
+                      >
+                        <i class="pi pi-copy text-sm" />
+                      </button>
                       <button
                         v-if="canAdd"
                         type="button"
