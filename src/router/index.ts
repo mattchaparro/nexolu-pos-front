@@ -57,6 +57,28 @@ const router = createRouter({
       ],
     },
     {
+      path: '/olvide-mi-contrasena',
+      component: () => import('@/layouts/AuthLayout.vue'),
+      children: [
+        {
+          path: '',
+          name: 'forgot-password',
+          component: () => import('@/modules/auth/views/ForgotPasswordView.vue'),
+        },
+      ],
+    },
+    {
+      path: '/restablecer-contrasena',
+      component: () => import('@/layouts/AuthLayout.vue'),
+      children: [
+        {
+          path: '',
+          name: 'reset-password',
+          component: () => import('@/modules/auth/views/ResetPasswordView.vue'),
+        },
+      ],
+    },
+    {
       path: '/',
       component: () => import('@/layouts/AppLayout.vue'),
       meta: { requiresAuth: true },

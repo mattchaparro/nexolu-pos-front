@@ -44,6 +44,24 @@ export const useAuthStore = defineStore('auth', () => {
     setSession(data)
   }
 
+  // Sin sesion de por medio (no hay token que guardar) - el backend
+  // responde siempre el mismo mensaje generico, exista o no ese correo
+  // (AuthController::forgotPassword), asi que no hay nada que ramificar aca.
+  async function forgotPassword(email: string): Promise<string> {
+    const { data } = await httpClient.post<{ message: string }>('/forgot-password', { email })
+    return data.message
+  }
+
+  async function resetPassword(payload: {
+    token: string
+    email: string
+    password: string
+    password_confirmation: string
+  }): Promise<string> {
+    const { data } = await httpClient.post<{ message: string }>('/reset-password', payload)
+    return data.message
+  }
+
   /** Rehidrata al usuario a partir del token guardado (recarga de pagina). */
   async function fetchCurrentUser(): Promise<User> {
     const { data } = await httpClient.get<User>('/me')
@@ -98,6 +116,8 @@ export const useAuthStore = defineStore('auth', () => {
     isImpersonating,
     login,
     logout,
+    forgotPassword,
+    resetPassword,
     fetchCurrentUser,
     clearSession,
     impersonate,

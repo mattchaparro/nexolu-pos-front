@@ -2,9 +2,7 @@
 // Validacion alineada 1:1 con LoginRequest (nexolu-pos-api): email
 // requerido+formato, password requerido. Sin casilla "Recordarme" (los
 // tokens de Sanctum expiran a las 4h - config/sanctum.php - no hay un
-// "recordarme" mas alla de eso) ni link de "olvide mi contraseña" (el
-// endpoint todavia no existe en la API) - ver conversacion con el equipo
-// antes de agregarlos de vuelta.
+// "recordarme" mas alla de eso).
 //
 // La validacion NO usa `validationSchema` de useForm (bug de integracion
 // entre vee-validate 4.15.1 y @vee-validate/zod 4.15.1: los mensajes
@@ -15,7 +13,7 @@
 import { isAxiosError } from 'axios'
 import { useForm } from 'vee-validate'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { z } from 'zod'
 
 import { homeRouteFor } from '@/router'
@@ -96,15 +94,23 @@ const onSubmit = handleSubmit(async (values) => {
         :error="errors.email"
       />
 
-      <NxInput
-        id="password"
-        v-model="password"
-        v-bind="passwordAttrs"
-        type="password"
-        label="Contraseña"
-        autocomplete="current-password"
-        :error="errors.password"
-      />
+      <div>
+        <NxInput
+          id="password"
+          v-model="password"
+          v-bind="passwordAttrs"
+          type="password"
+          label="Contraseña"
+          autocomplete="current-password"
+          :error="errors.password"
+        />
+        <RouterLink
+          :to="{ name: 'forgot-password' }"
+          class="mt-1.5 inline-block text-sm font-semibold text-indigo-600 hover:text-indigo-800"
+        >
+          ¿Olvidaste tu contraseña?
+        </RouterLink>
+      </div>
 
       <NxButton type="submit" class="w-full" :loading="isSubmitting"> Ingresar </NxButton>
     </form>
