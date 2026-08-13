@@ -1,6 +1,6 @@
 import { httpClient } from '@/services/http/client'
 import type { PaginatedResponse } from '@/types/pagination'
-import type { CommunicationChannel, CommunicationLogEntry } from '@/types/superadmin/communication'
+import type { CommunicationChannel, CommunicationLogEntry, SendBusinessCommunicationPayload } from '@/types/superadmin/communication'
 
 export interface FetchCommunicationsParams {
   channel?: CommunicationChannel
@@ -21,4 +21,8 @@ export interface BusinessOption {
 export async function searchBusinesses(search: string): Promise<BusinessOption[]> {
   const { data } = await httpClient.get<PaginatedResponse<BusinessOption>>('/superadmin/businesses', { params: { search } })
   return data.data
+}
+
+export async function sendBusinessCommunication(businessId: number, payload: SendBusinessCommunicationPayload): Promise<void> {
+  await httpClient.post(`/superadmin/businesses/${businessId}/communications`, payload)
 }

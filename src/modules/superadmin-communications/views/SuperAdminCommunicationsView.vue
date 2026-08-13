@@ -6,8 +6,9 @@
 import { computed, ref, watch } from 'vue'
 
 import type { CommunicationChannel, CommunicationLogEntry } from '@/types/superadmin/communication'
-import { NxColumn, NxDataTable, NxPageHeader, NxSelect } from '@/ui'
+import { NxButton, NxColumn, NxDataTable, NxPageHeader, NxSelect } from '@/ui'
 
+import SendCommunicationModal from '../components/SendCommunicationModal.vue'
 import { useBusinessSearch } from '../composables/useBusinessSearch'
 import { useCommunications } from '../composables/useCommunications'
 
@@ -15,6 +16,7 @@ const channel = ref<CommunicationChannel | ''>('')
 const businessId = ref<number | null>(null)
 const businessSearch = ref('')
 const page = ref(1)
+const composeModalOpen = ref(false)
 
 const channelOptions = [
   { value: '', label: 'Todos los canales' },
@@ -56,7 +58,10 @@ function formatDate(value: string): string {
 
 <template>
   <div class="flex flex-col gap-4">
-    <NxPageHeader title="Comunicaciones" icon="pi pi-envelope" compact />
+    <div class="flex items-center justify-between gap-3">
+      <NxPageHeader title="Comunicaciones" icon="pi pi-envelope" compact />
+      <NxButton icon="pi pi-send" size="sm" @click="composeModalOpen = true">Redactar</NxButton>
+    </div>
 
     <div class="flex flex-col gap-2 sm:flex-row">
       <NxSelect v-model="channel" label="Canal" size="lg" :options="channelOptions" option-label="label" option-value="value" class="sm:w-56" />
@@ -127,5 +132,7 @@ function formatDate(value: string): string {
         </NxColumn>
       </NxDataTable>
     </div>
+
+    <SendCommunicationModal v-model="composeModalOpen" />
   </div>
 </template>

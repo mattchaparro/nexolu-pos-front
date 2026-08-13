@@ -14,3 +14,12 @@ export interface CommunicationLogEntry {
   error: string | null
   created_at: string
 }
+
+// Refleja CommunicationController::send (BusinessCommunicationService):
+// correo de asunto/cuerpo libres, o WhatsApp via la plantilla generica
+// 'recordatorio' (una unica variable de texto libre, tope 300 caracteres).
+export interface SendBusinessCommunicationPayload {
+  channel: CommunicationChannel
+  subject?: string | null
+  message: string
+}
