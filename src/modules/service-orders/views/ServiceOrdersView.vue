@@ -9,11 +9,11 @@ import { useRouter } from 'vue-router'
 import StageBadge from '@/components/StageBadge.vue'
 import { useServiceWorkflow } from '@/composables/useServiceWorkflow'
 import type { ServiceOrder, ServiceOrderStatus } from '@/types/serviceOrder'
-import { NxButton, NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect } from '@/ui'
+import { NxButton, NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect, NxStatCard } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
 import PayServiceOrderModal from '../components/PayServiceOrderModal.vue'
-import { useServiceOrders } from '../composables/useServiceOrders'
+import { useServiceOrders, useServiceOrdersSummary } from '../composables/useServiceOrders'
 
 const router = useRouter()
 
@@ -32,6 +32,7 @@ const status = ref<ServiceOrderStatus | ''>('')
 const searchInput = ref('')
 const search = ref('')
 const page = ref(1)
+const stageId = ref<number | null>(null)
 let debounce: number | undefined
 
 watch(searchInput, (value) => {
@@ -44,9 +45,17 @@ watch(searchInput, (value) => {
 watch(status, () => {
   page.value = 1
 })
+watch(stageId, () => {
+  page.value = 1
+})
 
-const ordersQuery = useServiceOrders(status, search, page)
+function toggleStage(id: number): void {
+  stageId.value = stageId.value === id ? null : id
+}
+
+const ordersQuery = useServiceOrders(status, search, page, stageId)
 const meta = computed(() => ordersQuery.data.value?.meta)
+const summaryQuery = useServiceOrdersSummary()
 
 function onPage(event: { page: number }): void {
   page.value = event.page + 1
@@ -81,6 +90,10 @@ function statusBadgeClass(order: ServiceOrder): string {
       <NxButton icon="pi pi-plus" @click="router.push({ name: 'service-orders.create' })">Nueva orden</NxButton>
     </div>
 
+    <div v-if="summaryQuery.data.value" class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <NxStatCard label="Saldo pendiente" :value="formatCop(summaryQuery.data.value.pending_balance)" icon="pi pi-wallet" />
+    </div>
+
     <div class="flex flex-wrap gap-3">
       <NxInput v-model="searchInput" label="Buscar por servicio o cliente" class="min-w-[220px] flex-1" icon="pi pi-search" clearable blur-after-typing />
       <NxSelect
@@ -92,6 +105,19 @@ function statusBadgeClass(order: ServiceOrder): string {
         class="min-w-[180px]"
         @update:model-value="status = $event as ServiceOrderStatus | ''"
       />
+    </div>
+
+    <div v-if="hasWorkflow" class="flex flex-wrap gap-2">
+      <button
+        v-for="stage in workflowQuery.data.value?.stages ?? []"
+        :key="stage.id"
+        type="button"
+        class="rounded-full transition-opacity"
+        :class="stageId !== null && stageId !== stage.id ? 'opacity-40' : ''"
+        @click="toggleStage(stage.id)"
+      >
+        <StageBadge :stage="stage" />
+      </button>
     </div>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">

@@ -10,11 +10,21 @@ import type {
 export interface FetchServiceOrdersParams {
   status?: ServiceOrderStatus | ''
   search?: string
+  stage_id?: number
   page?: number
 }
 
 export async function fetchServiceOrders(params: FetchServiceOrdersParams = {}): Promise<PaginatedResponse<ServiceOrder>> {
   const { data } = await httpClient.get<PaginatedResponse<ServiceOrder>>('/service-orders', { params })
+  return data
+}
+
+export interface ServiceOrdersSummary {
+  pending_balance: number
+}
+
+export async function fetchServiceOrdersSummary(): Promise<ServiceOrdersSummary> {
+  const { data } = await httpClient.get<ServiceOrdersSummary>('/service-orders/summary')
   return data
 }
 
