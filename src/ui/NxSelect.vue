@@ -28,6 +28,18 @@ const props = withDefaults(
     id?: string
     /** Buscador dentro del dropdown - para listas largas (ej. productos/insumos en una linea de compra). */
     filter?: boolean
+    /**
+     * Campos que PrimeSelect compara contra lo tipeado, ademas de re-emitir
+     * el evento filter (ver abajo). Default [optionLabel] - para listas
+     * server-driven que buscan por mas de un campo (ej. ClientPicker.vue
+     * busca por nombre/telefono/email), hay que listarlos todos aca:
+     * PrimeSelect SIEMPRE filtra el resultado del servidor contra lo
+     * tipeado ademas de re-emitirlo (no hay forma de desactivar ese filtro
+     * propio) - si options ya viene filtrado por telefono pero filterFields
+     * solo mira optionLabel (el nombre), un resultado que matcheo por
+     * telefono desaparece del dropdown aunque siga en options.
+     */
+    filterFields?: string[]
   }>(),
   {
     label: undefined,
@@ -39,6 +51,7 @@ const props = withDefaults(
     size: 'md',
     id: undefined,
     filter: false,
+    filterFields: undefined,
   },
 )
 
@@ -93,6 +106,7 @@ const fontSizeStyle = { fontSize: '16px' }
         :size="primeSize"
         :style="fontSizeStyle"
         :filter="filter"
+        :filter-fields="filterFields ?? [optionLabel]"
         :class="{ 'p-inputwrapper-filled': hasMatchingOption }"
         fluid
         @update:model-value="(value) => emit('update:modelValue', value)"

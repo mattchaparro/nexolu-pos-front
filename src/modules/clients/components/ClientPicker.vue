@@ -1,15 +1,16 @@
 <script setup lang="ts">
 // Selector de cliente (opcional) con busqueda server-side (via
 // NxSelect filter+@filter, ver src/ui/NxSelect.vue) y alta rapida inline -
-// no existe todavia una pantalla de gestion de Clientes, asi que el alta
-// se limita a lo minimo que exige StoreClientRequest (nombre + telefono
-// opcional), sin duplicar un CRUD completo que nadie pidio todavia.
-import { ref } from 'vue'
+// el alta rapida se limita a lo minimo que exige StoreClientRequest (nombre
+// + telefono opcional); la ficha completa (email, notas) se termina de
+// llenar despues desde ClientsView.vue si hace falta.
+import { computed, ref } from 'vue'
 
-import { usePermissions } from '@/composables/usePermissions'
+import { useBusiness } from '@/composables/useBusiness'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import { NxButton, NxInput, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
+import { hasFeature } from '@/utils/hasFeature'
 
 import { useClientSearch } from '../composables/useClientSearch'
 import { createClient } from '../services/clientService'
@@ -24,12 +25,13 @@ const emit = defineEmits<{ 'update:modelValue': [value: number | null] }>()
 const search = ref('')
 const clientsQuery = useClientSearch(search)
 const { notify } = useSystemAlert()
-// GET /clients/search y POST /clients requieren clients.manage (ver
-// routes/api.php) - un empleado sin ese permiso puede igual gestionar la
-// orden/cita (permission distinto, appointments.manage) pero no puede
-// buscar ni crear clientes desde aca.
-const { hasPermission } = usePermissions()
-const canManageClients = hasPermission('clients.manage')
+// GET /clients/search y POST /clients solo exigen la feature clients (ver
+// routes/api.php) - no el permiso clients.manage, que es aparte para el
+// directorio completo. Un cliente es un cliente sin importar por donde
+// entra (venta, cita, apartado): cualquiera que pueda gestionar la orden/
+// cita ya puede buscar o dar de alta uno desde aca.
+const { data: business } = useBusiness()
+const clientsFeatureEnabled = computed(() => hasFeature(business.value, 'clients'))
 
 const showQuickCreate = ref(false)
 const quickName = ref('')
@@ -67,19 +69,20 @@ async function quickCreate(): Promise<void> {
       option-value="id"
       label="Cliente (opcional)"
       filter
+      :filter-fields="['name', 'phone', 'email']"
       :error="error"
       @update:model-value="emit('update:modelValue', $event as number | null)"
       @filter="search = $event"
     />
     <button
-      v-if="canManageClients"
+      v-if="clientsFeatureEnabled"
       type="button"
       class="self-start text-xs font-semibold text-indigo-600 hover:text-indigo-800"
       @click="showQuickCreate = !showQuickCreate"
     >
       {{ showQuickCreate ? 'Cancelar' : '+ Nuevo cliente' }}
     </button>
-    <div v-if="canManageClients && showQuickCreate" class="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+    <div v-if="clientsFeatureEnabled && showQuickCreate" class="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
       <p v-if="quickCreateError" class="text-xs text-red-600">{{ quickCreateError }}</p>
       <NxInput v-model="quickName" label="Nombre" size="sm" />
       <NxInput v-model="quickPhone" label="Teléfono (opcional)" size="sm" />

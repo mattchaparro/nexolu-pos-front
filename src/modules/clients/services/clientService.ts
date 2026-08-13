@@ -1,14 +1,16 @@
 import { httpClient } from '@/services/http/client'
-import type { Client, ClientPayload } from '@/types/client'
+import type { Client, ClientPayload, ClientSearchResult } from '@/types/client'
 import type { PaginatedResponse } from '@/types/pagination'
 
-// ClientController::index() no acepta per_page (fijo en 25) - igual que
-// SupplierController, el tope lo pone el backend.
-export async function searchClients(search: string): Promise<Client[]> {
-  const { data } = await httpClient.get<PaginatedResponse<Client>>('/clients', {
-    params: { search: search || undefined },
+// GET /clients/search (no /clients?search=): liviano, sin permission
+// clients.manage - cualquiera que pueda vender/agendar/apartar necesita
+// poder buscar un cliente en el momento, no solo quien administra el
+// directorio completo (ver ClientPicker.vue y routes/api.php).
+export async function searchClients(search: string): Promise<ClientSearchResult[]> {
+  const { data } = await httpClient.get<ClientSearchResult[]>('/clients/search', {
+    params: { q: search || undefined },
   })
-  return data.data
+  return data
 }
 
 export interface FetchClientsParams {

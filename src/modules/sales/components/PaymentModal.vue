@@ -25,6 +25,7 @@
 import { computed, ref, watch } from 'vue'
 
 import PaymentMethodPicker from '@/components/PaymentMethodPicker.vue'
+import ClientQuickAssociate from '@/modules/clients/components/ClientQuickAssociate.vue'
 import type { Business } from '@/types/business'
 import type { Sale } from '@/types/sale'
 import {
@@ -367,6 +368,16 @@ const modalTitle = computed(() => props.title ?? (props.sale ? 'Cobrar cuenta' :
                 </p>
                 <NxInput v-model="customerName" label="Nombre del cliente" size="sm" />
                 <NxInput v-model="customerPhone" label="Teléfono" size="sm" />
+                <ClientQuickAssociate
+                  :name="customerName"
+                  :phone="customerPhone"
+                  @apply="
+                    (client) => {
+                      customerName = client.name
+                      customerPhone = client.phone ?? ''
+                    }
+                  "
+                />
               </template>
             </div>
 

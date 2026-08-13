@@ -6,6 +6,8 @@
 // chevron propio a la derecha, mas claro como indicador de "colapsable".
 import { ref, watch } from 'vue'
 
+import ClientQuickAssociate from '@/modules/clients/components/ClientQuickAssociate.vue'
+import type { ClientSearchResult } from '@/types/client'
 import { NxInput } from '@/ui'
 
 const props = defineProps<{
@@ -15,11 +17,16 @@ const props = defineProps<{
   required: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   'update:name': [value: string]
   'update:phone': [value: string]
   'update:identification': [value: string]
 }>()
+
+function applyClient(client: ClientSearchResult): void {
+  emit('update:name', client.name)
+  emit('update:phone', client.phone ?? '')
+}
 
 const isOpen = ref(props.required)
 
@@ -62,6 +69,7 @@ watch(
           @update:model-value="$emit('update:identification', $event)"
         />
       </div>
+      <ClientQuickAssociate :name="name" :phone="phone" @apply="applyClient" />
     </div>
   </details>
 </template>

@@ -8,6 +8,7 @@ import { useRouter } from 'vue-router'
 
 import { useBusiness } from '@/composables/useBusiness'
 import { useSystemAlert } from '@/composables/useSystemAlert'
+import ClientQuickAssociate from '@/modules/clients/components/ClientQuickAssociate.vue'
 import type { LayawayItemInput, LayawayPayload } from '@/types/layaway'
 import { NxButton, NxInput, NxInputNumber, NxPageHeader, NxTextarea, NxToggleButton } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
@@ -107,6 +108,17 @@ async function submit(): Promise<void> {
           <NxInput v-model="customerPhone" label="Teléfono" :error="fieldErrors.customer_phone" />
           <NxTextarea v-model="notes" label="Notas (opcional)" :rows="1" class="sm:col-span-2" />
         </div>
+        <ClientQuickAssociate
+          class="mt-3"
+          :name="customerName"
+          :phone="customerPhone"
+          @apply="
+            (client) => {
+              customerName = client.name
+              customerPhone = client.phone ?? ''
+            }
+          "
+        />
       </div>
 
       <div class="rounded-xl border border-slate-200 bg-white p-4">
