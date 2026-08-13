@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Wizard publico de registro, 2 pasos, estilo del registro del legacy (el
+// Wizard publico de registro, 3 pasos, estilo del registro del legacy (el
 // usuario dijo que le gusta esa UX: tarjetas + panel de resumen en vivo) -
 // pero con la logica corregida: plan PRIMERO, despues personalizar dentro de
 // ese plan. El legacy hacia lo opuesto (entrevista de funciones, el plan se
@@ -9,6 +9,15 @@
 // se logra subiendo de plan, ya sea aca antes de crear la cuenta o despues
 // desde SuperAdmin). El backend (BusinessRegistrationService::register())
 // clampa esto igual, asi que esta pantalla no es la unica barrera.
+//
+// El paso 3 (verificar WhatsApp por OTP) es obligatorio a proposito - misma
+// decision via AskUserQuestion: pedir el WhatsApp del negocio y confirmarlo
+// con un codigo antes de dejar entrar al dashboard ahorra el paso de
+// vincularlo despues (ver WhatsappOnboardingCard.vue del Dashboard) y de
+// paso sirve como verificacion minima anti-bot - nadie termina el registro
+// sin poder recibir un mensaje de WhatsApp real. Reusa el mismo mecanismo de
+// OTP que ya existe para el Asistente de IA (POST /ai/channels/whatsapp/*,
+// ver ChannelLinkService) en vez de construir uno nuevo sin sesion.
 import { isAxiosError } from 'axios'
 import { useForm } from 'vee-validate'
 import { computed, reactive, ref } from 'vue'
@@ -16,13 +25,15 @@ import { RouterLink, useRouter } from 'vue-router'
 import { z } from 'zod'
 
 import { homeRouteFor } from '@/router'
+import { confirmWhatsappLink, startWhatsappLink } from '@/services/aiChannelLink'
 import { useAuthStore } from '@/stores/auth.store'
 import { NxButton, NxInput, NxSwitch } from '@/ui'
+import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 
 import { usePlanCatalog } from '../composables/usePlanCatalog'
 
-const step = ref<1 | 2>(1)
+const step = ref<1 | 2 | 3>(1)
 const catalogQuery = usePlanCatalog()
 
 // --- Paso 1: datos del negocio y del dueño ---
@@ -33,14 +44,19 @@ const step1Schema = z
     email: z.string().min(1, 'El correo es obligatorio').email('Ingresa un correo válido'),
     password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
     password_confirmation: z.string().min(1, 'Confirma tu contraseña'),
+    whatsapp_number: z.string().min(7, 'Ingresa un número de WhatsApp válido, con indicativo'),
+    usesDifferentPhone: z.boolean(),
     phone: z.string().optional(),
-    whatsapp_number: z.string().optional(),
     nit: z.string().optional(),
     address: z.string().optional(),
   })
   .refine((data) => data.password === data.password_confirmation, {
     message: 'Las contraseñas no coinciden',
     path: ['password_confirmation'],
+  })
+  .refine((data) => !data.usesDifferentPhone || Boolean(data.phone?.trim()), {
+    message: 'Ingresa el teléfono que aparecerá en facturas y reportes',
+    path: ['phone'],
   })
 
 const { handleSubmit, defineField, errors, setErrors } = useForm({
@@ -50,8 +66,9 @@ const { handleSubmit, defineField, errors, setErrors } = useForm({
     email: '',
     password: '',
     password_confirmation: '',
-    phone: '',
     whatsapp_number: '',
+    usesDifferentPhone: false,
+    phone: '',
     nit: '',
     address: '',
   },
@@ -62,8 +79,9 @@ const [owner_name, ownerNameAttrs] = defineField('owner_name')
 const [email, emailAttrs] = defineField('email')
 const [password, passwordAttrs] = defineField('password')
 const [password_confirmation, passwordConfirmationAttrs] = defineField('password_confirmation')
-const [phone, phoneAttrs] = defineField('phone')
 const [whatsapp_number, whatsappNumberAttrs] = defineField('whatsapp_number')
+const [usesDifferentPhone] = defineField('usesDifferentPhone')
+const [phone, phoneAttrs] = defineField('phone')
 const [nit, nitAttrs] = defineField('nit')
 const [address, addressAttrs] = defineField('address')
 
@@ -77,6 +95,8 @@ const goToStep2 = handleSubmit((values) => {
       email: fieldErrors.email?.[0],
       password: fieldErrors.password?.[0],
       password_confirmation: fieldErrors.password_confirmation?.[0],
+      whatsapp_number: fieldErrors.whatsapp_number?.[0],
+      phone: fieldErrors.phone?.[0],
     })
     return
   }
@@ -137,6 +157,52 @@ const router = useRouter()
 const submitError = ref<string | null>(null)
 const isSubmitting = ref(false)
 
+// --- Paso 3: verificar el WhatsApp con un codigo (obligatorio) ---
+const otpPhone = ref('')
+const otpCode = ref('')
+const otpSent = ref(false)
+const otpError = ref<string | null>(null)
+const isSendingOtp = ref(false)
+const isConfirmingOtp = ref(false)
+
+async function sendWhatsappCode(): Promise<void> {
+  if (!otpPhone.value.trim()) {
+    return
+  }
+  otpError.value = null
+  isSendingOtp.value = true
+  try {
+    await startWhatsappLink(otpPhone.value.trim())
+    otpSent.value = true
+    otpCode.value = ''
+  } catch (error) {
+    otpError.value = extractErrorMessage(error, 'No pudimos enviar el código. Revisa el número e intenta de nuevo.')
+  } finally {
+    isSendingOtp.value = false
+  }
+}
+
+function editWhatsappNumber(): void {
+  otpSent.value = false
+  otpError.value = null
+}
+
+async function confirmWhatsappCode(): Promise<void> {
+  if (!otpCode.value.trim()) {
+    return
+  }
+  otpError.value = null
+  isConfirmingOtp.value = true
+  try {
+    await confirmWhatsappLink(otpCode.value.trim())
+    await router.push(homeRouteFor(authStore.user))
+  } catch (error) {
+    otpError.value = extractErrorMessage(error, 'El código no es válido. Intenta de nuevo.')
+  } finally {
+    isConfirmingOtp.value = false
+  }
+}
+
 async function submitRegistration(): Promise<void> {
   if (!selectedPlan.value) {
     return
@@ -150,15 +216,17 @@ async function submitRegistration(): Promise<void> {
       email: email.value ?? '',
       password: password.value ?? '',
       password_confirmation: password_confirmation.value ?? '',
-      phone: phone.value || undefined,
-      whatsapp_number: whatsapp_number.value || undefined,
+      whatsapp_number: whatsapp_number.value ?? '',
+      phone: usesDifferentPhone.value ? phone.value || undefined : undefined,
       nit: nit.value || undefined,
       address: address.value || undefined,
       plan: selectedPlan.value,
       feature_flags: { ...editableFlags },
       device_name: 'nexolu-pos-front',
     })
-    await router.push(homeRouteFor(authStore.user))
+    step.value = 3
+    otpPhone.value = whatsapp_number.value ?? ''
+    await sendWhatsappCode()
   } catch (error) {
     submitError.value = isAxiosError<{ message?: string; errors?: Record<string, string[]> }>(error)
       ? (Object.values(error.response?.data?.errors ?? {})[0]?.[0] ?? error.response?.data?.message)
@@ -174,16 +242,16 @@ async function submitRegistration(): Promise<void> {
   <div class="min-h-screen bg-slate-50">
     <header class="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
       <span class="text-lg font-bold text-indigo-600">Nexolú POS</span>
-      <RouterLink :to="{ name: 'login' }" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">
+      <RouterLink v-if="step < 3" :to="{ name: 'login' }" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">
         ¿Ya tienes cuenta? Inicia sesión
       </RouterLink>
     </header>
 
-    <main class="mx-auto px-6 py-10" :class="step === 1 ? 'max-w-xl' : 'max-w-5xl'">
+    <main class="mx-auto px-6 py-10" :class="step === 2 ? 'max-w-5xl' : 'max-w-xl'">
       <div class="mb-8 text-center">
-        <p class="text-xs font-semibold tracking-wide text-indigo-600 uppercase">Paso {{ step }} de 2</p>
+        <p class="text-xs font-semibold tracking-wide text-indigo-600 uppercase">Paso {{ step }} de 3</p>
         <h1 class="mt-1 text-3xl font-bold text-slate-900">
-          {{ step === 1 ? 'Cuéntanos de tu negocio' : 'Elige tu plan' }}
+          {{ step === 1 ? 'Cuéntanos de tu negocio' : step === 2 ? 'Elige tu plan' : 'Verifica tu WhatsApp' }}
         </h1>
       </div>
 
@@ -212,10 +280,36 @@ async function submitRegistration(): Promise<void> {
             :error="errors.password_confirmation"
           />
         </div>
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <NxInput id="phone" v-model="phone" v-bind="phoneAttrs" label="Teléfono (opcional)" />
-          <NxInput id="whatsapp_number" v-model="whatsapp_number" v-bind="whatsappNumberAttrs" label="WhatsApp del negocio (opcional)" />
+
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <NxInput
+            id="whatsapp_number"
+            v-model="whatsapp_number"
+            v-bind="whatsappNumberAttrs"
+            label="WhatsApp del negocio"
+            :error="errors.whatsapp_number"
+          />
+          <p class="mt-2 text-xs text-slate-500">
+            A este número te llegarán todas las notificaciones del negocio (resúmenes, alertas, recordatorios). En el siguiente paso te
+            enviaremos un código para confirmarlo.
+          </p>
+
+          <label class="mt-3 flex items-center gap-2">
+            <NxSwitch v-model="usesDifferentPhone" />
+            <span class="text-sm text-slate-700">Uso un número diferente para facturas y reportes</span>
+          </label>
+
+          <NxInput
+            v-if="usesDifferentPhone"
+            id="phone"
+            v-model="phone"
+            v-bind="phoneAttrs"
+            label="Teléfono para facturas y reportes"
+            class="mt-3"
+            :error="errors.phone"
+          />
         </div>
+
         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <NxInput id="nit" v-model="nit" v-bind="nitAttrs" label="NIT (opcional)" />
           <NxInput id="address" v-model="address" v-bind="addressAttrs" label="Dirección (opcional)" />
@@ -224,7 +318,7 @@ async function submitRegistration(): Promise<void> {
       </form>
 
       <!-- Paso 2 -->
-      <div v-else class="space-y-6">
+      <div v-else-if="step === 2" class="space-y-6">
         <p v-if="submitError" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ submitError }}</p>
 
         <div v-if="catalogQuery.isPending.value" class="h-64 animate-pulse rounded-xl bg-slate-100" />
@@ -297,6 +391,38 @@ async function submitRegistration(): Promise<void> {
           <NxButton variant="outline" @click="backToStep1">Atrás</NxButton>
           <NxButton :disabled="!selectedPlan" :loading="isSubmitting" @click="submitRegistration">Crear mi cuenta</NxButton>
         </div>
+      </div>
+
+      <!-- Paso 3: verificar WhatsApp (obligatorio, sin opcion de omitir) -->
+      <div v-else class="mx-auto max-w-sm space-y-4 text-center">
+        <i class="pi pi-whatsapp text-4xl text-emerald-500" />
+
+        <p v-if="otpError" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ otpError }}</p>
+
+        <template v-if="!otpSent">
+          <p class="text-sm text-slate-600">
+            Confirma el número de WhatsApp donde recibirás todas las notificaciones de tu negocio.
+          </p>
+          <NxInput v-model="otpPhone" label="WhatsApp del negocio" class="mx-auto max-w-[260px]" />
+          <NxButton :loading="isSendingOtp" @click="sendWhatsappCode">Enviar código</NxButton>
+        </template>
+
+        <template v-else>
+          <p class="text-sm text-slate-600">
+            Te enviamos un código de 6 dígitos a <strong>{{ otpPhone }}</strong
+            >.
+          </p>
+          <NxInput v-model="otpCode" label="Código recibido" class="mx-auto max-w-[200px]" />
+          <NxButton class="w-full" :loading="isConfirmingOtp" @click="confirmWhatsappCode">Confirmar código</NxButton>
+          <div class="flex justify-center gap-4 text-xs">
+            <button type="button" class="font-medium text-indigo-600 hover:text-indigo-800" :disabled="isSendingOtp" @click="sendWhatsappCode">
+              Reenviar código
+            </button>
+            <button type="button" class="font-medium text-slate-400 hover:text-slate-600" @click="editWhatsappNumber">
+              ¿Número equivocado?
+            </button>
+          </div>
+        </template>
       </div>
     </main>
   </div>

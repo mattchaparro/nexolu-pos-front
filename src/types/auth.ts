@@ -33,8 +33,13 @@ export interface RegisterPayload {
   email: string
   password: string
   password_confirmation: string
+  // Opcional: solo se manda si el negocio usa un numero DISTINTO al de
+  // WhatsApp para facturas/reportes - si no, el backend lo deja igual al
+  // whatsapp_number ya verificado (ver BusinessRegistrationService::register()).
   phone?: string
-  whatsapp_number?: string
+  // Obligatorio: es el canal de notificaciones, y el wizard lo verifica con
+  // un OTP justo despues de crear la cuenta (ver RegisterView.vue paso 3).
+  whatsapp_number: string
   nit?: string
   address?: string
   plan: 'basic' | 'full'
