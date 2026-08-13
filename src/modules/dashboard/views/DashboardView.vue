@@ -1,9 +1,9 @@
 <script setup lang="ts">
-// Version recortada de Pages/Admin/Dashboard.vue del legacy: las 5
-// StatCards (resumen del dia), el nombre real del negocio y el "consejo
-// del dia". Quedan afuera para cuando exista el modulo de chat IA:
-// tarjeta de insight IA y onboarding de WhatsApp - ambas enlazan a esa
-// conversacion, que este frontend todavia no tiene. La grilla de atajos
+// Version recortada de Pages/Admin/Dashboard.vue del legacy: las StatCards
+// (resumen del dia), el nombre real del negocio, el card de onboarding de
+// WhatsApp y el "consejo del dia". Queda afuera para cuando exista el
+// modulo de chat IA: la tarjeta de insight IA (esa si depende de la
+// conversacion, que este frontend todavia no tiene). La grilla de atajos
 // personalizable queda para cuando haya 2-3 modulos reales a los que
 // apuntar.
 import { useBusiness } from '@/composables/useBusiness'
@@ -11,6 +11,7 @@ import { NxPageHeader, NxStatCard } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
 import ConsejoDelDiaCard from '../components/ConsejoDelDiaCard.vue'
+import WhatsappOnboardingCard from '../components/WhatsappOnboardingCard.vue'
 import { useDashboardSummary } from '../composables/useDashboardSummary'
 
 const { data: stats, isPending, isError } = useDashboardSummary()
@@ -40,6 +41,8 @@ const { data: business } = useBusiness()
           :value="String(stats.today_count)"
           icon="pi pi-receipt"
         />
+        <NxStatCard label="Efectivo hoy" :value="formatCop(stats.today_cash)" icon="pi pi-money-bill" />
+        <NxStatCard label="Transferencia hoy" :value="formatCop(stats.today_transfer)" icon="pi pi-credit-card" />
         <NxStatCard
           label="Cuentas abiertas"
           :value="formatCop(stats.open_tabs_total)"
@@ -60,6 +63,7 @@ const { data: business } = useBusiness()
       </template>
     </div>
 
+    <WhatsappOnboardingCard class="mt-6" />
     <ConsejoDelDiaCard class="mt-6" />
   </div>
 </template>
