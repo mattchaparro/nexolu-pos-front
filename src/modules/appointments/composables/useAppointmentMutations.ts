@@ -4,6 +4,7 @@ import type { AppointmentPayload, AppointmentStatus, ReschedulePayload } from '@
 
 import {
   createAppointment,
+  deleteAppointment,
   rescheduleAppointment,
   updateAppointment,
   updateAppointmentStatus,
@@ -39,5 +40,10 @@ export function useAppointmentMutations() {
     onSuccess: invalidate,
   })
 
-  return { createMutation, updateMutation, rescheduleMutation, updateStatusMutation }
+  const deleteMutation = useMutation({
+    mutationFn: deleteAppointment,
+    onSuccess: invalidate,
+  })
+
+  return { createMutation, updateMutation, rescheduleMutation, updateStatusMutation, deleteMutation }
 }

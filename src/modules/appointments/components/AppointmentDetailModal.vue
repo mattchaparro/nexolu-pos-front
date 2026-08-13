@@ -30,7 +30,7 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
 const { notify } = useSystemAlert()
-const { updateStatusMutation } = useAppointmentMutations()
+const { updateStatusMutation, deleteMutation } = useAppointmentMutations()
 const { setStageMutation } = useServiceOrderMutations()
 const workflowQuery = useServiceWorkflow()
 const stageOptions = computed(() => workflowQuery.data.value?.stages ?? [])
@@ -88,6 +88,29 @@ async function cancelAppointment(): Promise<void> {
     return
   }
   await changeStatus('cancelled')
+}
+
+// A diferencia de "Cancelar", esto no reembolsa ni cambia la orden de
+// servicio vinculada (si la hay) - solo saca la cita del calendario, la
+// orden y sus pagos quedan intactos (ver comentario en
+// AppointmentController::destroy en el backend).
+async function deleteAppointment(): Promise<void> {
+  if (!props.appointment) {
+    return
+  }
+  const warning = linkedOrder.value
+    ? '¿Eliminar esta cita? La orden de servicio vinculada y sus pagos no se verán afectados.'
+    : '¿Eliminar esta cita?'
+  if (!window.confirm(warning)) {
+    return
+  }
+  actionError.value = null
+  try {
+    await deleteMutation.mutateAsync(props.appointment.id)
+    emit('update:modelValue', false)
+  } catch (error) {
+    actionError.value = extractErrorMessage(error, 'No pudimos eliminar la cita.')
+  }
 }
 
 function formatDateTime(value: string): string {
@@ -150,6 +173,9 @@ function formatDateTime(value: string): string {
           Reprogramar
         </NxButton>
         <NxButton v-if="appointment.status !== 'cancelled'" variant="outline" size="sm" @click="cancelAppointment">Cancelar</NxButton>
+        <NxButton variant="danger" size="sm" :loading="deleteMutation.isPending.value" @click="deleteAppointment">
+          Eliminar
+        </NxButton>
       </div>
     </div>
 

@@ -39,3 +39,7 @@ export async function updateAppointmentStatus(id: number, status: AppointmentSta
   const { data } = await httpClient.put<Appointment>(`/appointments/${id}/status`, { status })
   return data
 }
+
+export async function deleteAppointment(id: number): Promise<void> {
+  await httpClient.delete(`/appointments/${id}`)
+}
