@@ -9,7 +9,7 @@
 import { computed, ref, watch } from 'vue'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
-import { fetchReceiptPdf, sendReceipt } from '@/services/receipts'
+import { fetchReceiptPdf, fetchReceiptPrintHtml, sendReceipt } from '@/services/receipts'
 import type { ReceiptChannel, ReceiptEntityType } from '@/types/receipt'
 import { NxButton, NxInput, NxModal } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
@@ -26,6 +26,11 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 const { notify } = useSystemAlert()
 
+// Dos formatos distintos, igual que el backend (ver ReceiptPdfService):
+// "Imprimir" abre el HTML de impresion directo (dispara window.print() solo,
+// sin visor de PDF de por medio - mejor para imprimir contra una impresora
+// termica) y "Ver PDF" abre el PDF descargable/adjuntable (el mismo que se
+// usa al enviar por WhatsApp/correo).
 const isPrinting = ref(false)
 const printError = ref<string | null>(null)
 
@@ -33,7 +38,7 @@ async function print(): Promise<void> {
   printError.value = null
   isPrinting.value = true
   try {
-    const blob = await fetchReceiptPdf(props.entityType, props.entityId)
+    const blob = await fetchReceiptPrintHtml(props.entityType, props.entityId)
     const url = URL.createObjectURL(blob)
     window.open(url, '_blank')
     window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
@@ -41,6 +46,24 @@ async function print(): Promise<void> {
     printError.value = extractErrorMessage(error, 'No pudimos generar el comprobante.')
   } finally {
     isPrinting.value = false
+  }
+}
+
+const isOpeningPdf = ref(false)
+const pdfError = ref<string | null>(null)
+
+async function viewPdf(): Promise<void> {
+  pdfError.value = null
+  isOpeningPdf.value = true
+  try {
+    const blob = await fetchReceiptPdf(props.entityType, props.entityId)
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank')
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  } catch (error) {
+    pdfError.value = extractErrorMessage(error, 'No pudimos generar el PDF.')
+  } finally {
+    isOpeningPdf.value = false
   }
 }
 
@@ -87,8 +110,12 @@ async function send(): Promise<void> {
     <div class="flex flex-col gap-4">
       <div>
         <p class="mb-2 text-sm font-semibold text-slate-700">Imprimir</p>
-        <NxButton variant="outline" icon="pi pi-print" :loading="isPrinting" @click="print">Ver / imprimir PDF</NxButton>
+        <div class="flex flex-wrap gap-2">
+          <NxButton variant="outline" icon="pi pi-print" :loading="isPrinting" @click="print">Imprimir</NxButton>
+          <NxButton variant="outline" icon="pi pi-file-pdf" :loading="isOpeningPdf" @click="viewPdf">Ver PDF</NxButton>
+        </div>
         <p v-if="printError" class="mt-1 text-xs text-red-600">{{ printError }}</p>
+        <p v-if="pdfError" class="mt-1 text-xs text-red-600">{{ pdfError }}</p>
       </div>
 
       <div class="border-t border-slate-200 pt-4">

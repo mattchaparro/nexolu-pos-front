@@ -20,6 +20,17 @@ export async function fetchReceiptPdf(type: ReceiptEntityType, id: number): Prom
   return data
 }
 
+// El PDF de arriba es para descargar/adjuntar en el envio; esto es distinto:
+// un HTML de solo impresion (ver receipts.print.* en el backend) que el
+// navegador puede imprimir directo contra una impresora termica sin pasar
+// por un visor de PDF (que suele agregar margenes/escalado y rompe el ancho
+// del ticket). Mismo problema de auth que arriba, mismo fix: blob + object
+// URL, solo que aca el blob es text/html en vez de application/pdf.
+export async function fetchReceiptPrintHtml(type: ReceiptEntityType, id: number): Promise<Blob> {
+  const { data } = await httpClient.get(`/${ENDPOINT_BY_TYPE[type]}/${id}/receipt/print`, { responseType: 'blob' })
+  return data
+}
+
 export async function sendReceipt(type: ReceiptEntityType, id: number, payload: SendReceiptPayload): Promise<void> {
   await httpClient.post(`/${ENDPOINT_BY_TYPE[type]}/${id}/receipt/send`, payload)
 }
