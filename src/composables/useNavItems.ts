@@ -49,6 +49,7 @@ export function useNavItems() {
   // nota del meta requiresAdmin en router/index.ts).
   const showUsers = computed(() => auth.user?.roles?.includes('admin') === true)
   const showAuditLogs = computed(() => hasPermission('audit_logs.view'))
+  const showDailySummary = computed(() => hasPermission('reports.sales'))
 
   return computed<NavItem[]>(() =>
     adminNavItems
@@ -74,6 +75,9 @@ export function useNavItems() {
         }
         if (item.label === 'Auditoría' && showAuditLogs.value) {
           return { ...item, routeName: 'audit-logs.index', disabled: false }
+        }
+        if (item.label === 'Resumen del día' && showDailySummary.value) {
+          return { ...item, routeName: 'daily-summary.index', disabled: false }
         }
         return item
       }),

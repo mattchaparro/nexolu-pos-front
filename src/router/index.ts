@@ -311,6 +311,15 @@ const router = createRouter({
           meta: { requiresFeature: 'audit_logs', requiresPermission: 'audit_logs.view' },
         },
         {
+          // Sin requiresFeature: no es un extra de plan (igual que Ajustes),
+          // cualquier negocio puede ver su propio resumen de ingresos -
+          // reports.sales es el mismo permiso que ya protege /reports/sales/*.
+          path: 'resumen-del-dia',
+          name: 'daily-summary.index',
+          component: () => import('@/modules/daily-summary/views/DailySummaryView.vue'),
+          meta: { requiresPermission: 'reports.sales' },
+        },
+        {
           // Sin requiresFeature/requiresPermission: a diferencia de los modulos
           // de arriba, Ajustes no depende de un feature flag propio - cada
           // seccion adentro decide si aplica segun el negocio (ver

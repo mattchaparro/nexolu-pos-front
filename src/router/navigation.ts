@@ -23,7 +23,7 @@ export const adminNavItems: NavItem[] = [
   // gap que se repite.
   { label: 'Clientes', icon: 'pi pi-users', routeName: 'clients.index', featureKey: 'clients' },
   { label: 'Turnos de caja', icon: 'pi pi-clock', disabled: true, featureKey: 'cash_closing' },
-  { label: 'Resumen del día', icon: 'pi pi-chart-bar', disabled: true },
+  { label: 'Resumen del día', icon: 'pi pi-chart-bar', disabled: true, routeName: 'daily-summary.index' },
   { label: 'Gastos', icon: 'pi pi-money-bill', routeName: 'expenses.index', featureKey: 'expenses' },
   { label: 'Planificador', icon: 'pi pi-calendar-clock', routeName: 'reminders.index', featureKey: 'reminders' },
   { label: 'Descuentos', icon: 'pi pi-tag', disabled: true, featureKey: 'discounts' },
