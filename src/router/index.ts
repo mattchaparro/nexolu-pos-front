@@ -295,6 +295,12 @@ const router = createRouter({
           meta: { requiresAdmin: true },
         },
         {
+          path: 'auditoria',
+          name: 'audit-logs.index',
+          component: () => import('@/modules/audit-logs/views/AuditLogView.vue'),
+          meta: { requiresFeature: 'audit_logs', requiresPermission: 'audit_logs.view' },
+        },
+        {
           // Sin requiresFeature/requiresPermission: a diferencia de los modulos
           // de arriba, Ajustes no depende de un feature flag propio - cada
           // seccion adentro decide si aplica segun el negocio (ver

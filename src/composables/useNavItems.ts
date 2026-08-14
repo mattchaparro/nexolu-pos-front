@@ -48,6 +48,7 @@ export function useNavItems() {
   // Usuarios: restringido a rol admin, no a un permiso del catalogo (ver la
   // nota del meta requiresAdmin en router/index.ts).
   const showUsers = computed(() => auth.user?.roles?.includes('admin') === true)
+  const showAuditLogs = computed(() => hasPermission('audit_logs.view'))
 
   return computed<NavItem[]>(() =>
     adminNavItems
@@ -70,6 +71,9 @@ export function useNavItems() {
         }
         if (item.label === 'Usuarios' && showUsers.value) {
           return { ...item, routeName: 'employees.index', disabled: false }
+        }
+        if (item.label === 'Auditoría' && showAuditLogs.value) {
+          return { ...item, routeName: 'audit-logs.index', disabled: false }
         }
         return item
       }),
