@@ -8,12 +8,13 @@
 import { computed, ref, watch } from 'vue'
 
 import ReceiptActionsModal from '@/components/ReceiptActionsModal.vue'
-import type { IncomeChannel, RecentLayaway, RecentSale, RecentServiceOrder } from '@/types/dailySummary'
-import type { ReceiptEntityType } from '@/types/receipt'
-import { NxButton, NxInput, NxSelect, NxStatCard, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs } from '@/ui'
+import type { IncomeChannel, RecentLayaway, RecentReceivable, RecentSale, RecentServiceOrder } from '@/types/dailySummary'
+import { NxInput, NxSelect, NxStatCard, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs, NxToggleButton } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
+import TransactionRowItem from '../components/TransactionRowItem.vue'
 import { useDailySummary } from '../composables/useDailySummary'
+import type { TransactionRow } from '../types'
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10)
@@ -114,26 +115,110 @@ function paymentMethodLabel(id: string): string {
 
 const closedSales = computed<RecentSale[]>(() => (summaryQuery.data.value?.recent_sales ?? []).filter((sale) => sale.status === 'closed'))
 
-const receiptModalOpen = ref(false)
-const receiptEntity = ref<{ type: ReceiptEntityType; id: number; title: string; phone?: string | null } | null>(null)
+// Filas de transaccion mapeadas a una forma comun (ver types.ts) para poder
+// reusar la misma TransactionRowItem tanto agrupadas por canal (4 secciones,
+// cada una ya dice su canal en el titulo) como en una sola lista con
+// columna de canal - el usuario pidio poder alternar entre las dos formas
+// de ver lo mismo, no solo la agrupada.
+function saleRow(sale: RecentSale): TransactionRow {
+  const paymentBadges =
+    sale.payment_splits.length > 0
+      ? sale.payment_splits.map((split) => ({ label: paymentMethodLabel(split.payment_method), amount: split.amount }))
+      : sale.payment_method
+        ? [{ label: paymentMethodLabel(sale.payment_method) }]
+        : []
 
-function openSaleReceipt(sale: RecentSale): void {
-  receiptEntity.value = { type: 'sale', id: sale.id, title: `Comprobante · Venta #${sale.invoice_number ?? sale.id}`, phone: sale.customer_phone }
-  receiptModalOpen.value = true
-}
-
-function openServiceOrderReceipt(order: RecentServiceOrder): void {
-  receiptEntity.value = { type: 'service-order', id: order.id, title: `Comprobante · ${order.service_name}` }
-  receiptModalOpen.value = true
-}
-
-function openLayawayReceipt(layaway: RecentLayaway): void {
-  receiptEntity.value = {
-    type: 'layaway',
-    id: layaway.id,
-    title: `Comprobante · Apartado #${layaway.id}`,
-    phone: layaway.customer_phone,
+  const flags: TransactionRow['flags'] = []
+  if (sale.is_non_revenue) {
+    flags.push({ label: 'Cortesía', badgeClass: 'bg-fuchsia-50 text-fuchsia-600' })
   }
+  if (sale.is_credit) {
+    flags.push({ label: 'Fiado', badgeClass: 'bg-amber-50 text-amber-600' })
+  }
+
+  return {
+    key: `sale-${sale.id}`,
+    channelKey: 'sales',
+    channelLabel: 'Ventas',
+    title: sale.customer_name || sale.table_name || `Venta #${sale.id}`,
+    subtitle: `${sale.created_at} · ${sale.items_preview}`,
+    amount: sale.total,
+    paymentBadges,
+    flags,
+    items: sale.items,
+    receipt: { type: 'sale', id: sale.id, title: `Comprobante · Venta #${sale.invoice_number ?? sale.id}`, phone: sale.customer_phone },
+  }
+}
+
+function serviceRow(order: RecentServiceOrder): TransactionRow {
+  return {
+    key: `service-${order.id}`,
+    channelKey: 'services',
+    channelLabel: 'Servicios',
+    title: order.service_name,
+    subtitle: `${order.client_name || 'Sin cliente'} · saldo ${formatCop(order.balance)}`,
+    amount: order.amount_paid_today,
+    paymentBadges: order.payment_methods_today.map((method) => ({ label: paymentMethodLabel(method) })),
+    flags: [],
+    items: null,
+    receipt: { type: 'service-order', id: order.id, title: `Comprobante · ${order.service_name}` },
+  }
+}
+
+function layawayRow(layaway: RecentLayaway): TransactionRow {
+  return {
+    key: `layaway-${layaway.id}`,
+    channelKey: 'layaways',
+    channelLabel: 'Apartados',
+    title: layaway.customer_name || `Apartado #${layaway.id}`,
+    subtitle: layaway.customer_phone || 'Sin teléfono',
+    amount: layaway.amount_paid_today,
+    paymentBadges: layaway.payment_methods_today.map((method) => ({ label: paymentMethodLabel(method) })),
+    flags: [],
+    items: null,
+    receipt: { type: 'layaway', id: layaway.id, title: `Comprobante · Apartado #${layaway.id}`, phone: layaway.customer_phone },
+  }
+}
+
+function receivableRow(receivable: RecentReceivable): TransactionRow {
+  return {
+    key: `receivable-${receivable.id}`,
+    channelKey: 'receivables',
+    channelLabel: 'Fiados',
+    title: receivable.customer_name || `Fiado #${receivable.id}`,
+    subtitle: `${receivable.paid_at} · ${receivable.customer_phone || 'Sin teléfono'}`,
+    amount: receivable.amount,
+    paymentBadges: receivable.payment_method ? [{ label: paymentMethodLabel(receivable.payment_method) }] : [],
+    flags: [],
+    items: null,
+    // Sin recibo: no existe endpoint de comprobante para fiados en el backend.
+    receipt: null,
+  }
+}
+
+const salesRows = computed(() => closedSales.value.map(saleRow))
+const serviceRows = computed(() =>
+  summaryQuery.data.value?.channels_enabled.services ? (summaryQuery.data.value.recent_service_orders ?? []).map(serviceRow) : [],
+)
+const layawayRows = computed(() =>
+  summaryQuery.data.value?.channels_enabled.layaways ? (summaryQuery.data.value.recent_layaways ?? []).map(layawayRow) : [],
+)
+const receivableRows = computed(() =>
+  summaryQuery.data.value?.channels_enabled.receivables ? (summaryQuery.data.value.recent_receivables ?? []).map(receivableRow) : [],
+)
+
+const allRows = computed<TransactionRow[]>(() => [...salesRows.value, ...serviceRows.value, ...layawayRows.value, ...receivableRows.value])
+
+const linesGrouped = ref(true)
+
+const receiptModalOpen = ref(false)
+const receiptEntity = ref<TransactionRow['receipt']>(null)
+
+function openReceipt(row: TransactionRow): void {
+  if (!row.receipt) {
+    return
+  }
+  receiptEntity.value = row.receipt
   receiptModalOpen.value = true
 }
 </script>
@@ -244,136 +329,52 @@ function openLayawayReceipt(layaway: RecentLayaway): void {
         </ul>
       </div>
 
-      <!-- ================= Ventas ================= -->
-      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 class="mb-3 text-sm font-semibold text-slate-700">Ventas <span class="font-normal text-slate-400">({{ closedSales.length }})</span></h2>
-        <div v-if="closedSales.length === 0" class="py-4 text-center text-sm text-slate-400">Sin ventas cerradas en este rango.</div>
-        <div v-else class="flex flex-col divide-y divide-slate-100">
-          <div v-for="sale in closedSales" :key="sale.id" class="flex flex-wrap items-center justify-between gap-2 py-2.5">
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-slate-700">
-                {{ sale.customer_name || sale.table_name || `Venta #${sale.id}` }}
-                <span class="font-normal text-slate-400">· {{ sale.created_at }}</span>
-              </p>
-              <p class="truncate text-xs text-slate-400">{{ sale.items_preview }}</p>
-            </div>
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span v-if="sale.is_non_revenue" class="rounded-full bg-fuchsia-50 px-2 py-0.5 text-[11px] font-semibold text-fuchsia-600">Cortesía</span>
-              <span v-if="sale.is_credit" class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-600">Fiado</span>
-              <template v-if="sale.payment_splits.length > 0">
-                <span
-                  v-for="(split, idx) in sale.payment_splits"
-                  :key="idx"
-                  class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600"
-                >
-                  {{ paymentMethodLabel(split.payment_method) }} {{ formatCop(split.amount) }}
-                </span>
-              </template>
-              <span v-else-if="sale.payment_method" class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                {{ paymentMethodLabel(sale.payment_method) }}
-              </span>
-            </div>
-            <span class="text-sm font-semibold text-slate-900">{{ formatCop(sale.total) }}</span>
-            <NxButton size="sm" variant="outline" icon="pi pi-receipt" @click="openSaleReceipt(sale)">Comprobante</NxButton>
-          </div>
-        </div>
+      <!-- ================= Detalle de transacciones ================= -->
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="text-sm font-semibold text-slate-700">Detalle de transacciones</h2>
+        <NxToggleButton v-model="linesGrouped" label="Agrupar por canal" icon="pi pi-sitemap" />
       </div>
 
-      <!-- ================= Servicios ================= -->
-      <div v-if="summaryQuery.data.value.channels_enabled.services" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 class="mb-3 text-sm font-semibold text-slate-700">
-          Servicios <span class="font-normal text-slate-400">({{ summaryQuery.data.value.recent_service_orders.length }})</span>
-        </h2>
-        <div v-if="summaryQuery.data.value.recent_service_orders.length === 0" class="py-4 text-center text-sm text-slate-400">
-          Sin abonos a servicios en este rango.
-        </div>
-        <div v-else class="flex flex-col divide-y divide-slate-100">
-          <div
-            v-for="order in summaryQuery.data.value.recent_service_orders"
-            :key="order.id"
-            class="flex flex-wrap items-center justify-between gap-2 py-2.5"
-          >
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-slate-700">{{ order.service_name }}</p>
-              <p class="truncate text-xs text-slate-400">{{ order.client_name || 'Sin cliente' }} · saldo {{ formatCop(order.balance) }}</p>
-            </div>
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span
-                v-for="method in order.payment_methods_today"
-                :key="method"
-                class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600"
-              >
-                {{ paymentMethodLabel(method) }}
-              </span>
-            </div>
-            <span class="text-sm font-semibold text-slate-900">{{ formatCop(order.amount_paid_today) }}</span>
-            <NxButton size="sm" variant="outline" icon="pi pi-receipt" @click="openServiceOrderReceipt(order)">Comprobante</NxButton>
+      <template v-if="linesGrouped">
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h3 class="mb-1 text-sm font-semibold text-slate-700">Ventas <span class="font-normal text-slate-400">({{ salesRows.length }})</span></h3>
+          <p v-if="salesRows.length === 0" class="py-4 text-center text-sm text-slate-400">Sin ventas cerradas en este rango.</p>
+          <div v-else class="flex flex-col divide-y divide-slate-100">
+            <TransactionRowItem v-for="row in salesRows" :key="row.key" :row="row" :show-channel="false" @receipt="openReceipt(row)" />
           </div>
         </div>
-      </div>
 
-      <!-- ================= Apartados ================= -->
-      <div v-if="summaryQuery.data.value.channels_enabled.layaways" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 class="mb-3 text-sm font-semibold text-slate-700">
-          Apartados <span class="font-normal text-slate-400">({{ summaryQuery.data.value.recent_layaways.length }})</span>
-        </h2>
-        <div v-if="summaryQuery.data.value.recent_layaways.length === 0" class="py-4 text-center text-sm text-slate-400">
-          Sin abonos a apartados en este rango.
-        </div>
-        <div v-else class="flex flex-col divide-y divide-slate-100">
-          <div
-            v-for="layaway in summaryQuery.data.value.recent_layaways"
-            :key="layaway.id"
-            class="flex flex-wrap items-center justify-between gap-2 py-2.5"
-          >
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-slate-700">{{ layaway.customer_name || `Apartado #${layaway.id}` }}</p>
-              <p class="truncate text-xs text-slate-400">{{ layaway.customer_phone || 'Sin teléfono' }}</p>
-            </div>
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span
-                v-for="method in layaway.payment_methods_today"
-                :key="method"
-                class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600"
-              >
-                {{ paymentMethodLabel(method) }}
-              </span>
-            </div>
-            <span class="text-sm font-semibold text-slate-900">{{ formatCop(layaway.amount_paid_today) }}</span>
-            <NxButton size="sm" variant="outline" icon="pi pi-receipt" @click="openLayawayReceipt(layaway)">Comprobante</NxButton>
+        <div v-if="summaryQuery.data.value.channels_enabled.services" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h3 class="mb-1 text-sm font-semibold text-slate-700">Servicios <span class="font-normal text-slate-400">({{ serviceRows.length }})</span></h3>
+          <p v-if="serviceRows.length === 0" class="py-4 text-center text-sm text-slate-400">Sin abonos a servicios en este rango.</p>
+          <div v-else class="flex flex-col divide-y divide-slate-100">
+            <TransactionRowItem v-for="row in serviceRows" :key="row.key" :row="row" :show-channel="false" @receipt="openReceipt(row)" />
           </div>
         </div>
-      </div>
 
-      <!-- ================= Fiados cobrados ================= -->
-      <div v-if="summaryQuery.data.value.channels_enabled.receivables" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 class="mb-3 text-sm font-semibold text-slate-700">
-          Fiados cobrados <span class="font-normal text-slate-400">({{ summaryQuery.data.value.recent_receivables.length }})</span>
-        </h2>
-        <div v-if="summaryQuery.data.value.recent_receivables.length === 0" class="py-4 text-center text-sm text-slate-400">
-          Sin fiados cobrados en este rango.
-        </div>
-        <div v-else class="flex flex-col divide-y divide-slate-100">
-          <div
-            v-for="receivable in summaryQuery.data.value.recent_receivables"
-            :key="receivable.id"
-            class="flex flex-wrap items-center justify-between gap-2 py-2.5"
-          >
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-slate-700">
-                {{ receivable.customer_name || `Fiado #${receivable.id}` }}
-                <span class="font-normal text-slate-400">· {{ receivable.paid_at }}</span>
-              </p>
-              <p class="truncate text-xs text-slate-400">{{ receivable.customer_phone || 'Sin teléfono' }}</p>
-            </div>
-            <span
-              v-if="receivable.payment_method"
-              class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600"
-            >
-              {{ paymentMethodLabel(receivable.payment_method) }}
-            </span>
-            <span class="text-sm font-semibold text-slate-900">{{ formatCop(receivable.amount) }}</span>
+        <div v-if="summaryQuery.data.value.channels_enabled.layaways" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h3 class="mb-1 text-sm font-semibold text-slate-700">Apartados <span class="font-normal text-slate-400">({{ layawayRows.length }})</span></h3>
+          <p v-if="layawayRows.length === 0" class="py-4 text-center text-sm text-slate-400">Sin abonos a apartados en este rango.</p>
+          <div v-else class="flex flex-col divide-y divide-slate-100">
+            <TransactionRowItem v-for="row in layawayRows" :key="row.key" :row="row" :show-channel="false" @receipt="openReceipt(row)" />
           </div>
+        </div>
+
+        <div v-if="summaryQuery.data.value.channels_enabled.receivables" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h3 class="mb-1 text-sm font-semibold text-slate-700">
+            Fiados cobrados <span class="font-normal text-slate-400">({{ receivableRows.length }})</span>
+          </h3>
+          <p v-if="receivableRows.length === 0" class="py-4 text-center text-sm text-slate-400">Sin fiados cobrados en este rango.</p>
+          <div v-else class="flex flex-col divide-y divide-slate-100">
+            <TransactionRowItem v-for="row in receivableRows" :key="row.key" :row="row" :show-channel="false" @receipt="openReceipt(row)" />
+          </div>
+        </div>
+      </template>
+
+      <div v-else class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p v-if="allRows.length === 0" class="py-4 text-center text-sm text-slate-400">Sin transacciones en este rango.</p>
+        <div v-else class="flex flex-col divide-y divide-slate-100">
+          <TransactionRowItem v-for="row in allRows" :key="row.key" :row="row" :show-channel="true" @receipt="openReceipt(row)" />
         </div>
       </div>
     </template>

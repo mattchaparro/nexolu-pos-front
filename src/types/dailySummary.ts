@@ -13,6 +13,13 @@ export interface IncomeChannel {
   by_payment_method: PaymentMethodTotal[]
 }
 
+export interface SaleItemLine {
+  name: string
+  is_deleted: boolean
+  quantity: number
+  subtotal: number
+}
+
 export interface RecentSale {
   id: number
   invoice_number: string | null
@@ -28,6 +35,7 @@ export interface RecentSale {
   user_name: string | null
   created_at: string
   items_preview: string
+  items: SaleItemLine[]
 }
 
 export interface TopProduct {
