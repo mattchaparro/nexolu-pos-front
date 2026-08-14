@@ -27,3 +27,13 @@ export async function confirmWhatsappLink(code: string): Promise<WhatsappLinkCon
   const { data } = await httpClient.post<WhatsappLinkConfirmResponse>('/ai/channels/whatsapp/confirm', { code })
   return data
 }
+
+// Estado real del vinculo, sin las excepciones de
+// GET /dashboard/whatsapp-onboarding (que se apaga si el usuario ya
+// descarto la tarjeta o el negocio tiene el chat de IA bloqueado - eso solo
+// decide si se muestra esa tarjeta, no si el canal esta vinculado). Lo usa
+// la pestaña de notificaciones de Ajustes.
+export async function fetchWhatsappLinkStatus(): Promise<{ linked: boolean }> {
+  const { data } = await httpClient.get<{ linked: boolean }>('/ai/channels/whatsapp/status')
+  return data
+}

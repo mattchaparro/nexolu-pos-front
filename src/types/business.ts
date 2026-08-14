@@ -17,10 +17,33 @@ export interface BusinessChargesConfig {
 export interface Business {
   id: number
   name: string
+  owner_name: string
+  phone: string | null
+  whatsapp_number: string | null
+  instagram_handle: string | null
+  tiktok_handle: string | null
+  nit: string | null
+  address: string | null
+  logo_path: string | null
+  ticket_paper_width: '58' | '80'
+  invoice_prefix: string
+  ticket_header_tagline: string | null
+  ticket_thanks_message: string | null
+  ticket_footer_text: string | null
   delivery_enabled: boolean
   delivery_fee: number
   payment_methods: BusinessPaymentMethod[]
   charges: BusinessChargesConfig
+  low_stock_alert_threshold: number
+  low_stock_email_enabled: boolean
+  low_stock_email: string | null
+  low_stock_snoozed_until: string | null
+  // null = todas las categorias habilitan Apartados; array = solo esas.
+  layaway_allowed_category_ids: number[] | null
+  email_header_color: string | null
+  email_footer_text: string | null
+  email_whatsapp_cta: boolean
+  notification_preferences: Record<string, boolean> | null
   feature_flags: Record<string, boolean> | null
   // Las 20 banderas del catalogo YA resueltas (Business::resolvedFeatures())
   // - lo que hasFeature() lee, en vez de replicar la logica de resolucion
