@@ -24,7 +24,7 @@ export const adminNavItems: NavItem[] = [
   { label: 'Clientes', icon: 'pi pi-users', routeName: 'clients.index', featureKey: 'clients' },
   { label: 'Turnos de caja', icon: 'pi pi-clock', disabled: true, featureKey: 'cash_closing' },
   { label: 'Resumen del día', icon: 'pi pi-chart-bar', disabled: true },
-  { label: 'Gastos', icon: 'pi pi-money-bill', disabled: true, featureKey: 'expenses' },
+  { label: 'Gastos', icon: 'pi pi-money-bill', routeName: 'expenses.index', featureKey: 'expenses' },
   { label: 'Planificador', icon: 'pi pi-calendar-clock', disabled: true, featureKey: 'reminders' },
   { label: 'Descuentos', icon: 'pi pi-tag', disabled: true, featureKey: 'discounts' },
   { label: 'Reportes', icon: 'pi pi-chart-line', disabled: true },

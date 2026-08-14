@@ -248,6 +248,14 @@ const router = createRouter({
           meta: { requiresFeature: 'scheduling', requiresPermission: 'appointments.manage' },
         },
         {
+          path: 'gastos',
+          name: 'expenses.index',
+          component: () => import('@/modules/expenses/views/ExpensesView.vue'),
+          // expenses.create O expenses.manage (basta uno de los dos para
+          // ver el listado - mismo criterio que el backend: permission:expenses.create,expenses.manage).
+          meta: { requiresFeature: 'expenses', requiresPermission: ['expenses.create', 'expenses.manage'] },
+        },
+        {
           // Sin requiresFeature/requiresPermission: a diferencia de los modulos
           // de arriba, Ajustes no depende de un feature flag propio - cada
           // seccion adentro decide si aplica segun el negocio (ver
