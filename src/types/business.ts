@@ -22,6 +22,11 @@ export interface Business {
   payment_methods: BusinessPaymentMethod[]
   charges: BusinessChargesConfig
   feature_flags: Record<string, boolean> | null
+  // Las 20 banderas del catalogo YA resueltas (Business::resolvedFeatures())
+  // - lo que hasFeature() lee, en vez de replicar la logica de resolucion
+  // de feature_flags/plan aca (ver BusinessResource y el comentario en
+  // utils/hasFeature.ts).
+  resolved_features: Record<string, boolean>
   // Computado en el backend (Business::canAccessPurchases()) - no replicar
   // la logica de feature_flags/plan aca, ver BusinessResource.
   can_access_purchases: boolean
