@@ -37,6 +37,36 @@ export interface TopProduct {
   total_revenue: number
 }
 
+export interface RecentServiceOrder {
+  id: number
+  service_name: string
+  client_name: string | null
+  total: number
+  amount_paid: number
+  amount_paid_today: number
+  balance: number
+  status: string
+  payment_methods_today: string[]
+}
+
+export interface RecentLayaway {
+  id: number
+  customer_name: string | null
+  customer_phone: string | null
+  amount_paid_today: number
+  payment_methods_today: string[]
+  status: string
+}
+
+export interface RecentReceivable {
+  id: number
+  customer_name: string | null
+  customer_phone: string | null
+  amount: number
+  payment_method: string | null
+  paid_at: string
+}
+
 export interface DailySummary {
   date: string
   date_from: string
@@ -69,4 +99,7 @@ export interface DailySummary {
   top_products: TopProduct[]
   recent_sales: RecentSale[]
   open_sales: RecentSale[]
+  recent_service_orders: RecentServiceOrder[]
+  recent_layaways: RecentLayaway[]
+  recent_receivables: RecentReceivable[]
 }

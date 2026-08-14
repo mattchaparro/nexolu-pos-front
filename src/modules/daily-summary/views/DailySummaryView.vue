@@ -7,8 +7,10 @@
 // a pedir datos al backend: la respuesta ya trae el desglose completo.
 import { computed, ref, watch } from 'vue'
 
-import type { IncomeChannel } from '@/types/dailySummary'
-import { NxInput, NxSelect, NxStatCard, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs } from '@/ui'
+import ReceiptActionsModal from '@/components/ReceiptActionsModal.vue'
+import type { IncomeChannel, RecentLayaway, RecentSale, RecentServiceOrder } from '@/types/dailySummary'
+import type { ReceiptEntityType } from '@/types/receipt'
+import { NxButton, NxInput, NxSelect, NxStatCard, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
 import { useDailySummary } from '../composables/useDailySummary'
@@ -89,6 +91,51 @@ const filteredPaymentBreakdown = computed(() => {
   }
   return list.filter((m) => m.id === paymentMethodFilter.value)
 })
+
+// Detalle linea por linea por canal - lo que ya existia en el resumen del
+// dia del legacy (3 bloques: ultimas ventas, servicios, apartados) mas
+// fiados cobrados (el legacy no lo desglosaba aparte). Cada fila muestra su
+// medio de pago (o el reparto completo si fue un pago dividido/varios
+// medios) y un boton de comprobante, reusando el mismo ReceiptActionsModal
+// que ya usan Vender/Ordenes de servicio/Apartados - un solo modal
+// compartido con el estado de la fila seleccionada, igual que hacia el
+// legacy con su modal unico al final de la pagina.
+const paymentMethodLabelMap = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {}
+  for (const method of summaryQuery.data.value?.payment_breakdown ?? []) {
+    map[method.id] = method.label
+  }
+  return map
+})
+
+function paymentMethodLabel(id: string): string {
+  return paymentMethodLabelMap.value[id] ?? id
+}
+
+const closedSales = computed<RecentSale[]>(() => (summaryQuery.data.value?.recent_sales ?? []).filter((sale) => sale.status === 'closed'))
+
+const receiptModalOpen = ref(false)
+const receiptEntity = ref<{ type: ReceiptEntityType; id: number; title: string; phone?: string | null } | null>(null)
+
+function openSaleReceipt(sale: RecentSale): void {
+  receiptEntity.value = { type: 'sale', id: sale.id, title: `Comprobante · Venta #${sale.invoice_number ?? sale.id}`, phone: sale.customer_phone }
+  receiptModalOpen.value = true
+}
+
+function openServiceOrderReceipt(order: RecentServiceOrder): void {
+  receiptEntity.value = { type: 'service-order', id: order.id, title: `Comprobante · ${order.service_name}` }
+  receiptModalOpen.value = true
+}
+
+function openLayawayReceipt(layaway: RecentLayaway): void {
+  receiptEntity.value = {
+    type: 'layaway',
+    id: layaway.id,
+    title: `Comprobante · Apartado #${layaway.id}`,
+    phone: layaway.customer_phone,
+  }
+  receiptModalOpen.value = true
+}
 </script>
 
 <template>
@@ -186,32 +233,158 @@ const filteredPaymentBreakdown = computed(() => {
         </NxTabs>
       </div>
 
-      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 class="mb-3 text-sm font-semibold text-slate-700">Productos más vendidos</h2>
-          <div v-if="summaryQuery.data.value.top_products.length === 0" class="py-4 text-center text-sm text-slate-400">Sin ventas en este rango.</div>
-          <ul v-else class="flex flex-col gap-2">
-            <li v-for="product in summaryQuery.data.value.top_products" :key="product.product_id" class="flex items-center justify-between text-sm">
-              <span class="text-slate-700">{{ product.name }} <span class="text-slate-400">x{{ product.total_quantity }}</span></span>
-              <span class="font-medium text-slate-900">{{ formatCop(product.total_revenue) }}</span>
-            </li>
-          </ul>
-        </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h2 class="mb-3 text-sm font-semibold text-slate-700">Productos más vendidos</h2>
+        <div v-if="summaryQuery.data.value.top_products.length === 0" class="py-4 text-center text-sm text-slate-400">Sin ventas en este rango.</div>
+        <ul v-else class="flex flex-col gap-2">
+          <li v-for="product in summaryQuery.data.value.top_products" :key="product.product_id" class="flex items-center justify-between text-sm">
+            <span class="text-slate-700">{{ product.name }} <span class="text-slate-400">x{{ product.total_quantity }}</span></span>
+            <span class="font-medium text-slate-900">{{ formatCop(product.total_revenue) }}</span>
+          </li>
+        </ul>
+      </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 class="mb-3 text-sm font-semibold text-slate-700">Ventas recientes</h2>
-          <div v-if="summaryQuery.data.value.recent_sales.length === 0" class="py-4 text-center text-sm text-slate-400">Sin ventas en este rango.</div>
-          <ul v-else class="flex flex-col gap-2">
-            <li v-for="sale in summaryQuery.data.value.recent_sales" :key="sale.id" class="flex items-center justify-between text-sm">
-              <span class="min-w-0 truncate text-slate-700">
+      <!-- ================= Ventas ================= -->
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h2 class="mb-3 text-sm font-semibold text-slate-700">Ventas <span class="font-normal text-slate-400">({{ closedSales.length }})</span></h2>
+        <div v-if="closedSales.length === 0" class="py-4 text-center text-sm text-slate-400">Sin ventas cerradas en este rango.</div>
+        <div v-else class="flex flex-col divide-y divide-slate-100">
+          <div v-for="sale in closedSales" :key="sale.id" class="flex flex-wrap items-center justify-between gap-2 py-2.5">
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-medium text-slate-700">
                 {{ sale.customer_name || sale.table_name || `Venta #${sale.id}` }}
-                <span class="text-slate-400">· {{ sale.created_at }}</span>
+                <span class="font-normal text-slate-400">· {{ sale.created_at }}</span>
+              </p>
+              <p class="truncate text-xs text-slate-400">{{ sale.items_preview }}</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span v-if="sale.is_non_revenue" class="rounded-full bg-fuchsia-50 px-2 py-0.5 text-[11px] font-semibold text-fuchsia-600">Cortesía</span>
+              <span v-if="sale.is_credit" class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-600">Fiado</span>
+              <template v-if="sale.payment_splits.length > 0">
+                <span
+                  v-for="(split, idx) in sale.payment_splits"
+                  :key="idx"
+                  class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+                >
+                  {{ paymentMethodLabel(split.payment_method) }} {{ formatCop(split.amount) }}
+                </span>
+              </template>
+              <span v-else-if="sale.payment_method" class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                {{ paymentMethodLabel(sale.payment_method) }}
               </span>
-              <span class="ml-2 flex-shrink-0 font-medium text-slate-900">{{ formatCop(sale.total) }}</span>
-            </li>
-          </ul>
+            </div>
+            <span class="text-sm font-semibold text-slate-900">{{ formatCop(sale.total) }}</span>
+            <NxButton size="sm" variant="outline" icon="pi pi-receipt" @click="openSaleReceipt(sale)">Comprobante</NxButton>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= Servicios ================= -->
+      <div v-if="summaryQuery.data.value.channels_enabled.services" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h2 class="mb-3 text-sm font-semibold text-slate-700">
+          Servicios <span class="font-normal text-slate-400">({{ summaryQuery.data.value.recent_service_orders.length }})</span>
+        </h2>
+        <div v-if="summaryQuery.data.value.recent_service_orders.length === 0" class="py-4 text-center text-sm text-slate-400">
+          Sin abonos a servicios en este rango.
+        </div>
+        <div v-else class="flex flex-col divide-y divide-slate-100">
+          <div
+            v-for="order in summaryQuery.data.value.recent_service_orders"
+            :key="order.id"
+            class="flex flex-wrap items-center justify-between gap-2 py-2.5"
+          >
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-medium text-slate-700">{{ order.service_name }}</p>
+              <p class="truncate text-xs text-slate-400">{{ order.client_name || 'Sin cliente' }} · saldo {{ formatCop(order.balance) }}</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span
+                v-for="method in order.payment_methods_today"
+                :key="method"
+                class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+              >
+                {{ paymentMethodLabel(method) }}
+              </span>
+            </div>
+            <span class="text-sm font-semibold text-slate-900">{{ formatCop(order.amount_paid_today) }}</span>
+            <NxButton size="sm" variant="outline" icon="pi pi-receipt" @click="openServiceOrderReceipt(order)">Comprobante</NxButton>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= Apartados ================= -->
+      <div v-if="summaryQuery.data.value.channels_enabled.layaways" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h2 class="mb-3 text-sm font-semibold text-slate-700">
+          Apartados <span class="font-normal text-slate-400">({{ summaryQuery.data.value.recent_layaways.length }})</span>
+        </h2>
+        <div v-if="summaryQuery.data.value.recent_layaways.length === 0" class="py-4 text-center text-sm text-slate-400">
+          Sin abonos a apartados en este rango.
+        </div>
+        <div v-else class="flex flex-col divide-y divide-slate-100">
+          <div
+            v-for="layaway in summaryQuery.data.value.recent_layaways"
+            :key="layaway.id"
+            class="flex flex-wrap items-center justify-between gap-2 py-2.5"
+          >
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-medium text-slate-700">{{ layaway.customer_name || `Apartado #${layaway.id}` }}</p>
+              <p class="truncate text-xs text-slate-400">{{ layaway.customer_phone || 'Sin teléfono' }}</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span
+                v-for="method in layaway.payment_methods_today"
+                :key="method"
+                class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+              >
+                {{ paymentMethodLabel(method) }}
+              </span>
+            </div>
+            <span class="text-sm font-semibold text-slate-900">{{ formatCop(layaway.amount_paid_today) }}</span>
+            <NxButton size="sm" variant="outline" icon="pi pi-receipt" @click="openLayawayReceipt(layaway)">Comprobante</NxButton>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= Fiados cobrados ================= -->
+      <div v-if="summaryQuery.data.value.channels_enabled.receivables" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h2 class="mb-3 text-sm font-semibold text-slate-700">
+          Fiados cobrados <span class="font-normal text-slate-400">({{ summaryQuery.data.value.recent_receivables.length }})</span>
+        </h2>
+        <div v-if="summaryQuery.data.value.recent_receivables.length === 0" class="py-4 text-center text-sm text-slate-400">
+          Sin fiados cobrados en este rango.
+        </div>
+        <div v-else class="flex flex-col divide-y divide-slate-100">
+          <div
+            v-for="receivable in summaryQuery.data.value.recent_receivables"
+            :key="receivable.id"
+            class="flex flex-wrap items-center justify-between gap-2 py-2.5"
+          >
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-medium text-slate-700">
+                {{ receivable.customer_name || `Fiado #${receivable.id}` }}
+                <span class="font-normal text-slate-400">· {{ receivable.paid_at }}</span>
+              </p>
+              <p class="truncate text-xs text-slate-400">{{ receivable.customer_phone || 'Sin teléfono' }}</p>
+            </div>
+            <span
+              v-if="receivable.payment_method"
+              class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+            >
+              {{ paymentMethodLabel(receivable.payment_method) }}
+            </span>
+            <span class="text-sm font-semibold text-slate-900">{{ formatCop(receivable.amount) }}</span>
+          </div>
         </div>
       </div>
     </template>
+
+    <ReceiptActionsModal
+      v-if="receiptEntity"
+      v-model="receiptModalOpen"
+      :entity-type="receiptEntity.type"
+      :entity-id="receiptEntity.id"
+      :document-title="receiptEntity.title"
+      :default-phone="receiptEntity.phone"
+    />
   </div>
 </template>
