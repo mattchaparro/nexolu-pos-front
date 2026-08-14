@@ -35,7 +35,9 @@ const canManage = computed(() =>
 )
 
 // ---------- tab activo -----------------------------------------------
-const activeTab = ref(0)
+// NxTabs usa v-model:value con string - ref('0') para que coincida con el
+// value de los NxTab ("0", "1").
+const activeTab = ref('0')
 
 // ---------- filtros Gastos -------------------------------------------
 const month = ref(currentDate.getMonth() + 1)
@@ -166,9 +168,12 @@ async function removeTemplate(template: FixedExpenseTemplate): Promise<void> {
 
 <template>
   <div class="flex flex-col gap-4 pb-20 lg:pb-0">
-    <NxPageHeader title="Gastos" icon="pi pi-money-bill" compact />
+    <div class="flex items-center justify-between gap-3">
+      <NxPageHeader title="Gastos" icon="pi pi-money-bill" compact />
+      <NxButton icon="pi pi-plus" @click="openNewExpense">Gasto</NxButton>
+    </div>
 
-    <NxTabs v-model:active-index="activeTab">
+    <NxTabs v-model:value="activeTab">
       <NxTabList>
         <NxTab value="0">Gastos</NxTab>
         <NxTab v-if="canManage" value="1">Gastos fijos</NxTab>
@@ -216,7 +221,6 @@ async function removeTemplate(template: FixedExpenseTemplate): Promise<void> {
                 blur-after-typing
                 class="flex-1"
               />
-              <NxButton icon="pi pi-plus" @click="openNewExpense">Gasto</NxButton>
             </div>
 
             <!-- Resumen del período -->
