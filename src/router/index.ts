@@ -248,6 +248,12 @@ const router = createRouter({
           meta: { requiresFeature: 'scheduling', requiresPermission: 'appointments.manage' },
         },
         {
+          path: 'planificador',
+          name: 'reminders.index',
+          component: () => import('@/modules/reminders/views/RemindersView.vue'),
+          meta: { requiresFeature: 'reminders', requiresPermission: 'reminders.manage' },
+        },
+        {
           path: 'gastos',
           name: 'expenses.index',
           component: () => import('@/modules/expenses/views/ExpensesView.vue'),
