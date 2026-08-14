@@ -262,6 +262,12 @@ const router = createRouter({
           meta: { requiresFeature: 'expenses', requiresPermission: ['expenses.create', 'expenses.manage'] },
         },
         {
+          path: 'descuentos',
+          name: 'discounts.index',
+          component: () => import('@/modules/discounts/views/DiscountsView.vue'),
+          meta: { requiresFeature: 'discounts', requiresPermission: 'discounts.manage' },
+        },
+        {
           // Sin requiresFeature/requiresPermission: a diferencia de los modulos
           // de arriba, Ajustes no depende de un feature flag propio - cada
           // seccion adentro decide si aplica segun el negocio (ver

@@ -37,6 +37,11 @@ export function useNavItems() {
     () => business.value?.can_access_scheduling === true && hasPermission('appointments.manage'),
   )
   const showLayaways = computed(() => business.value?.can_access_layaways === true && hasPermission('layaways.manage'))
+  // Descuentos no tiene un "can_access_x" precalculado en BusinessResource
+  // (a diferencia de servicios/agenda/apartados) porque no depende de un OR
+  // entre varias features - solo del feature 'discounts' (ya filtrado abajo
+  // por featureKey) mas este permiso.
+  const showDiscounts = computed(() => hasPermission('discounts.manage'))
 
   return computed<NavItem[]>(() =>
     adminNavItems
@@ -50,6 +55,9 @@ export function useNavItems() {
         }
         if (item.label === 'Apartados' && showLayaways.value) {
           return { ...item, routeName: 'layaways.index', disabled: false }
+        }
+        if (item.label === 'Descuentos' && showDiscounts.value) {
+          return { ...item, routeName: 'discounts.index', disabled: false }
         }
         return item
       }),
