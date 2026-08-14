@@ -9,20 +9,23 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 
 import { useBusiness } from '@/composables/useBusiness'
+import { useBusinessPaymentMethods } from '@/composables/useBusinessPaymentMethods'
 import { useClearLowStockSnoozeMutation } from '@/composables/useClearLowStockSnoozeMutation'
+import { useRequestPaymentMethodSupportMutation } from '@/composables/useRequestPaymentMethodSupportMutation'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import { useUpdateBusinessMutation } from '@/composables/useUpdateBusinessMutation'
 import { useUpdateBusinessNotificationsMutation } from '@/composables/useUpdateBusinessNotificationsMutation'
+import { useUpdateBusinessPaymentMethodsMutation } from '@/composables/useUpdateBusinessPaymentMethodsMutation'
 import { useWhatsappLinkStatus } from '@/composables/useWhatsappLinkStatus'
 import { useAiMessagePackCheckout } from '@/modules/ai-message-packs/composables/useAiMessagePackCheckout'
 import { useAiQuotaState } from '@/modules/ai-message-packs/composables/useAiQuotaState'
 import { useCategories } from '@/modules/catalog/composables/useCategories'
-import type { BusinessPaymentMethod } from '@/types/business'
 import {
   NxButton,
   NxCard,
   NxInput,
   NxInputNumber,
+  NxModal,
   NxPageHeader,
   NxSelect,
   NxSwitch,
@@ -81,8 +84,66 @@ const paperWidthOptions = [
 ]
 
 // ---------- Ventas: metodos de pago, domicilios, cargos ----------------
-const paymentMethods = ref<BusinessPaymentMethod[]>([])
-const newPaymentMethodLabel = ref('')
+// Selector contra el catalogo global (PosPaymentMethod, gestionado desde
+// SuperAdmin) en vez de texto libre - ver PosPaymentMethodController en el
+// backend. Guardar aca es lo que migra al negocio del JSON legacy al
+// catalogo normalizado (Business::paymentMethods()); nunca se borra un
+// medio, solo se deshabilita.
+const paymentMethodsQuery = useBusinessPaymentMethods()
+const paymentMethodSelections = reactive<Record<number, boolean>>({})
+const paymentMethodsFormError = ref<string | null>(null)
+const updatePaymentMethods = useUpdateBusinessPaymentMethodsMutation()
+
+watch(
+  paymentMethodsQuery.data,
+  (value) => {
+    if (!value) {
+      return
+    }
+    for (const key of Object.keys(paymentMethodSelections)) {
+      delete paymentMethodSelections[Number(key)]
+    }
+    for (const method of value.data) {
+      paymentMethodSelections[method.id] = method.is_enabled
+    }
+  },
+  { immediate: true },
+)
+
+async function savePaymentMethods(): Promise<void> {
+  paymentMethodsFormError.value = null
+  try {
+    await updatePaymentMethods.mutateAsync(
+      Object.entries(paymentMethodSelections).map(([id, is_enabled]) => ({
+        pos_payment_method_id: Number(id),
+        is_enabled,
+      })),
+    )
+    notify('Medios de pago guardados')
+  } catch (error) {
+    paymentMethodsFormError.value = extractErrorMessage(error, 'No pudimos guardar los medios de pago.')
+  }
+}
+
+// ---------- Ventas: "no esta el que necesitas? Contacta a soporte" ------
+const supportModalOpen = ref(false)
+const supportMessage = ref('')
+const requestSupport = useRequestPaymentMethodSupportMutation()
+
+async function submitSupportRequest(): Promise<void> {
+  if (!supportMessage.value.trim()) {
+    return
+  }
+  try {
+    await requestSupport.mutateAsync(supportMessage.value.trim())
+    notify('Le avisamos a soporte, te contactaremos pronto')
+    supportModalOpen.value = false
+    supportMessage.value = ''
+  } catch (error) {
+    notify(extractErrorMessage(error, 'No pudimos enviar la solicitud.'))
+  }
+}
+
 const ventas = reactive({
   delivery_enabled: false,
   delivery_fee: 0 as number | null,
@@ -93,29 +154,6 @@ const ventas = reactive({
 })
 const ventasErrors = ref<Record<string, string>>({})
 const ventasFormError = ref<string | null>(null)
-
-function addPaymentMethod(): void {
-  const label = newPaymentMethodLabel.value.trim()
-  if (!label) {
-    return
-  }
-  const id = label
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-  if (!id || paymentMethods.value.some((m) => m.id === id)) {
-    newPaymentMethodLabel.value = ''
-    return
-  }
-  paymentMethods.value.push({ id, label })
-  newPaymentMethodLabel.value = ''
-}
-
-function removePaymentMethod(id: string): void {
-  paymentMethods.value = paymentMethods.value.filter((m) => m.id !== id)
-}
 
 // ---------- Inventario: alertas de stock bajo ---------------------------
 const inventario = reactive({
@@ -209,7 +247,6 @@ watch(
     facturacion.email_footer_text = value.email_footer_text ?? ''
     facturacion.email_whatsapp_cta = value.email_whatsapp_cta
 
-    paymentMethods.value = value.payment_methods.map((m) => ({ ...m }))
     ventas.delivery_enabled = value.delivery_enabled
     ventas.delivery_fee = value.delivery_fee
     ventas.service_charge_enabled = value.charges.service_charge_enabled
@@ -321,7 +358,6 @@ async function submitVentas(): Promise<void> {
   ventasFormError.value = null
   try {
     await mutateAsync({
-      payment_methods: paymentMethods.value,
       delivery_enabled: ventas.delivery_enabled,
       delivery_fee: ventas.delivery_fee ?? 0,
       service_charge_enabled: ventas.service_charge_enabled,
@@ -463,23 +499,46 @@ async function submitServicios(): Promise<void> {
             <NxCard class="mt-3">
               <p v-if="ventasFormError" class="mb-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ ventasFormError }}</p>
 
-              <p class="mb-2 text-sm font-semibold text-slate-700">Metodos de pago</p>
-              <div class="mb-4 flex flex-wrap gap-2">
-                <span
-                  v-for="method in paymentMethods"
-                  :key="method.id"
-                  class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-sm text-slate-700"
+              <p class="mb-1 text-sm font-semibold text-slate-700">Metodos de pago</p>
+              <p class="mb-3 text-xs text-slate-500">
+                Selecciona del catalogo los que acepta tu negocio. Un medio nunca se elimina, solo se deshabilita, para no romper el historial
+                de ventas que ya lo usaron.
+              </p>
+
+              <p v-if="paymentMethodsFormError" class="mb-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ paymentMethodsFormError }}</p>
+
+              <div v-if="paymentMethodsQuery.isPending.value" class="mb-6 h-24 animate-pulse rounded-xl bg-slate-100" />
+
+              <template v-else>
+                <p
+                  v-if="!paymentMethodsQuery.data.value?.migrated && paymentMethodsQuery.data.value?.legacy_payment_methods.length"
+                  class="mb-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800"
                 >
-                  {{ method.label }}
-                  <button v-if="canEdit" type="button" class="text-slate-400 hover:text-red-600" @click="removePaymentMethod(method.id)">
-                    <i class="pi pi-times text-xs" />
+                  Hoy tienes configurado, sin normalizar:
+                  {{ paymentMethodsQuery.data.value.legacy_payment_methods.map((m) => m.label).join(', ') }}. Selecciona abajo los que uses y
+                  guarda para pasarlos al catálogo.
+                </p>
+
+                <div class="mb-4 divide-y divide-slate-100 rounded-xl border border-slate-200">
+                  <div v-for="method in paymentMethodsQuery.data.value?.data ?? []" :key="method.id" class="flex items-center justify-between gap-4 px-4 py-3">
+                    <div>
+                      <p class="text-sm font-medium text-slate-700">{{ method.label }}</p>
+                      <p v-if="!method.is_active" class="text-xs text-amber-600">Retirado del catálogo por Nexolú - puedes deshabilitarlo.</p>
+                    </div>
+                    <NxSwitch v-model="paymentMethodSelections[method.id]" :disabled="!canEdit" />
+                  </div>
+                  <p v-if="!paymentMethodsQuery.data.value?.data.length" class="px-4 py-6 text-center text-sm text-slate-400">
+                    Todavía no hay medios de pago en el catálogo.
+                  </p>
+                </div>
+
+                <div v-if="canEdit" class="mb-6 flex flex-wrap items-center gap-3">
+                  <NxButton size="sm" :loading="updatePaymentMethods.isPending.value" @click="savePaymentMethods">Guardar medios de pago</NxButton>
+                  <button type="button" class="text-xs font-medium text-indigo-600 hover:underline" @click="supportModalOpen = true">
+                    ¿No está el que necesitas? Contacta a soporte
                   </button>
-                </span>
-              </div>
-              <div v-if="canEdit" class="mb-6 flex items-end gap-2">
-                <NxInput v-model="newPaymentMethodLabel" label="Nuevo metodo de pago" placeholder="Ej. Nequi" class="max-w-xs" @keyup.enter="addPaymentMethod" />
-                <NxButton variant="outline" size="sm" @click="addPaymentMethod">Agregar</NxButton>
-              </div>
+                </div>
+              </template>
 
               <p class="mb-2 text-sm font-semibold text-slate-700">Domicilios</p>
               <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -723,5 +782,23 @@ async function submitServicios(): Promise<void> {
         </NxTabPanels>
       </NxTabs>
     </template>
+
+    <NxModal v-model="supportModalOpen" title="Contacta a soporte" size="sm">
+      <div class="flex flex-col gap-3">
+        <p class="text-sm text-slate-600">
+          Cuéntanos qué medio de pago necesitas y por qué - le llega directo al equipo de Nexolú con el asunto "Solicitud de añadir medio de
+          pago".
+        </p>
+        <NxTextarea v-model="supportMessage" label="Mensaje" placeholder="Ej. Necesitamos Bancolombia a la Mano" :rows="4" />
+      </div>
+      <template #footer>
+        <div class="flex gap-2">
+          <NxButton variant="outline" class="flex-1" @click="supportModalOpen = false">Cancelar</NxButton>
+          <NxButton class="flex-1" :loading="requestSupport.isPending.value" :disabled="!supportMessage.trim()" @click="submitSupportRequest">
+            Enviar
+          </NxButton>
+        </div>
+      </template>
+    </NxModal>
   </div>
 </template>

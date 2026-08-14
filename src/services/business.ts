@@ -1,5 +1,5 @@
 import { httpClient } from '@/services/http/client'
-import type { Business, BusinessPaymentMethod } from '@/types/business'
+import type { Business, BusinessPosPaymentMethodsResponse } from '@/types/business'
 
 // Compartido entre modulos (Dashboard lo usa para el nombre del negocio,
 // Vender para metodos de pago/cargos/domicilio, Ajustes para editarlo) - no
@@ -38,7 +38,6 @@ export type UpdateBusinessPayload = Partial<
     | 'service_orders_default_service_name'
   >
 > & {
-  payment_methods?: BusinessPaymentMethod[]
   service_charge_enabled?: boolean
   service_charge_rate?: number
   ipoconsumo_enabled?: boolean
@@ -56,4 +55,20 @@ export async function updateBusinessNotifications(preferences: Record<string, bo
 
 export async function clearLowStockSnooze(): Promise<void> {
   await httpClient.delete('/business/low-stock-snooze')
+}
+
+export async function fetchBusinessPaymentMethods(): Promise<BusinessPosPaymentMethodsResponse> {
+  const { data } = await httpClient.get<BusinessPosPaymentMethodsResponse>('/business/payment-methods')
+  return data
+}
+
+export async function updateBusinessPaymentMethods(
+  methods: Array<{ pos_payment_method_id: number; is_enabled: boolean }>,
+): Promise<BusinessPosPaymentMethodsResponse> {
+  const { data } = await httpClient.put<BusinessPosPaymentMethodsResponse>('/business/payment-methods', { methods })
+  return data
+}
+
+export async function requestPaymentMethodSupport(message: string): Promise<void> {
+  await httpClient.post('/business/payment-methods/support-request', { message })
 }

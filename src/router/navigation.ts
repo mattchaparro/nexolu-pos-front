@@ -71,4 +71,7 @@ export const superadminNavItems: NavItem[] = [
   { label: 'Planes y Funciones', icon: 'pi pi-sitemap', routeName: 'superadmin.feature-catalog.index' },
   { label: 'Cron jobs', icon: 'pi pi-clock', disabled: true },
   { label: 'Workflows servicio', icon: 'pi pi-sitemap', routeName: 'superadmin.workflows.index' },
+  // Idem: sin equivalente en el legacy - catalogo normalizado de medios de
+  // pago del POS (ver docs/CUTOVER_TODO.md sobre la normalizacion pendiente).
+  { label: 'Medios de pago', icon: 'pi pi-wallet', routeName: 'superadmin.pos-payment-methods.index' },
 ]

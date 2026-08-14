@@ -377,6 +377,12 @@ const router = createRouter({
             import('@/modules/superadmin-feature-catalog/views/SuperAdminFeatureCatalogView.vue'),
         },
         {
+          path: 'medios-de-pago',
+          name: 'superadmin.pos-payment-methods.index',
+          component: () =>
+            import('@/modules/superadmin-payment-methods/views/SuperAdminPosPaymentMethodsView.vue'),
+        },
+        {
           path: 'workflows',
           name: 'superadmin.workflows.index',
           component: () =>

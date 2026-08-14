@@ -7,6 +7,26 @@ export interface BusinessPaymentMethod {
   label: string
 }
 
+// Refleja la respuesta de GET/PUT /business/payment-methods
+// (PosPaymentMethodController::buildResponse() en el backend) - selector de
+// Ajustes > Ventas contra el catalogo global (App\Models\PosPaymentMethod),
+// ya no texto libre. `migrated` distingue si el negocio ya tiene filas en
+// business_pos_payment_methods (catalogo) o todavia lee del JSON legacy
+// (payment_methods, expuesto aca solo como referencia mientras no migra).
+export interface BusinessPosPaymentMethod {
+  id: number
+  key: string
+  label: string
+  is_active: boolean
+  is_enabled: boolean
+}
+
+export interface BusinessPosPaymentMethodsResponse {
+  data: BusinessPosPaymentMethod[]
+  migrated: boolean
+  legacy_payment_methods: BusinessPaymentMethod[]
+}
+
 export interface BusinessChargesConfig {
   service_charge_enabled: boolean
   service_charge_rate: number
