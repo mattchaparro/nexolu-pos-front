@@ -26,6 +26,14 @@ declare module 'vue-router' {
     // (ver business.can_access_purchases) - no vale la pena generalizar
     // requiresFeature para este unico caso compuesto.
     requiresPurchasesAccess?: boolean
+    // Restringido a rol admin (dueño incluido, siempre admin) - a diferencia
+    // de requiresPermission, no existe un permiso del catalogo para esto:
+    // EmployeeController::store/update/toggle/destroy exigen hasRole('admin')
+    // directo, no un permiso granular (ver PermissionCatalog, que no tiene
+    // "employees.manage"). Usar requiresPermission con un nombre inventado
+    // solo "funcionaria" por el bypass de admin del guard, pero mentiria
+    // sobre que exige un permiso real.
+    requiresAdmin?: boolean
   }
 }
 
@@ -268,6 +276,25 @@ const router = createRouter({
           meta: { requiresFeature: 'discounts', requiresPermission: 'discounts.manage' },
         },
         {
+          path: 'fiados',
+          name: 'receivables.index',
+          component: () => import('@/modules/receivables/views/FiadosView.vue'),
+          meta: { requiresFeature: 'receivables', requiresPermission: 'receivables.manage' },
+        },
+        {
+          // Sin requiresFeature: EmployeeController::store/update/toggle/destroy
+          // no estan detras de feature:permissions_management (solo
+          // catalog/updatePermissions lo estan, ver EmployeeTest::
+          // test_can_still_list_and_create_employees_without_the_feature) -
+          // gestionar el equipo es basico, no un extra de plan. requiresAdmin
+          // porque el backend exige hasRole('admin') directo, no un permiso
+          // del catalogo (ver la nota del meta requiresAdmin arriba).
+          path: 'usuarios',
+          name: 'employees.index',
+          component: () => import('@/modules/employees/views/UsersView.vue'),
+          meta: { requiresAdmin: true },
+        },
+        {
           // Sin requiresFeature/requiresPermission: a diferencia de los modulos
           // de arriba, Ajustes no depende de un feature flag propio - cada
           // seccion adentro decide si aplica segun el negocio (ver
@@ -367,6 +394,15 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.requiresSuperAdmin && !auth.user?.roles?.includes('superadmin')) {
+    return { name: 'dashboard' }
+  }
+
+  if (
+    to.meta.requiresAdmin &&
+    !auth.user?.roles?.includes('admin') &&
+    !auth.user?.roles?.includes('superadmin')
+  ) {
+    useFlashStore().set('Solo un administrador puede acceder a esta sección.', 'warn')
     return { name: 'dashboard' }
   }
 

@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 
+import { useAuthStore } from '@/stores/auth.store'
 import { hasFeature } from '@/utils/hasFeature'
 
 import { adminNavItems } from '@/router/navigation'
@@ -25,6 +26,7 @@ import { usePermissions } from './usePermissions'
 export function useNavItems() {
   const { data: business } = useBusiness()
   const { hasPermission } = usePermissions()
+  const auth = useAuthStore()
 
   // Servicios (feature:services) y Agenda (feature:scheduling) son features
   // independientes del negocio, ambos con el mismo permiso de empleado
@@ -42,6 +44,10 @@ export function useNavItems() {
   // entre varias features - solo del feature 'discounts' (ya filtrado abajo
   // por featureKey) mas este permiso.
   const showDiscounts = computed(() => hasPermission('discounts.manage'))
+  const showReceivables = computed(() => hasPermission('receivables.manage'))
+  // Usuarios: restringido a rol admin, no a un permiso del catalogo (ver la
+  // nota del meta requiresAdmin en router/index.ts).
+  const showUsers = computed(() => auth.user?.roles?.includes('admin') === true)
 
   return computed<NavItem[]>(() =>
     adminNavItems
@@ -58,6 +64,12 @@ export function useNavItems() {
         }
         if (item.label === 'Descuentos' && showDiscounts.value) {
           return { ...item, routeName: 'discounts.index', disabled: false }
+        }
+        if (item.label === 'Fiados' && showReceivables.value) {
+          return { ...item, routeName: 'receivables.index', disabled: false }
+        }
+        if (item.label === 'Usuarios' && showUsers.value) {
+          return { ...item, routeName: 'employees.index', disabled: false }
         }
         return item
       }),
