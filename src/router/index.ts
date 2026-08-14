@@ -282,6 +282,16 @@ const router = createRouter({
           meta: { requiresFeature: 'receivables', requiresPermission: 'receivables.manage' },
         },
         {
+          // Sin requiresPermission: la ruta del backend (routes/api.php,
+          // grupo feature:kitchen_board) no tiene middleware permission: -
+          // la comandera es accesible por igual a admin y a cualquier
+          // empleado, a diferencia de los demas modulos de esta lista.
+          path: 'comandera',
+          name: 'kitchen.index',
+          component: () => import('@/modules/kitchen/views/KitchenBoardView.vue'),
+          meta: { requiresFeature: 'kitchen_board' },
+        },
+        {
           // Sin requiresFeature: EmployeeController::store/update/toggle/destroy
           // no estan detras de feature:permissions_management (solo
           // catalog/updatePermissions lo estan, ver EmployeeTest::
