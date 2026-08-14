@@ -18,6 +18,15 @@ export interface Receivable {
   paid_at: string | null
   collected_by_user_id: number | null
   notes: string | null
+  created_at: string
+}
+
+// Refleja ReceivableController::summary().
+export interface ReceivableSummary {
+  pending_count: number
+  pending_amount: number
+  collected_this_month_count: number
+  collected_this_month_amount: number
 }
 
 // Refleja CollectReceivableRequest - un fiado se cobra completo de una sola

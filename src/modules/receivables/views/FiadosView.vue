@@ -6,11 +6,12 @@
 import { computed, ref, watch } from 'vue'
 
 import type { Receivable, ReceivableStatus } from '@/types/receivable'
-import { NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect } from '@/ui'
+import { NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect, NxStatCard } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
 import CollectReceivableModal from '../components/CollectReceivableModal.vue'
 import { useReceivables } from '../composables/useReceivables'
+import { useReceivablesSummary } from '../composables/useReceivablesSummary'
 
 const statusOptions = [
   { label: 'Todos', value: '' },
@@ -21,6 +22,8 @@ const statusOptions = [
 const status = ref<ReceivableStatus | ''>('pending')
 const searchInput = ref('')
 const search = ref('')
+const dateFrom = ref('')
+const dateTo = ref('')
 const page = ref(1)
 let debounce: number | undefined
 
@@ -31,12 +34,18 @@ watch(searchInput, (value) => {
     page.value = 1
   }, 300)
 })
-watch(status, () => {
+watch([status, dateFrom, dateTo], () => {
   page.value = 1
 })
 
-const receivablesQuery = useReceivables(status, search, page)
+const receivablesQuery = useReceivables(status, search, page, dateFrom, dateTo)
 const meta = computed(() => receivablesQuery.data.value?.meta)
+
+const summaryQuery = useReceivablesSummary()
+
+function togglePendingFilter(): void {
+  status.value = status.value === 'pending' ? '' : 'pending'
+}
 
 function onPage(event: { page: number }): void {
   page.value = event.page + 1
@@ -62,6 +71,24 @@ function openCollect(receivable: Receivable): void {
   <div class="flex flex-col gap-4 pb-20 lg:pb-0">
     <NxPageHeader title="Fiados" icon="pi pi-wallet" compact />
 
+    <div v-if="summaryQuery.data.value" class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <NxStatCard
+        label="Fiados pendientes"
+        :value="String(summaryQuery.data.value.pending_count)"
+        icon="pi pi-clock"
+        clickable
+        :active="status === 'pending'"
+        @click="togglePendingFilter"
+      />
+      <NxStatCard label="Saldo pendiente" :value="formatCop(summaryQuery.data.value.pending_amount)" icon="pi pi-wallet" />
+      <NxStatCard label="Cobrados este mes" :value="String(summaryQuery.data.value.collected_this_month_count)" icon="pi pi-check-circle" />
+      <NxStatCard
+        label="Cobrado este mes"
+        :value="formatCop(summaryQuery.data.value.collected_this_month_amount)"
+        icon="pi pi-money-bill"
+      />
+    </div>
+
     <div class="flex flex-wrap gap-3">
       <NxInput
         v-model="searchInput"
@@ -80,6 +107,8 @@ function openCollect(receivable: Receivable): void {
         class="min-w-[180px]"
         @update:model-value="status = $event as ReceivableStatus | ''"
       />
+      <NxInput v-model="dateFrom" type="date" label="Desde" class="min-w-[160px]" />
+      <NxInput v-model="dateTo" type="date" label="Hasta" class="min-w-[160px]" />
     </div>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
