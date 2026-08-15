@@ -514,7 +514,7 @@ async function submitServicios(): Promise<void> {
                   v-if="!paymentMethodsQuery.data.value?.migrated && paymentMethodsQuery.data.value?.legacy_payment_methods.length"
                   class="mb-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800"
                 >
-                  Hoy tienes configurado, sin normalizar:
+                  Hoy tienes configurado (todavía sin pasar al catálogo nuevo):
                   {{ paymentMethodsQuery.data.value.legacy_payment_methods.map((m) => m.label).join(', ') }}. Selecciona abajo los que uses y
                   guarda para pasarlos al catálogo.
                 </p>
