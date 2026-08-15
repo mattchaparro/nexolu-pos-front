@@ -13,6 +13,8 @@ import type { SubscriptionPayment, SubscriptionStatus } from '@/types/subscripti
 import { NxButton, NxCard, NxPageHeader } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
+import DirectCheckoutPanel from '../components/DirectCheckoutPanel.vue'
+import { useDirectCheckout } from '../composables/useDirectCheckout'
 import { useSubscriptionCheckout } from '../composables/useSubscriptionCheckout'
 import { useSubscriptionStatus } from '../composables/useSubscriptionStatus'
 
@@ -32,6 +34,15 @@ const statusConfig: Record<SubscriptionStatus, { label: string; class: string; i
 }
 
 const checkout = useSubscriptionCheckout()
+// Flujo nuevo (flow="api", sin abrir el widget) - convive con `checkout`
+// (Widget legado) sin tocarlo. El estado de "verificando/confirmado" se
+// combina abajo porque ambos terminan igual: esperando el mismo webhook
+// del Core, solo cambia como se inicio el cobro.
+const direct = useDirectCheckout()
+
+const anyVerifying = computed(() => checkout.verifying.value || direct.verifying.value)
+const anyActivated = computed(() => checkout.activated.value || direct.activated.value)
+const anyTimedOut = computed(() => checkout.timedOut.value || direct.timedOut.value)
 
 function formatDate(value: string | null): string {
   if (!value) {
@@ -61,7 +72,10 @@ onMounted(() => {
   }
 })
 
-onUnmounted(() => checkout.stop())
+onUnmounted(() => {
+  checkout.stop()
+  direct.stop()
+})
 </script>
 
 <template>
@@ -125,7 +139,7 @@ onUnmounted(() => checkout.stop())
       </NxCard>
 
       <!-- Verificando pago -->
-      <div v-if="checkout.verifying.value" class="flex items-center gap-4 rounded-xl border border-sky-200 bg-sky-50 p-5">
+      <div v-if="anyVerifying" class="flex items-center gap-4 rounded-xl border border-sky-200 bg-sky-50 p-5">
         <i class="pi pi-spin pi-spinner text-2xl text-sky-500" />
         <div>
           <p class="font-semibold text-sky-800">Verificando tu pago...</p>
@@ -134,7 +148,7 @@ onUnmounted(() => checkout.stop())
       </div>
 
       <!-- Pago confirmado -->
-      <div v-else-if="checkout.activated.value" class="flex items-start gap-3 rounded-xl border border-emerald-300 bg-emerald-50 p-5">
+      <div v-else-if="anyActivated" class="flex items-start gap-3 rounded-xl border border-emerald-300 bg-emerald-50 p-5">
         <i class="pi pi-check-circle mt-0.5 text-2xl text-emerald-500" />
         <div>
           <p class="font-semibold text-emerald-800">Pago confirmado</p>
@@ -143,7 +157,7 @@ onUnmounted(() => checkout.stop())
       </div>
 
       <!-- Timeout esperando el webhook -->
-      <div v-else-if="checkout.timedOut.value" class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-5">
+      <div v-else-if="anyTimedOut" class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-5">
         <i class="pi pi-clock mt-0.5 text-2xl text-amber-500" />
         <div>
           <p class="font-semibold text-amber-800">Pago en proceso</p>
@@ -174,7 +188,7 @@ onUnmounted(() => checkout.stop())
       </div>
 
       <!-- Pago en linea -->
-      <NxCard v-if="!checkout.verifying.value && !checkout.activated.value">
+      <NxCard v-if="!anyVerifying && !anyActivated">
         <p class="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
           {{ isActive ? 'Pagar siguiente periodo' : 'Realizar pago' }}
         </p>
@@ -193,8 +207,16 @@ onUnmounted(() => checkout.stop())
           </div>
         </div>
 
-        <NxButton class="w-full" size="lg" icon="pi pi-credit-card" :loading="checkout.paying.value" @click="payNow">
-          {{ checkout.paying.value ? 'Abriendo pasarela de pago...' : 'Pagar en línea' }}
+        <DirectCheckoutPanel :direct="direct" />
+
+        <div class="my-4 flex items-center gap-3 text-xs text-slate-400">
+          <span class="h-px flex-1 bg-slate-200" />
+          o
+          <span class="h-px flex-1 bg-slate-200" />
+        </div>
+
+        <NxButton class="w-full" variant="outline" size="lg" icon="pi pi-credit-card" :loading="checkout.paying.value" @click="payNow">
+          {{ checkout.paying.value ? 'Abriendo pasarela de pago...' : 'Pagar con el widget de Wompi' }}
         </NxButton>
 
         <p v-if="checkout.error.value" class="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">

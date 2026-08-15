@@ -46,6 +46,14 @@ export interface SubscriptionCheckoutIntent {
     reference: string
     integrity_signature: string
   }
+  // Solo viene si se pidio flow="api" (ver initiateSubscriptionCheckout) -
+  // lo necesita useDirectCheckout para tokenizar tarjeta/Nequi directo con
+  // Wompi (public_key) y crear la fuente de pago.
+  payment_init?: {
+    public_key: string
+    acceptance_token: string
+    accept_personal_auth: string
+  } | null
 }
 
 export interface SubscriptionCheckoutStatus {
