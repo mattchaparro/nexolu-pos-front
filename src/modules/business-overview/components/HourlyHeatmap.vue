@@ -121,27 +121,15 @@ function formatPeak(peak: { weekday: number; hour: number; revenue: number } | n
 </template>
 
 <style scoped>
+/* Sin variantes de modo oscuro a proposito: el resto de la app no tiene tema
+   oscuro (darkModeSelector: false en main.ts) y la tarjeta que envuelve esto
+   es bg-white fijo - responder a prefers-color-scheme del sistema volveria
+   el texto blanco sobre ese fondo blanco fijo. */
 .viz-root {
   --surface-1: #fcfcfb;
   --text-primary: #0b0b0b;
   --text-secondary: #52514e;
   --text-muted: #898781;
   --border: rgba(11, 11, 11, 0.1);
-}
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme='light'])) .viz-root {
-    --surface-1: #1a1a19;
-    --text-primary: #ffffff;
-    --text-secondary: #c3c2b7;
-    --text-muted: #898781;
-    --border: rgba(255, 255, 255, 0.1);
-  }
-}
-:root[data-theme='dark'] .viz-root {
-  --surface-1: #1a1a19;
-  --text-primary: #ffffff;
-  --text-secondary: #c3c2b7;
-  --text-muted: #898781;
-  --border: rgba(255, 255, 255, 0.1);
 }
 </style>

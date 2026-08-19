@@ -183,6 +183,10 @@ const tooltipAnchorsRight = computed(() => tooltipX.value > width - 140)
 </template>
 
 <style scoped>
+/* Sin variantes de modo oscuro a proposito: el resto de la app no tiene tema
+   oscuro (darkModeSelector: false en main.ts) y la tarjeta que envuelve esto
+   es bg-white fijo - responder a prefers-color-scheme del sistema volveria
+   el texto blanco sobre ese fondo blanco fijo. */
 .viz-root {
   position: relative;
   color-scheme: light;
@@ -195,31 +199,5 @@ const tooltipAnchorsRight = computed(() => tooltipX.value > width - 140)
   --border: rgba(11, 11, 11, 0.1);
   --series-1: #2a78d6;
   --series-1-fill: rgb(42 120 214 / 10%);
-}
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme='light'])) .viz-root {
-    color-scheme: dark;
-    --surface-1: #1a1a19;
-    --text-primary: #ffffff;
-    --text-secondary: #c3c2b7;
-    --text-muted: #898781;
-    --gridline: #2c2c2a;
-    --baseline: #383835;
-    --border: rgba(255, 255, 255, 0.1);
-    --series-1: #3987e5;
-    --series-1-fill: rgb(57 135 229 / 10%);
-  }
-}
-:root[data-theme='dark'] .viz-root {
-  color-scheme: dark;
-  --surface-1: #1a1a19;
-  --text-primary: #ffffff;
-  --text-secondary: #c3c2b7;
-  --text-muted: #898781;
-  --gridline: #2c2c2a;
-  --baseline: #383835;
-  --border: rgba(255, 255, 255, 0.1);
-  --series-1: #3987e5;
-  --series-1-fill: rgb(57 135 229 / 10%);
 }
 </style>

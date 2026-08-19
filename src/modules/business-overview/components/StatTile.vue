@@ -42,18 +42,12 @@ withDefaults(
 </template>
 
 <style scoped>
+/* Sin variantes de modo oscuro a proposito: el resto de la app no tiene tema
+   oscuro (darkModeSelector: false en main.ts) y esta tarjeta es bg-white
+   fijo - responder a prefers-color-scheme del sistema volveria el texto
+   blanco sobre ese fondo blanco fijo. */
 .viz-root {
   --delta-good: #006300;
   --delta-bad: #d03b3b;
-}
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme='light'])) .viz-root {
-    --delta-good: #0ca30c;
-    --delta-bad: #e66767;
-  }
-}
-:root[data-theme='dark'] .viz-root {
-  --delta-good: #0ca30c;
-  --delta-bad: #e66767;
 }
 </style>

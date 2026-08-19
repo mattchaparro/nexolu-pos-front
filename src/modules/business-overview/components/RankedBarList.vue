@@ -3,6 +3,11 @@
 // para el ingreso del mes (% del total). Un solo hue (magnitud, no
 // identidad) - top y menos rotacion usan el mismo tono; lo que cambia es la
 // seccion en la que aparecen, no el color de la barra.
+//
+// Sin variantes de modo oscuro a proposito: el resto de la app no tiene tema
+// oscuro (darkModeSelector: false en main.ts) y las tarjetas que envuelven
+// esto son bg-white fijo - responder a prefers-color-scheme del sistema
+// volveria el texto blanco sobre ese fondo blanco fijo.
 import { computed } from 'vue'
 
 import type { ProductRotation } from '@/types/businessOverview'
@@ -56,21 +61,5 @@ function formatQty(value: number): string {
   --text-muted: #898781;
   --series-1: #2a78d6;
   --track: #e1e0d9;
-}
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme='light'])) .viz-root {
-    --text-primary: #ffffff;
-    --text-secondary: #c3c2b7;
-    --text-muted: #898781;
-    --series-1: #3987e5;
-    --track: #2c2c2a;
-  }
-}
-:root[data-theme='dark'] .viz-root {
-  --text-primary: #ffffff;
-  --text-secondary: #c3c2b7;
-  --text-muted: #898781;
-  --series-1: #3987e5;
-  --track: #2c2c2a;
 }
 </style>

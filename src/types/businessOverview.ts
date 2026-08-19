@@ -86,6 +86,7 @@ export interface ServiceRotation {
 export interface ProfitProduct {
   product_id: number
   name: string
+  sku: string | null
   qty_sold: number
   revenue: number
   cost_total: number
