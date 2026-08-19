@@ -14,6 +14,7 @@ import type { SubscriptionPayment, SubscriptionStatus } from '@/types/subscripti
 import { NxButton, NxCard, NxPageHeader } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
+import BillingConfirmModal from '../components/BillingConfirmModal.vue'
 import DirectCheckoutPanel from '../components/DirectCheckoutPanel.vue'
 import { useDirectCheckout } from '../composables/useDirectCheckout'
 import { usePaymentMethodsCatalog } from '../composables/usePaymentMethodsCatalog'
@@ -73,10 +74,13 @@ function methodLabel(payment: SubscriptionPayment): string {
   return methodLabels[payment.payment_method ?? ''] ?? payment.payment_method ?? 'Manual'
 }
 
+const showWidgetBilling = ref(false)
+
 async function payNow(): Promise<void> {
   if (!auth.user) {
     return
   }
+  showWidgetBilling.value = false
   await checkout.pay({ email: auth.user.email, fullName: auth.user.full_name })
 }
 
@@ -257,7 +261,14 @@ onUnmounted(() => {
             <span class="h-px flex-1 bg-slate-200" />
           </div>
 
-          <NxButton class="w-full" variant="outline" size="lg" icon="pi pi-credit-card" :loading="checkout.paying.value" @click="payNow">
+          <NxButton
+            class="w-full"
+            variant="outline"
+            size="lg"
+            icon="pi pi-credit-card"
+            :loading="checkout.paying.value"
+            @click="showWidgetBilling = true"
+          >
             {{ checkout.paying.value ? 'Abriendo pasarela de pago...' : 'Pagar con el widget de Wompi' }}
           </NxButton>
         </template>
@@ -294,6 +305,16 @@ onUnmounted(() => {
         </ul>
       </NxCard>
       <p v-else class="py-4 text-center text-xs text-slate-400">Sin pagos registrados todavía.</p>
+
+      <BillingConfirmModal
+        v-model="showWidgetBilling"
+        title="Pagar con Wompi"
+        description="Antes de abrir la pasarela de pago, confirma tus datos de facturación."
+        confirm-label="Continuar"
+        :paying="checkout.paying.value"
+        :error="null"
+        @submit="payNow"
+      />
     </template>
   </div>
 </template>

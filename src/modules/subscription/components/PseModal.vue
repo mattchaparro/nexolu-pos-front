@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { useUpdateBillingProfile } from '@/composables/useBillingProfile'
 import type { PseFinancialInstitution } from '@/types/paymentSource'
 import { NxButton, NxModal, NxSelect } from '@/ui'
 
 import BillingDetailsFields from './BillingDetailsFields.vue'
+import { useBillingCheckout } from '../composables/useBillingCheckout'
 import type { PseChargeInput } from '../composables/useDirectCheckout'
 
 defineProps<{
@@ -23,43 +23,25 @@ const emit = defineEmits<{
 
 const bankCode = ref<string | null>(null)
 
-// Documento/nombre/telefono via el mismo componente compartido que
-// AddCardModal (prefill + resumen si ya se completo antes) - PSE los
-// necesita como parte del cobro en si, no solo para guardarlos.
-const documentType = ref<'CC' | 'NIT' | 'CE'>('CC')
-const documentNumber = ref('')
-const fullName = ref('')
-const phoneNumber = ref('')
-const billingEmail = ref('')
-const billingAddress = ref('')
-const billingCity = ref('')
-const billingValid = ref(false)
-const updateBillingProfileMutation = useUpdateBillingProfile()
+// Documento/nombre/telefono via el mismo composable/componente que el
+// resto de los medios de pago - PSE los necesita como parte del cobro en
+// si, no solo para guardarlos.
+const billing = useBillingCheckout()
 
-const canSubmit = computed(() => Boolean(bankCode.value) && billingValid.value)
+const canSubmit = computed(() => Boolean(bankCode.value) && billing.valid.value)
 
 function submit(): void {
   if (!canSubmit.value || !bankCode.value) {
     return
   }
-  // Se guarda para la proxima vez - sin esperar la respuesta ni bloquear
-  // el pago si falla, es solo comodidad, no un requisito del cobro.
-  updateBillingProfileMutation.mutate({
-    document_type: documentType.value,
-    document_number: documentNumber.value,
-    full_name: fullName.value.trim(),
-    phone: phoneNumber.value,
-    email: billingEmail.value || undefined,
-    address: billingAddress.value || undefined,
-    city: billingCity.value || undefined,
-  })
+  billing.save()
   emit('submit', {
     financial_institution_code: bankCode.value,
     user_type: 0,
-    user_legal_id_type: documentType.value,
-    user_legal_id: documentNumber.value,
-    customer_full_name: fullName.value.trim(),
-    customer_phone_number: phoneNumber.value,
+    user_legal_id_type: billing.documentType.value,
+    user_legal_id: billing.documentNumber.value,
+    customer_full_name: billing.fullName.value.trim(),
+    customer_phone_number: billing.phone.value,
   })
 }
 </script>
@@ -70,14 +52,14 @@ function submit(): void {
       <p class="text-xs text-slate-500">Vas a terminar el pago en el sitio de tu banco.</p>
 
       <BillingDetailsFields
-        v-model:document-type="documentType"
-        v-model:document-number="documentNumber"
-        v-model:full-name="fullName"
-        v-model:phone="phoneNumber"
-        v-model:email="billingEmail"
-        v-model:address="billingAddress"
-        v-model:city="billingCity"
-        v-model:valid="billingValid"
+        v-model:document-type="billing.documentType.value"
+        v-model:document-number="billing.documentNumber.value"
+        v-model:full-name="billing.fullName.value"
+        v-model:phone="billing.phone.value"
+        v-model:email="billing.email.value"
+        v-model:address="billing.address.value"
+        v-model:city="billing.city.value"
+        v-model:valid="billing.valid.value"
       />
 
       <NxSelect

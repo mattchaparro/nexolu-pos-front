@@ -3,6 +3,8 @@ import { computed, ref } from 'vue'
 
 import { NxButton, NxInput, NxModal, NxSwitch } from '@/ui'
 
+import BillingDetailsFields from './BillingDetailsFields.vue'
+import { useBillingCheckout } from '../composables/useBillingCheckout'
 import { formatColombianPhone, isValidColombianMobile, stripToDigits } from '../support/colombianPhone'
 
 defineProps<{
@@ -17,6 +19,9 @@ const emit = defineEmits<{
   submit: [phoneNumber: string, save: boolean, label: string]
 }>()
 
+// Celular de la CUENTA Nequi (a donde llega la notificacion push) - distinto
+// del telefono de contacto de facturacion, aunque en la practica suela ser
+// el mismo numero.
 const phoneNumber = ref('')
 const save = ref(true)
 const phoneTouched = ref(false)
@@ -30,10 +35,14 @@ function onPhoneInput(raw: string): void {
   phoneNumber.value = stripToDigits(raw)
 }
 
+const billing = useBillingCheckout()
+const canSubmit = computed(() => phoneValid.value && billing.valid.value)
+
 function submit(): void {
-  if (!phoneValid.value) {
+  if (!canSubmit.value) {
     return
   }
+  billing.save()
   emit('submit', phoneNumber.value, save.value, `Nequi ${phoneNumber.value.slice(0, 3)}•••${phoneNumber.value.slice(-4)}`)
 }
 </script>
@@ -46,6 +55,17 @@ function submit(): void {
       <p class="text-sm text-slate-500">Tienes que aceptar la suscripción que te llegó por notificación push. Esto solo pasa la primera vez.</p>
     </div>
     <div v-else class="flex flex-col gap-3">
+      <BillingDetailsFields
+        v-model:document-type="billing.documentType.value"
+        v-model:document-number="billing.documentNumber.value"
+        v-model:full-name="billing.fullName.value"
+        v-model:phone="billing.phone.value"
+        v-model:email="billing.email.value"
+        v-model:address="billing.address.value"
+        v-model:city="billing.city.value"
+        v-model:valid="billing.valid.value"
+      />
+
       <NxInput
         :model-value="phoneFormatted"
         label="Celular Nequi"
@@ -66,7 +86,7 @@ function submit(): void {
     <template #footer>
       <div class="flex gap-2">
         <NxButton variant="outline" class="flex-1" :disabled="paying" @click="emit('update:modelValue', false)">Cancelar</NxButton>
-        <NxButton class="flex-[2]" :loading="paying" :disabled="waitingApproval || !phoneValid" @click="submit">Pagar</NxButton>
+        <NxButton class="flex-[2]" :loading="paying" :disabled="waitingApproval || !canSubmit" @click="submit">Pagar</NxButton>
       </div>
     </template>
   </NxModal>

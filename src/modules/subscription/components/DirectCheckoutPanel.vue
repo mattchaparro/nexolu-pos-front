@@ -9,7 +9,7 @@
 // uno de estos 4 metodos habilitado (ver usePaymentMethodsCatalog).
 import { computed, ref } from 'vue'
 
-import type { PseFinancialInstitution } from '@/types/paymentSource'
+import type { PaymentSource, PseFinancialInstitution } from '@/types/paymentSource'
 import { NxButton } from '@/ui'
 
 import type { DirectCheckout, PseChargeInput } from '../composables/useDirectCheckout'
@@ -20,6 +20,8 @@ import type { CardInput } from '../services/wompiTokenization'
 
 import AddCardModal from './AddCardModal.vue'
 import AddNequiModal from './AddNequiModal.vue'
+import BillingConfirmModal from './BillingConfirmModal.vue'
+import ConfirmSavedSourceModal from './ConfirmSavedSourceModal.vue'
 import PseModal from './PseModal.vue'
 
 const props = defineProps<{
@@ -43,6 +45,9 @@ const institutions = computed<PseFinancialInstitution[]>(() => institutionsQuery
 const showAddCard = ref(false)
 const showAddNequi = ref(false)
 const showPse = ref(false)
+const showBancolombia = ref(false)
+const confirmingSource = ref<PaymentSource | null>(null)
+const showConfirmSource = ref(false)
 
 async function handleAddCard(card: CardInput, saveLabel: string | null): Promise<void> {
   await props.direct.payWithNewCard(card, saveLabel)
@@ -63,6 +68,26 @@ async function handlePse(payload: PseChargeInput): Promise<void> {
   // a mano, el navegador ya se fue al sitio del banco.
   await props.direct.payWithPse(payload)
 }
+
+async function handleBancolombia(): Promise<void> {
+  // Boton Bancolombia tambien redirige de inmediato si sale bien.
+  await props.direct.payWithBancolombiaTransfer()
+}
+
+function confirmPayWithSavedSource(source: PaymentSource): void {
+  confirmingSource.value = source
+  showConfirmSource.value = true
+}
+
+async function handleConfirmedSavedSource(): Promise<void> {
+  if (!confirmingSource.value) {
+    return
+  }
+  await props.direct.payWithSavedSource(confirmingSource.value.payment_source_id)
+  if (!props.direct.error.value) {
+    showConfirmSource.value = false
+  }
+}
 </script>
 
 <template>
@@ -81,7 +106,7 @@ async function handlePse(payload: PseChargeInput): Promise<void> {
             {{ source.label }}
           </div>
           <div class="flex items-center gap-2">
-            <NxButton size="sm" :loading="direct.paying.value" @click="direct.payWithSavedSource(source.payment_source_id)">
+            <NxButton size="sm" :loading="direct.paying.value" @click="confirmPayWithSavedSource(source)">
               Pagar
             </NxButton>
             <button
@@ -116,13 +141,7 @@ async function handlePse(payload: PseChargeInput): Promise<void> {
           <img :src="paymentMethodImage('PSE')" alt="" class="h-5 w-auto rounded" />
           PSE
         </NxButton>
-        <NxButton
-          v-if="hasBancolombia"
-          size="sm"
-          variant="outline"
-          :loading="direct.paying.value"
-          @click="direct.payWithBancolombiaTransfer()"
-        >
+        <NxButton v-if="hasBancolombia" size="sm" variant="outline" @click="showBancolombia = true">
           <img :src="paymentMethodImage('BANCOLOMBIA_TRANSFER')" alt="" class="h-5 w-auto rounded" />
           Botón Bancolombia
         </NxButton>
@@ -148,6 +167,22 @@ async function handlePse(payload: PseChargeInput): Promise<void> {
       :institutions="institutions"
       :loading-institutions="institutionsQuery.isPending.value"
       @submit="handlePse"
+    />
+    <BillingConfirmModal
+      v-model="showBancolombia"
+      title="Botón Bancolombia"
+      description="Vas a terminar el pago en la app o el sitio de Bancolombia."
+      confirm-label="Ir a Bancolombia"
+      :paying="direct.paying.value"
+      :error="direct.error.value"
+      @submit="handleBancolombia"
+    />
+    <ConfirmSavedSourceModal
+      v-model="showConfirmSource"
+      :source="confirmingSource"
+      :paying="direct.paying.value"
+      :error="direct.error.value"
+      @submit="handleConfirmedSavedSource"
     />
   </div>
 </template>
