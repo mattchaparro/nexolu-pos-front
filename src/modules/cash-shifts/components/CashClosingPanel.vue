@@ -15,6 +15,7 @@ import { formatCop } from '@/utils/formatCop'
 import { useCashClosingPreview, usePendingClosingDates } from '../composables/useCashClosing'
 import { useCashClosingMutations } from '../composables/useCashClosingMutations'
 import { useCashDifference } from '../composables/useCashDifference'
+import DailySummaryDetailModal from './DailySummaryDetailModal.vue'
 import PaymentBreakdownList from './PaymentBreakdownList.vue'
 import PendingDatesQueue from './PendingDatesQueue.vue'
 
@@ -86,6 +87,8 @@ const { tone: differenceTone, message: differenceMessage } = useCashDifference(a
 const { notify } = useSystemAlert()
 const { storeMutation } = useCashClosingMutations()
 
+const detailModalOpen = ref(false)
+
 async function submit(): Promise<void> {
   if (actualCash.value === null || baseForNextDay.value === null) {
     return
@@ -127,6 +130,13 @@ async function submit(): Promise<void> {
       <i class="pi pi-check-circle text-2xl text-emerald-500" />
       <p class="mt-2 text-sm font-medium text-slate-700">Ya existe un cierre de caja para el {{ selectedDate }}.</p>
       <p class="text-xs text-slate-400">Consúltalo en el historial más abajo.</p>
+      <button
+        type="button"
+        class="mt-3 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+        @click="detailModalOpen = true"
+      >
+        Ver detalle del día
+      </button>
     </div>
 
     <template v-else-if="previewQuery.data.value">
@@ -150,7 +160,17 @@ async function submit(): Promise<void> {
       </div>
 
       <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 class="mb-3 text-sm font-semibold text-slate-700">Ingresos por medio de pago</h3>
+        <div class="mb-3 flex items-center justify-between gap-2">
+          <h3 class="text-sm font-semibold text-slate-700">Ingresos por medio de pago</h3>
+          <button
+            type="button"
+            class="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+            @click="detailModalOpen = true"
+          >
+            <i class="pi pi-eye text-xs" />
+            Ver detalle
+          </button>
+        </div>
         <PaymentBreakdownList :breakdown="previewQuery.data.value.totals.payment_breakdown" />
       </div>
 
@@ -193,5 +213,7 @@ async function submit(): Promise<void> {
         </NxButton>
       </div>
     </template>
+
+    <DailySummaryDetailModal v-model="detailModalOpen" :date="selectedDate" />
   </div>
 </template>

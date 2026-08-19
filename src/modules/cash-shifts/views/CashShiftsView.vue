@@ -1,8 +1,10 @@
 <script setup lang="ts">
-// Turnos de caja / Cierre del día. Dos pestañas segun permiso: "Mi turno"
-// (cash_shift.manage - cualquier cajero) y "Cierre de caja" (cash_closing.manage
-// - normalmente solo el dueño/admin), con el historial y el "Deshacer" del
-// mismo dia dentro de esta ultima para no multiplicar pestañas.
+// Turnos de caja / Cierre del día. Dos pestañas segun permiso: "Cierre de
+// caja" (cash_closing.manage - normalmente solo el dueño/admin, con el
+// historial y el "Deshacer" del mismo dia dentro para no multiplicar
+// pestañas) y "Mi turno" (cash_shift.manage - cualquier cajero). Cierre de
+// caja va primero: es lo que le interesa ver de entrada al dueño/admin, que
+// es quien mas usa esta pantalla.
 import { computed, ref } from 'vue'
 
 import { usePermissions } from '@/composables/usePermissions'
@@ -16,7 +18,7 @@ const { hasPermission } = usePermissions()
 const canManageShift = computed(() => hasPermission('cash_shift.manage'))
 const canManageClosing = computed(() => hasPermission('cash_closing.manage'))
 
-const activeTab = ref(canManageShift.value ? '0' : '1')
+const activeTab = ref(canManageClosing.value ? '0' : '1')
 </script>
 
 <template>
@@ -28,18 +30,12 @@ const activeTab = ref(canManageShift.value ? '0' : '1')
 
     <NxTabs v-model:value="activeTab">
       <NxTabList>
-        <NxTab v-if="canManageShift" value="0">Mi turno</NxTab>
-        <NxTab v-if="canManageClosing" value="1">Cierre de caja</NxTab>
+        <NxTab v-if="canManageClosing" value="0">Cierre de caja</NxTab>
+        <NxTab v-if="canManageShift" value="1">Mi turno</NxTab>
       </NxTabList>
 
       <NxTabPanels>
-        <NxTabPanel v-if="canManageShift" value="0">
-          <div class="mt-3">
-            <MyShiftPanel />
-          </div>
-        </NxTabPanel>
-
-        <NxTabPanel v-if="canManageClosing" value="1">
+        <NxTabPanel v-if="canManageClosing" value="0">
           <div class="mt-3 flex flex-col gap-6">
             <CashClosingPanel />
 
@@ -47,6 +43,12 @@ const activeTab = ref(canManageShift.value ? '0' : '1')
               <h2 class="mb-2 text-sm font-semibold text-slate-700">Historial de cierres</h2>
               <CashClosingHistory />
             </div>
+          </div>
+        </NxTabPanel>
+
+        <NxTabPanel v-if="canManageShift" value="1">
+          <div class="mt-3">
+            <MyShiftPanel />
           </div>
         </NxTabPanel>
       </NxTabPanels>
