@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import type { PseFinancialInstitution } from '@/types/paymentSource'
 import { NxButton, NxInput, NxModal, NxSelect } from '@/ui'
+import { useBillingProfile, useUpdateBillingProfile } from '@/composables/useBillingProfile'
 
 import type { PseChargeInput } from '../composables/useDirectCheckout'
 import { formatColombianPhone, isValidColombianMobile, stripToDigits } from '../support/colombianPhone'
 
-defineProps<{
+const props = defineProps<{
   modelValue: boolean
   paying: boolean
   error: string | null
@@ -26,6 +27,29 @@ const legalId = ref('')
 const fullName = ref('')
 const phoneNumber = ref('')
 const phoneTouched = ref(false)
+
+// Prellenar con el perfil de facturacion guardado (una sola vez, no en
+// cada cobro) - ver docs/PLAN_METODOS_PAGO_ALTERNOS.md seccion 9 y
+// App\Models\BillingProfile (nexolu-pos-api). Si el negocio nunca lo
+// completo, el formulario simplemente arranca vacio como antes.
+const billingProfileQuery = useBillingProfile()
+const updateBillingProfileMutation = useUpdateBillingProfile()
+let prefilled = false
+
+watch(
+  () => [props.modelValue, billingProfileQuery.data.value] as const,
+  ([open, profile]) => {
+    if (!open || !profile || prefilled) {
+      return
+    }
+    prefilled = true
+    if (profile.document_type) legalIdType.value = profile.document_type
+    if (profile.document_number) legalId.value = profile.document_number
+    if (profile.full_name) fullName.value = profile.full_name
+    if (profile.phone) phoneNumber.value = profile.phone
+  },
+  { immediate: true },
+)
 
 const legalIdTypeOptions = [
   { label: 'Cédula de ciudadanía', value: 'CC' },
@@ -56,6 +80,14 @@ function submit(): void {
   if (!canSubmit.value || !bankCode.value) {
     return
   }
+  // Se guarda para la proxima vez - sin esperar la respuesta ni bloquear
+  // el pago si falla, es solo comodidad, no un requisito del cobro.
+  updateBillingProfileMutation.mutate({
+    document_type: legalIdType.value as 'CC' | 'NIT' | 'CE',
+    document_number: legalId.value,
+    full_name: fullName.value.trim(),
+    phone: phoneNumber.value,
+  })
   emit('submit', {
     financial_institution_code: bankCode.value,
     user_type: 0,
