@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, useId } from 'vue'
+import { computed, onBeforeUnmount, useId, useTemplateRef } from 'vue'
 import PrimeFloatLabel from 'primevue/floatlabel'
 import PrimeIconField from 'primevue/iconfield'
 import PrimeInputIcon from 'primevue/inputicon'
@@ -26,6 +26,8 @@ const props = withDefaults(
     size?: NxInputSize
     id?: string
     autocomplete?: string
+    /** Teclado movil a mostrar (ej. "numeric", "tel") - PrimeInputText no lo reenvia solo. */
+    inputmode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search'
     /** PrimeIcon (ej. "pi pi-search") a la izquierda del texto. */
     icon?: string
     /** Muestra una X a la derecha para vaciar el campo cuando tiene texto. */
@@ -51,6 +53,7 @@ const props = withDefaults(
     size: 'md',
     id: undefined,
     autocomplete: undefined,
+    inputmode: undefined,
     icon: undefined,
     clearable: false,
     blurAfterTyping: false,
@@ -112,6 +115,16 @@ const effectivePlaceholder = computed(() => {
   }
   return props.label ? undefined : props.placeholder
 })
+
+// Expuesto para formularios que necesitan avanzar el foco solos (ej. el
+// numero de tarjeta que salta al mes de vencimiento al completarse) - ver
+// CardPaymentFields.vue. PrimeInputText expone su elemento nativo en $el;
+// solo una de las dos ramas (con/sin icono) esta montada a la vez, pero
+// ambas comparten el mismo ref="inputEl".
+const inputEl = useTemplateRef<{ $el: HTMLInputElement }>('inputEl')
+defineExpose({
+  focus: () => inputEl.value?.$el?.focus(),
+})
 </script>
 
 <template>
@@ -121,12 +134,14 @@ const effectivePlaceholder = computed(() => {
         <PrimeInputIcon v-if="icon" :class="icon" />
         <PrimeInputText
           :id="inputId"
+          ref="inputEl"
           :model-value="modelValue"
           :type="type"
           :placeholder="effectivePlaceholder"
           :disabled="disabled"
           :invalid="isInvalid"
           :autocomplete="autocomplete"
+          :inputmode="inputmode"
           :size="primeSize"
           :style="fontSizeStyle"
           fluid
@@ -143,12 +158,14 @@ const effectivePlaceholder = computed(() => {
       <PrimeInputText
         v-else
         :id="inputId"
+        ref="inputEl"
         :model-value="modelValue"
         :type="type"
         :placeholder="effectivePlaceholder"
         :disabled="disabled"
         :invalid="isInvalid"
         :autocomplete="autocomplete"
+        :inputmode="inputmode"
         :size="primeSize"
         :style="fontSizeStyle"
         fluid
