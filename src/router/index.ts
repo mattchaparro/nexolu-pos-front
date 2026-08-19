@@ -320,6 +320,15 @@ const router = createRouter({
           meta: { requiresPermission: 'reports.sales' },
         },
         {
+          // Alguno de los dos permisos alcanza para ver la pantalla - dentro,
+          // cada pestaña (Mi turno / Cierre de caja) se muestra u oculta
+          // segun cual de los dos tenga el usuario (ver CashShiftsView.vue).
+          path: 'turnos-de-caja',
+          name: 'cash-shifts.index',
+          component: () => import('@/modules/cash-shifts/views/CashShiftsView.vue'),
+          meta: { requiresFeature: 'cash_closing', requiresPermission: ['cash_shift.manage', 'cash_closing.manage'] },
+        },
+        {
           // Sin requiresFeature/requiresPermission: a diferencia de los modulos
           // de arriba, Ajustes no depende de un feature flag propio - cada
           // seccion adentro decide si aplica segun el negocio (ver

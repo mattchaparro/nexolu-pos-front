@@ -8,9 +8,13 @@
 // Dictado por voz e impresion/envio de recibo quedan fuera, igual que
 // antes - ver docs/BACKEND_READINESS.md.
 import { computed, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 
 import { useBusiness } from '@/composables/useBusiness'
+import { usePermissions } from '@/composables/usePermissions'
 import { useSystemAlert } from '@/composables/useSystemAlert'
+import { useCurrentShift } from '@/modules/cash-shifts/composables/useCurrentShift'
+import { useAuthStore } from '@/stores/auth.store'
 import type { Product } from '@/types/product'
 import type { Sale } from '@/types/sale'
 import type { BusinessTable } from '@/types/table'
@@ -57,6 +61,24 @@ const checkout = useSaleCheckout(
 // feature, ni la tira de chips ni las consultas de tables/open-tabs deben
 // dispararse - antes se mostraban igual y el negocio veia un toast de
 // "no tienes permiso" apenas abria Vender.
+// Espejo del middleware EnsureCashShiftOpenForSales del backend, para no
+// dejar armar un carrito entero y recien enterarse al cobrar: solo aplica a
+// cajeros (cash_shift.manage) de un negocio con cierre de caja habilitado -
+// el admin/dueño queda exento, igual que en el backend.
+const auth = useAuthStore()
+const { hasPermission } = usePermissions()
+const requiresOpenShift = computed(
+  () =>
+    hasFeature(business.value, 'cash_closing') &&
+    hasPermission('cash_shift.manage') &&
+    auth.user?.roles?.includes('admin') !== true,
+)
+const currentShiftQuery = useCurrentShift()
+const shiftStatusLoaded = computed(() => !requiresOpenShift.value || currentShiftQuery.data.value !== undefined)
+const blockedForNoOpenShift = computed(
+  () => requiresOpenShift.value && shiftStatusLoaded.value && !currentShiftQuery.data.value?.shift,
+)
+
 const openTabsEnabled = computed(() => hasFeature(business.value, 'open_tabs'))
 const tablesQuery = useTables(openTabsEnabled)
 const openTabsQuery = useOpenTabsList(openTabsEnabled)
@@ -289,6 +311,19 @@ function handleNewSale(): void {
 <template>
   <div class="flex h-[calc(100dvh-4rem)] flex-col lg:h-[calc(100dvh-4rem-3rem)]">
     <NxPageHeader title="Vender" icon="pi pi-shopping-cart" compact />
+
+    <div
+      v-if="blockedForNoOpenShift"
+      class="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800"
+    >
+      <span><i class="pi pi-exclamation-triangle mr-2" />Abre tu turno de caja antes de registrar ventas.</span>
+      <RouterLink
+        :to="{ name: 'cash-shifts.index' }"
+        class="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
+      >
+        Abrir turno
+      </RouterLink>
+    </div>
 
     <p v-if="submitError" class="mt-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
       {{ submitError }}

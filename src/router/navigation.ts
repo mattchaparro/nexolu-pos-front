@@ -22,7 +22,7 @@ export const adminNavItems: NavItem[] = [
   // salvo escribiendo la URL a mano. Se agrega aca como item real, no un
   // gap que se repite.
   { label: 'Clientes', icon: 'pi pi-users', routeName: 'clients.index', featureKey: 'clients' },
-  { label: 'Turnos de caja', icon: 'pi pi-clock', disabled: true, featureKey: 'cash_closing' },
+  { label: 'Turnos de caja', icon: 'pi pi-clock', routeName: 'cash-shifts.index', featureKey: 'cash_closing' },
   { label: 'Resumen del día', icon: 'pi pi-chart-bar', routeName: 'daily-summary.index' },
   { label: 'Gastos', icon: 'pi pi-money-bill', routeName: 'expenses.index', featureKey: 'expenses' },
   { label: 'Planificador', icon: 'pi pi-calendar-clock', routeName: 'reminders.index', featureKey: 'reminders' },
