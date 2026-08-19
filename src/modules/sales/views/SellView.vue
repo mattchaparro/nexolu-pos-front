@@ -46,7 +46,18 @@ import { useSaleCheckout } from '../composables/useSaleCheckout'
 
 const { data: business } = useBusiness()
 const { productsQuery, categoriesQuery } = useProductCatalog()
-const { data: discounts } = useActiveDiscounts()
+const { hasPermission } = usePermissions()
+// Sin esto, un negocio sin el feature discounts (o un cajero sin
+// discounts.apply/discounts.manage) disparaba igual la consulta y recibia
+// el toast de "no tienes permiso"/"modulo no habilitado" apenas abria
+// Vender - mismo bug que ya se habia corregido para open_tabs (ver nota
+// mas abajo), nunca aplicado aca.
+const discountsEnabled = computed(
+  () =>
+    hasFeature(business.value, 'discounts') &&
+    (hasPermission('discounts.apply') || hasPermission('discounts.manage')),
+)
+const { data: discounts } = useActiveDiscounts(discountsEnabled)
 const createSaleMutation = useCreateSale()
 const { notify } = useSystemAlert()
 
@@ -66,14 +77,13 @@ const checkout = useSaleCheckout(
 // cajeros (cash_shift.manage) de un negocio con cierre de caja habilitado -
 // el admin/dueño queda exento, igual que en el backend.
 const auth = useAuthStore()
-const { hasPermission } = usePermissions()
 const requiresOpenShift = computed(
   () =>
     hasFeature(business.value, 'cash_closing') &&
     hasPermission('cash_shift.manage') &&
     auth.user?.roles?.includes('admin') !== true,
 )
-const currentShiftQuery = useCurrentShift()
+const currentShiftQuery = useCurrentShift(requiresOpenShift)
 const shiftStatusLoaded = computed(() => !requiresOpenShift.value || currentShiftQuery.data.value !== undefined)
 const blockedForNoOpenShift = computed(
   () => requiresOpenShift.value && shiftStatusLoaded.value && !currentShiftQuery.data.value?.shift,
