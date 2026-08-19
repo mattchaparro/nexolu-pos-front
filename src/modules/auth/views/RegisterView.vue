@@ -26,8 +26,9 @@ import { z } from 'zod'
 
 import { homeRouteFor } from '@/router'
 import { confirmWhatsappLink, startWhatsappLink } from '@/services/aiChannelLink'
+import { updateBillingProfile } from '@/services/billingProfile'
 import { useAuthStore } from '@/stores/auth.store'
-import { NxButton, NxInput, NxSwitch } from '@/ui'
+import { NxButton, NxInput, NxSelect, NxSwitch } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 
@@ -49,6 +50,8 @@ const step1Schema = z
     phone: z.string().optional(),
     nit: z.string().optional(),
     address: z.string().optional(),
+    document_type: z.enum(['CC', 'NIT', 'CE']).optional(),
+    document_number: z.string().optional(),
   })
   .refine((data) => data.password === data.password_confirmation, {
     message: 'Las contraseñas no coinciden',
@@ -71,6 +74,8 @@ const { handleSubmit, defineField, errors, setErrors } = useForm({
     phone: '',
     nit: '',
     address: '',
+    document_type: 'CC',
+    document_number: '',
   },
 })
 
@@ -84,6 +89,13 @@ const [usesDifferentPhone] = defineField('usesDifferentPhone')
 const [phone, phoneAttrs] = defineField('phone')
 const [nit, nitAttrs] = defineField('nit')
 const [address, addressAttrs] = defineField('address')
+const [document_type, documentTypeAttrs] = defineField('document_type')
+const [document_number, documentNumberAttrs] = defineField('document_number')
+const documentTypeOptions = [
+  { label: 'Cédula de ciudadanía', value: 'CC' },
+  { label: 'NIT', value: 'NIT' },
+  { label: 'Cédula de extranjería', value: 'CE' },
+]
 
 const goToStep2 = handleSubmit((values) => {
   const result = step1Schema.safeParse(values)
@@ -224,6 +236,24 @@ async function submitRegistration(): Promise<void> {
       feature_flags: { ...editableFlags },
       device_name: 'nexolu-pos-front',
     })
+
+    // Opcional, no bloquea el registro si falla - solo evita volver a
+    // pedir el documento en el primer pago por PSE (ver PseModal.vue).
+    if (document_number.value?.trim()) {
+      try {
+        await updateBillingProfile({
+          document_type: document_type.value as 'CC' | 'NIT' | 'CE',
+          document_number: document_number.value.trim(),
+          full_name: owner_name.value,
+          phone: (usesDifferentPhone.value ? phone.value : whatsapp_number.value) ?? undefined,
+          address: address.value || undefined,
+        })
+      } catch {
+        // silencioso a proposito: el registro ya tuvo exito, esto es una
+        // comodidad extra, no una condicion para entrar a la app.
+      }
+    }
+
     step.value = 3
     otpPhone.value = whatsapp_number.value ?? ''
     await sendWhatsappCode()
@@ -314,6 +344,26 @@ async function submitRegistration(): Promise<void> {
           <NxInput id="nit" v-model="nit" v-bind="nitAttrs" label="NIT (opcional)" />
           <NxInput id="address" v-model="address" v-bind="addressAttrs" label="Dirección (opcional)" />
         </div>
+
+        <!-- Opcional: si se completa, queda prellenado para pagar por PSE
+             despues sin volver a pedirlo (ver App\Models\BillingProfile,
+             nexolu-pos-api) - nunca bloquea el registro. -->
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p class="mb-3 text-sm text-slate-700">Documento del titular (opcional)</p>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <NxSelect
+              v-model="document_type"
+              v-bind="documentTypeAttrs"
+              :options="documentTypeOptions"
+              option-label="label"
+              option-value="value"
+              label="Tipo de documento"
+            />
+            <NxInput id="document_number" v-model="document_number" v-bind="documentNumberAttrs" label="Número de documento" inputmode="numeric" />
+          </div>
+          <p class="mt-2 text-xs text-slate-500">Lo vas a necesitar para pagar por PSE - te lo pedimos ahora para no volver a preguntarlo.</p>
+        </div>
+
         <NxButton type="submit" class="w-full">Continuar</NxButton>
       </form>
 
