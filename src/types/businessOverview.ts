@@ -83,6 +83,29 @@ export interface ServiceRotation {
   collected: number
 }
 
+export interface ProfitProduct {
+  product_id: number
+  name: string
+  qty_sold: number
+  revenue: number
+  cost_total: number
+  profit: number
+  margin_pct: number | null
+}
+
+// Null cuando el usuario no tiene el permiso accounting.manage: expone
+// rentabilidad real (costo/utilidad), no solo reportes de venta, asi que se
+// gatea aparte de reports.sales (que ya protege el resto del endpoint).
+export interface PeriodProfit {
+  revenue: number
+  cost: number
+  profit: number
+  margin_pct: number | null
+  uncosted_products_count: number
+  uncosted_revenue: number
+  top_products: ProfitProduct[]
+}
+
 export interface BusinessOverviewPeriod {
   year: number
   month: number
@@ -92,6 +115,7 @@ export interface BusinessOverviewPeriod {
   top_products: ProductRotation[]
   bottom_products: ProductRotation[]
   top_services: ServiceRotation[] | null
+  profit: PeriodProfit | null
 }
 
 export interface BusinessOverview {

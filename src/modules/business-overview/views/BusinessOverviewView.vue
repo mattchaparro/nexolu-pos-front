@@ -11,6 +11,7 @@ import { NxSelect } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
 import HourlyHeatmap from '../components/HourlyHeatmap.vue'
+import ProfitRankedList from '../components/ProfitRankedList.vue'
 import RankedBarList from '../components/RankedBarList.vue'
 import StatTile from '../components/StatTile.vue'
 import TrendLineChart from '../components/TrendLineChart.vue'
@@ -119,6 +120,44 @@ function formatQty(value: number): string {
             {{ formatCop(overview.period.receivables.collected_this_period) }} cobrados este mes
           </p>
         </div>
+      </section>
+
+      <!-- Margen de ganancia: aparte de descuentos/fiado porque expone
+           rentabilidad real, solo visible con el permiso accounting.manage -->
+      <section v-if="overview.period.profit" class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+        <div class="mb-3 flex items-center justify-between gap-2">
+          <h3 class="text-sm font-semibold text-emerald-900">Margen de ganancia del mes</h3>
+          <span class="text-xl font-bold text-emerald-900">
+            {{ overview.period.profit.margin_pct !== null ? `${overview.period.profit.margin_pct}%` : '—' }}
+          </span>
+        </div>
+        <div class="grid grid-cols-3 gap-3 text-xs">
+          <div>
+            <p class="text-emerald-700/70">Ingresos con costo</p>
+            <p class="font-semibold text-emerald-900">{{ formatCop(overview.period.profit.revenue) }}</p>
+          </div>
+          <div>
+            <p class="text-emerald-700/70">Costo</p>
+            <p class="font-semibold text-emerald-900">{{ formatCop(overview.period.profit.cost) }}</p>
+          </div>
+          <div>
+            <p class="text-emerald-700/70">Utilidad</p>
+            <p class="font-semibold text-emerald-900">{{ formatCop(overview.period.profit.profit) }}</p>
+          </div>
+        </div>
+        <p class="mt-3 text-xs text-emerald-700/70">
+          Solo cuenta productos con costo configurado en Catálogo.
+          <template v-if="overview.period.profit.uncosted_products_count > 0">
+            {{ overview.period.profit.uncosted_products_count }} producto(s) sin costo quedaron fuera
+            ({{ formatCop(overview.period.profit.uncosted_revenue) }} en ingresos no considerados).
+          </template>
+        </p>
+      </section>
+
+      <section v-if="overview.period.profit" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h3 class="mb-1 text-sm font-semibold text-slate-700">Top 10 por utilidad</h3>
+        <p class="mb-3 text-xs text-slate-400">Solo productos con costo configurado - la ganancia real, no solo lo más vendido.</p>
+        <ProfitRankedList :items="overview.period.profit.top_products" />
       </section>
 
       <!-- Rotacion con impacto -->
