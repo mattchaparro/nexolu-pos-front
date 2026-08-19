@@ -36,9 +36,10 @@ function submitLabel(): string {
       :phone="checkout.customerPhone.value"
       :identification="checkout.customerIdentification.value"
       :required="false"
-      @update:name="checkout.customerName.value = $event"
-      @update:phone="checkout.customerPhone.value = $event"
+      @update:name="checkout.setCustomerName($event)"
+      @update:phone="checkout.setCustomerPhone($event)"
       @update:identification="checkout.customerIdentification.value = $event"
+      @select-client="checkout.applyClient($event)"
     />
 
     <label v-if="business.delivery_enabled" class="flex items-center gap-2 text-sm text-slate-700">

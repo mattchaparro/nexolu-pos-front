@@ -33,7 +33,28 @@ const nonCreditPaymentMethods = computed(
 
 const customerName = ref('')
 const customerPhone = ref('')
+const clientId = ref<number | null>(null)
 const notes = ref('')
+
+// Editar nombre/telefono a mano invalida el vinculo con el Client aplicado
+// via ClientQuickAssociate - mismo criterio que useSaleCheckout (ver esa
+// nota): un client_id que ya no corresponde al texto es peor que no
+// guardar ninguno.
+function setCustomerName(value: string): void {
+  customerName.value = value
+  clientId.value = null
+}
+
+function setCustomerPhone(value: string): void {
+  customerPhone.value = value
+  clientId.value = null
+}
+
+function applyClient(client: { id: number; name: string; phone: string | null }): void {
+  customerName.value = client.name
+  customerPhone.value = client.phone ?? ''
+  clientId.value = client.id
+}
 const lines = ref<LayawayLineRow[]>([newLayawayLineRow()])
 
 const registerInitialPayment = ref(false)
@@ -63,6 +84,7 @@ async function submit(): Promise<void> {
   const payload: LayawayPayload = {
     customer_name: customerName.value.trim() || null,
     customer_phone: customerPhone.value.trim() || null,
+    client_id: clientId.value,
     notes: notes.value.trim() || null,
     items,
     ...(registerInitialPayment.value && initialPayment.value
@@ -104,21 +126,11 @@ async function submit(): Promise<void> {
       <div class="rounded-xl border border-slate-200 bg-white p-4">
         <p class="mb-3 text-sm font-semibold text-slate-700">Datos del cliente (opcional)</p>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <NxInput v-model="customerName" label="Nombre" :error="fieldErrors.customer_name" />
-          <NxInput v-model="customerPhone" label="Teléfono" :error="fieldErrors.customer_phone" />
+          <NxInput :model-value="customerName" label="Nombre" :error="fieldErrors.customer_name" @update:model-value="setCustomerName" />
+          <NxInput :model-value="customerPhone" label="Teléfono" :error="fieldErrors.customer_phone" @update:model-value="setCustomerPhone" />
           <NxTextarea v-model="notes" label="Notas (opcional)" :rows="1" class="sm:col-span-2" />
         </div>
-        <ClientQuickAssociate
-          class="mt-3"
-          :name="customerName"
-          :phone="customerPhone"
-          @apply="
-            (client) => {
-              customerName = client.name
-              customerPhone = client.phone ?? ''
-            }
-          "
-        />
+        <ClientQuickAssociate class="mt-3" :name="customerName" :phone="customerPhone" @apply="applyClient" />
       </div>
 
       <div class="rounded-xl border border-slate-200 bg-white p-4">

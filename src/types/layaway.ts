@@ -1,7 +1,8 @@
 // Refleja LayawayResource/LayawayItemResource/LayawayPaymentResource
 // (app/Http/Resources/Api/V1) en nexolu-pos-api. A diferencia de Compras,
 // un apartado no tiene proveedor - solo nombre/telefono libres del
-// cliente (customer_name/customer_phone), sin relacion a Client.
+// cliente (customer_name/customer_phone), mas un client_id opcional
+// (ver CUTOVER_TODO.md #4) cuando esos datos se asociaron a un Client real.
 import type { Product } from './product'
 
 export type LayawayStatus = 'open' | 'completed' | 'cancelled'
@@ -28,6 +29,7 @@ export interface Layaway {
   business_id: number
   customer_name: string | null
   customer_phone: string | null
+  client_id: number | null
   status: LayawayStatus
   notes: string | null
   total: number
@@ -50,6 +52,7 @@ export interface LayawayItemInput {
 export interface LayawayPayload {
   customer_name?: string | null
   customer_phone?: string | null
+  client_id?: number | null
   notes?: string | null
   items: LayawayItemInput[]
   initial_payment?: number | null

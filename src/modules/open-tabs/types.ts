@@ -30,6 +30,7 @@ export interface CloseOpenTabPayload {
   customer_name?: string
   customer_phone?: string
   customer_identification?: string
+  client_id?: number | null
   apply_service_charge?: boolean
   apply_ipoconsumo?: boolean
 }

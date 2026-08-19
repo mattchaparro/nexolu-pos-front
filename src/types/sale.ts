@@ -26,6 +26,7 @@ export interface CreateSalePayload {
   customer_name?: string
   customer_phone?: string
   customer_identification?: string
+  client_id?: number | null
   is_delivery?: boolean
   is_non_revenue?: boolean
   non_revenue_reason?: string | null
@@ -80,6 +81,7 @@ export interface Sale {
   customer_name: string | null
   customer_phone: string | null
   customer_identification: string | null
+  client_id: number | null
   closed_at: string | null
   items: SaleItem[]
   payment_splits?: SalePaymentSplit[]

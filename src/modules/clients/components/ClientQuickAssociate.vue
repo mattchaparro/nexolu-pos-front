@@ -3,10 +3,11 @@
 // abierta, apartado) con un Client existente, o darlo de alta como uno
 // nuevo - un cliente es un cliente sin importar por donde entra (venta,
 // cita, apartado), asi que no hace falta reescribir esta logica en cada
-// modulo (misma busqueda/alta rapida que ClientPicker.vue, pero sin la
-// semantica de client_id: sales/layaways/receivables todavia no tienen esa
-// columna, ver docs/CUTOVER_TODO.md - por eso esto solo PREFILL-ea nombre/
-// telefono en el formulario, no guarda un vinculo persistente).
+// modulo (misma busqueda/alta rapida que ClientPicker.vue). Emite el Client
+// completo (con id): el padre decide que hacer con el - normalmente
+// prellenar nombre/telefono Y guardar el client_id real (ver
+// CUSTOMER_ID en CUTOVER_TODO.md #4, ya migrado a sales/layaways/
+// receivables).
 import { computed, ref } from 'vue'
 
 import { useBusiness } from '@/composables/useBusiness'
@@ -64,8 +65,9 @@ async function quickCreate(): Promise<void> {
   isCreating.value = true
   quickCreateError.value = null
   try {
-    await createClient({ name: quickName.value.trim(), phone: quickPhone.value.trim() || null })
+    const client = await createClient({ name: quickName.value.trim(), phone: quickPhone.value.trim() || null })
     notify('Cliente guardado')
+    emit('apply', client)
     mode.value = 'closed'
   } catch (error) {
     quickCreateError.value = extractErrorMessage(error, 'No pudimos guardar el cliente.')

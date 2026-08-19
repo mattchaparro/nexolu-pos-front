@@ -21,12 +21,8 @@ const emit = defineEmits<{
   'update:name': [value: string]
   'update:phone': [value: string]
   'update:identification': [value: string]
+  'select-client': [client: ClientSearchResult]
 }>()
-
-function applyClient(client: ClientSearchResult): void {
-  emit('update:name', client.name)
-  emit('update:phone', client.phone ?? '')
-}
 
 const isOpen = ref(props.required)
 
@@ -69,7 +65,7 @@ watch(
           @update:model-value="$emit('update:identification', $event)"
         />
       </div>
-      <ClientQuickAssociate :name="name" :phone="phone" @apply="applyClient" />
+      <ClientQuickAssociate :name="name" :phone="phone" @apply="emit('select-client', $event)" />
     </div>
   </details>
 </template>

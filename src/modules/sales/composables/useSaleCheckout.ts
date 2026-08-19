@@ -7,6 +7,7 @@
 // montar el DOM.
 import { computed, ref, type Ref } from 'vue'
 
+import type { ClientSearchResult } from '@/types/client'
 import type { Business } from '@/types/business'
 import type { Discount } from '@/types/discount'
 import type { Product } from '@/types/product'
@@ -29,6 +30,30 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
   const customerName = ref('')
   const customerPhone = ref('')
   const customerIdentification = ref('')
+  const clientId = ref<number | null>(null)
+
+  /** Vincula la venta a un Client real (ClientQuickAssociate) y prellena nombre/telefono. */
+  function applyClient(client: ClientSearchResult): void {
+    customerName.value = client.name
+    customerPhone.value = client.phone ?? ''
+    clientId.value = client.id
+  }
+
+  /**
+   * Editar nombre/telefono a mano invalida el vinculo con el Client
+   * aplicado: ya no es certeza de que el texto siga describiendo a esa
+   * misma persona, y guardar un client_id que ya no corresponde es peor que
+   * no guardar ninguno.
+   */
+  function setCustomerName(value: string): void {
+    customerName.value = value
+    clientId.value = null
+  }
+
+  function setCustomerPhone(value: string): void {
+    customerPhone.value = value
+    clientId.value = null
+  }
 
   const isDelivery = ref(false)
 
@@ -138,6 +163,7 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
       customer_name: customerName.value || undefined,
       customer_phone: customerPhone.value || undefined,
       customer_identification: customerIdentification.value || undefined,
+      client_id: clientId.value,
       is_delivery: isDelivery.value,
       cart_discount_id: cartDiscountId.value,
     }
@@ -148,6 +174,7 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     customerName.value = ''
     customerPhone.value = ''
     customerIdentification.value = ''
+    clientId.value = null
     isDelivery.value = false
     cartDiscountId.value = null
   }
@@ -157,6 +184,10 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     customerName,
     customerPhone,
     customerIdentification,
+    clientId,
+    applyClient,
+    setCustomerName,
+    setCustomerPhone,
     isDelivery,
     cartDiscountId,
     itemDiscounts,

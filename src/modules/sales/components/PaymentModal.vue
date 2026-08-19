@@ -92,6 +92,7 @@ const splitPeopleCount = ref<number | null>(2)
 const singleMethod = ref<string | null>(null)
 const customerName = ref('')
 const customerPhone = ref('')
+const clientId = ref<number | null>(null)
 const partialAmount = ref<number | null>(null)
 const partialMethod = ref<string | null>(null)
 const partialLabel = ref('')
@@ -108,6 +109,7 @@ function resetForm(): void {
   singleMethod.value = defaultMethodId.value
   customerName.value = ''
   customerPhone.value = ''
+  clientId.value = null
   partialAmount.value = null
   partialMethod.value = defaultSplitMethodId.value
   partialLabel.value = ''
@@ -264,6 +266,9 @@ function submitConfirm(): void {
     if (isCreditPaymentMethodId(singleMethod.value)) {
       payload.customer_name = customerName.value || undefined
       payload.customer_phone = customerPhone.value || undefined
+      if (clientId.value) {
+        payload.client_id = clientId.value
+      }
     }
   }
 
@@ -285,6 +290,26 @@ function submitPartial(): void {
 }
 
 const modalTitle = computed(() => props.title ?? (props.sale ? 'Cobrar cuenta' : 'Cobrar venta'))
+
+// Editar nombre/telefono a mano invalida el vinculo con el Client aplicado
+// via ClientQuickAssociate - mismo criterio que useSaleCheckout.setCustomerName/
+// setCustomerPhone (ver esa nota): un client_id que ya no corresponde al
+// texto es peor que no guardar ninguno.
+function setCustomerName(value: string): void {
+  customerName.value = value
+  clientId.value = null
+}
+
+function setCustomerPhone(value: string): void {
+  customerPhone.value = value
+  clientId.value = null
+}
+
+function applyClient(client: { id: number; name: string; phone: string | null }): void {
+  customerName.value = client.name
+  customerPhone.value = client.phone ?? ''
+  clientId.value = client.id
+}
 </script>
 
 <template>
@@ -366,18 +391,9 @@ const modalTitle = computed(() => props.title ?? (props.sale ? 'Cobrar cuenta' :
                 <p class="text-xs text-red-600">
                   Un fiado necesita al menos un dato del cliente (nombre o teléfono).
                 </p>
-                <NxInput v-model="customerName" label="Nombre del cliente" size="sm" />
-                <NxInput v-model="customerPhone" label="Teléfono" size="sm" />
-                <ClientQuickAssociate
-                  :name="customerName"
-                  :phone="customerPhone"
-                  @apply="
-                    (client) => {
-                      customerName = client.name
-                      customerPhone = client.phone ?? ''
-                    }
-                  "
-                />
+                <NxInput :model-value="customerName" label="Nombre del cliente" size="sm" @update:model-value="setCustomerName" />
+                <NxInput :model-value="customerPhone" label="Teléfono" size="sm" @update:model-value="setCustomerPhone" />
+                <ClientQuickAssociate :name="customerName" :phone="customerPhone" @apply="applyClient" />
               </template>
             </div>
 
