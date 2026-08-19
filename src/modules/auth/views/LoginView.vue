@@ -39,6 +39,10 @@ const isSubmitting = ref(false)
 
 const onSubmit = handleSubmit(async (values) => {
   const result = loginSchema.safeParse(values)
+  // Sin validationSchema, vee-validate no revalida solo al tipear (ver
+  // CLAUDE.md) - sin este clear, un error de un submit anterior ("correo
+  // obligatorio") se queda pegado en pantalla aunque el campo ya sea valido.
+  setErrors({ email: undefined, password: undefined })
   if (!result.success) {
     const fieldErrors = result.error.flatten().fieldErrors
     setErrors({
