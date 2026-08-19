@@ -3,7 +3,8 @@ import { ref } from 'vue'
 
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
-import { fetchSubscriptionStatus, initiateSubscriptionCheckout } from '../services/subscriptionService'
+import { clearPendingCheckoutReference, readPendingCheckoutReference, savePendingCheckoutReference } from './checkoutReferenceStorage'
+import { fetchSubscriptionCheckoutStatus, initiateSubscriptionCheckout } from '../services/subscriptionService'
 
 // Wompi carga su propio widget (checkout.wompi.co/widget.js) - no hay tipos
 // oficiales, se declara el shape minimo que se usa aca.
@@ -34,11 +35,15 @@ function loadWompiScript(): Promise<void> {
 
 /**
  * Orquesta el pago con Wompi: abre el widget, y tras un pago aprobado hace
- * polling de GET /subscription/status (no del estado de la orden) porque la
- * fuente de verdad real es el webhook de Payments Core activando el
- * negocio - el resultado que devuelve el widget es solo la respuesta de la
- * pasarela, no la confirmacion. Mismo criterio que Billing.vue del legacy
- * (10 intentos cada 2.5s).
+ * polling de GET /subscription/checkout/{reference} (el estado de la ORDEN,
+ * no el estado general de la suscripcion) porque la fuente de verdad real
+ * es el webhook de Payments Core, y solo el estado de la orden distingue
+ * "todavia no llega el webhook" de "el webhook llego y el pago fue
+ * rechazado" - el resultado que devuelve el widget es solo la respuesta de
+ * la pasarela, no la confirmacion. Mismo criterio que Billing.vue del
+ * legacy (10 intentos cada 2.5s). La reference se guarda en localStorage
+ * (ver checkoutReferenceStorage) porque en mobile Wompi redirige la pagina
+ * completa y el estado en memoria se pierde.
  */
 export function useSubscriptionCheckout() {
   const queryClient = useQueryClient()
@@ -47,6 +52,7 @@ export function useSubscriptionCheckout() {
   const verifying = ref(false)
   const activated = ref(false)
   const timedOut = ref(false)
+  const declined = ref(false)
 
   let pollTimer: ReturnType<typeof setTimeout> | undefined
   let pollCount = 0
@@ -58,14 +64,22 @@ export function useSubscriptionCheckout() {
     }
   }
 
-  async function pollStatus(): Promise<void> {
+  async function pollStatus(reference: string): Promise<void> {
     try {
-      const status = await fetchSubscriptionStatus()
-      if (status.status === 'paid') {
+      const status = await fetchSubscriptionCheckoutStatus(reference)
+      if (status.status === 'confirmed') {
         stopPolling()
+        clearPendingCheckoutReference()
         verifying.value = false
         activated.value = true
         queryClient.invalidateQueries({ queryKey: ['subscription', 'status'] })
+        return
+      }
+      if (status.status === 'failed' || status.status === 'cancelled') {
+        stopPolling()
+        clearPendingCheckoutReference()
+        verifying.value = false
+        declined.value = true
         return
       }
     } catch {
@@ -74,7 +88,7 @@ export function useSubscriptionCheckout() {
 
     pollCount += 1
     if (pollCount < MAX_POLLS) {
-      pollTimer = setTimeout(pollStatus, POLL_INTERVAL_MS)
+      pollTimer = setTimeout(() => pollStatus(reference), POLL_INTERVAL_MS)
     } else {
       stopPolling()
       verifying.value = false
@@ -82,22 +96,35 @@ export function useSubscriptionCheckout() {
     }
   }
 
-  /** Arranca (o reanuda, ej. tras el redirect de vuelta de Wompi en mobile) el polling. */
-  function startPolling(): void {
+  /**
+   * Arranca (o reanuda, ej. tras el redirect de vuelta de Wompi en mobile)
+   * el polling. Sin argumento, toma la reference pendiente de
+   * localStorage - asi funciona igual llamado desde `pay()` (misma carga de
+   * la pagina) que desde el fallback de mount tras el redirect (pagina
+   * nueva, sin memoria del intent).
+   */
+  function startPolling(reference?: string): void {
+    const ref_ = reference ?? readPendingCheckoutReference()
+    if (!ref_) {
+      return
+    }
     pollCount = 0
     verifying.value = true
     activated.value = false
     timedOut.value = false
-    pollTimer = setTimeout(pollStatus, POLL_INTERVAL_MS)
+    declined.value = false
+    pollTimer = setTimeout(() => pollStatus(ref_), POLL_INTERVAL_MS)
   }
 
   async function pay(customer: { email: string; fullName: string }): Promise<void> {
     paying.value = true
     error.value = null
+    declined.value = false
 
     try {
       const redirectUrl = `${window.location.origin}${window.location.pathname}?wompi_paid=1`
       const intent = await initiateSubscriptionCheckout(redirectUrl)
+      savePendingCheckoutReference(intent.order_key)
       await loadWompiScript()
 
       const checkout = new window.WidgetCheckout!({
@@ -116,10 +143,12 @@ export function useSubscriptionCheckout() {
         const txStatus = result.transaction?.status
         if (txStatus === 'APPROVED') {
           // No mostrar exito todavia - eso lo confirma el webhook, no el widget.
-          startPolling()
+          startPolling(intent.order_key)
         } else if (txStatus === 'DECLINED') {
+          clearPendingCheckoutReference()
           error.value = 'Tu pago fue rechazado. Verifica los datos de tu tarjeta o intenta con otro método de pago.'
         } else if (txStatus === 'ERROR') {
+          clearPendingCheckoutReference()
           error.value = 'Ocurrió un error al procesar el pago. Intenta de nuevo en unos minutos.'
         }
       })
@@ -133,5 +162,5 @@ export function useSubscriptionCheckout() {
     stopPolling()
   }
 
-  return { paying, error, verifying, activated, timedOut, pay, startPolling, stop }
+  return { paying, error, verifying, activated, timedOut, declined, pay, startPolling, stop }
 }

@@ -42,6 +42,7 @@ const direct = useDirectCheckout()
 
 const anyVerifying = computed(() => checkout.verifying.value || direct.verifying.value)
 const anyActivated = computed(() => checkout.activated.value || direct.activated.value)
+const anyDeclined = computed(() => checkout.declined.value || direct.declined.value)
 const anyTimedOut = computed(() => checkout.timedOut.value || direct.timedOut.value)
 
 function formatDate(value: string | null): string {
@@ -153,6 +154,17 @@ onUnmounted(() => {
         <div>
           <p class="font-semibold text-emerald-800">Pago confirmado</p>
           <p class="mt-0.5 text-sm text-emerald-700">Tu suscripción está activa.</p>
+        </div>
+      </div>
+
+      <!-- Pago rechazado (confirmado por el webhook, no por la respuesta de la pasarela) -->
+      <div v-else-if="anyDeclined" class="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-5">
+        <i class="pi pi-times-circle mt-0.5 text-2xl text-red-500" />
+        <div>
+          <p class="font-semibold text-red-800">Tu pago fue rechazado</p>
+          <p class="mt-0.5 text-sm text-red-700">
+            No pudimos procesar el pago. Verifica los datos e intenta de nuevo, o prueba con otro método de pago.
+          </p>
         </div>
       </div>
 

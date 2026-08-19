@@ -3,8 +3,9 @@ import { ref } from 'vue'
 
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
+import { clearPendingCheckoutReference, readPendingCheckoutReference, savePendingCheckoutReference } from './checkoutReferenceStorage'
 import { createPaymentSource } from '../services/paymentSourcesService'
-import { chargeSubscriptionCheckout, fetchSubscriptionStatus, initiateSubscriptionCheckout } from '../services/subscriptionService'
+import { chargeSubscriptionCheckout, fetchSubscriptionCheckoutStatus, initiateSubscriptionCheckout } from '../services/subscriptionService'
 import { type CardInput, fetchNequiTokenStatus, tokenizeCard, tokenizeNequi } from '../services/wompiTokenization'
 
 const POLL_INTERVAL_MS = 2500
@@ -29,8 +30,12 @@ export interface PseChargeInput {
  * ver docs/PLAN_METODOS_PAGO_ALTERNOS.md (repo nexolu-pos-api).
  *
  * Mismo criterio que el flujo Widget para la confirmacion: nunca se confia
- * en la respuesta sincrona del charge, siempre se espera el webhook real
- * (polling de GET /subscription/status, igual que useSubscriptionCheckout).
+ * en la respuesta sincrona del charge, siempre se espera el webhook real -
+ * polling de GET /subscription/checkout/{reference} (el estado de la ORDEN,
+ * no el estado general de la suscripcion), igual que useSubscriptionCheckout.
+ * La reference se guarda en localStorage (ver checkoutReferenceStorage)
+ * porque PSE/Boton Bancolombia redirigen la pagina completa al banco y de
+ * vuelta - el estado en memoria se pierde.
  */
 export function useDirectCheckout() {
   const queryClient = useQueryClient()
@@ -39,6 +44,7 @@ export function useDirectCheckout() {
   const verifying = ref(false)
   const activated = ref(false)
   const timedOut = ref(false)
+  const declined = ref(false)
   const waitingNequiApproval = ref(false)
 
   let pollTimer: ReturnType<typeof setTimeout> | undefined
@@ -51,14 +57,22 @@ export function useDirectCheckout() {
     }
   }
 
-  async function pollStatus(): Promise<void> {
+  async function pollStatus(reference: string): Promise<void> {
     try {
-      const status = await fetchSubscriptionStatus()
-      if (status.status === 'paid') {
+      const status = await fetchSubscriptionCheckoutStatus(reference)
+      if (status.status === 'confirmed') {
         stopPolling()
+        clearPendingCheckoutReference()
         verifying.value = false
         activated.value = true
         queryClient.invalidateQueries({ queryKey: ['subscription', 'status'] })
+        return
+      }
+      if (status.status === 'failed' || status.status === 'cancelled') {
+        stopPolling()
+        clearPendingCheckoutReference()
+        verifying.value = false
+        declined.value = true
         return
       }
     } catch {
@@ -67,7 +81,7 @@ export function useDirectCheckout() {
 
     pollCount += 1
     if (pollCount < MAX_POLLS) {
-      pollTimer = setTimeout(pollStatus, POLL_INTERVAL_MS)
+      pollTimer = setTimeout(() => pollStatus(reference), POLL_INTERVAL_MS)
     } else {
       stopPolling()
       verifying.value = false
@@ -75,12 +89,18 @@ export function useDirectCheckout() {
     }
   }
 
-  function startPolling(): void {
+  /** Sin argumento, toma la reference pendiente de localStorage (fallback tras redirect de PSE/Bancolombia). */
+  function startPolling(reference?: string): void {
+    const ref_ = reference ?? readPendingCheckoutReference()
+    if (!ref_) {
+      return
+    }
     pollCount = 0
     verifying.value = true
     activated.value = false
     timedOut.value = false
-    pollTimer = setTimeout(pollStatus, POLL_INTERVAL_MS)
+    declined.value = false
+    pollTimer = setTimeout(() => pollStatus(ref_), POLL_INTERVAL_MS)
   }
 
   function redirectUrl(): string {
@@ -107,22 +127,26 @@ export function useDirectCheckout() {
   }
 
   async function finishCharge(reference: string, paymentMethod: Record<string, unknown>): Promise<void> {
+    // Guardar la reference ANTES del charge: si es PSE/Bancolombia, la
+    // siguiente linea puede terminar en una navegacion completa al banco.
+    savePendingCheckoutReference(reference)
     const result = await chargeSubscriptionCheckout(reference, paymentMethod)
     if (result.redirect_url) {
       // PSE/Boton Bancolombia: el usuario tiene que terminar el pago en el
       // sitio de su banco. Al volver, redirect_url ya trae ?wompi_paid=1
       // (ver payWithPse/payWithBancolombiaTransfer) para que SubscriptionView
-      // reanude el polling al montar.
+      // reanude el polling al montar (toma la reference de localStorage).
       window.location.href = result.redirect_url
       return
     }
-    startPolling()
+    startPolling(reference)
   }
 
   /** Paga reusando una fuente de pago ya guardada - sin tokenizar nada de nuevo. */
   async function payWithSavedSource(paymentSourceId: string, installments = 1): Promise<void> {
     paying.value = true
     error.value = null
+    declined.value = false
     try {
       const intent = await initiateSubscriptionCheckout(redirectUrl(), 'api')
       await finishCharge(intent.order_key, {
@@ -141,6 +165,7 @@ export function useDirectCheckout() {
   async function payWithNewCard(card: CardInput, saveLabel: string | null): Promise<void> {
     paying.value = true
     error.value = null
+    declined.value = false
     try {
       const intent = await initiateSubscriptionCheckout(redirectUrl(), 'api')
       if (!intent.payment_init) {
@@ -171,6 +196,7 @@ export function useDirectCheckout() {
   async function payWithNewNequi(phoneNumber: string, save: boolean, label: string): Promise<void> {
     paying.value = true
     error.value = null
+    declined.value = false
     try {
       const intent = await initiateSubscriptionCheckout(redirectUrl(), 'api')
       if (!intent.payment_init) {
@@ -196,6 +222,7 @@ export function useDirectCheckout() {
   async function payWithPse(payload: PseChargeInput): Promise<void> {
     paying.value = true
     error.value = null
+    declined.value = false
     try {
       const intent = await initiateSubscriptionCheckout(redirectUrl(), 'api')
       await finishCharge(intent.order_key, {
@@ -213,6 +240,7 @@ export function useDirectCheckout() {
   async function payWithBancolombiaTransfer(): Promise<void> {
     paying.value = true
     error.value = null
+    declined.value = false
     try {
       const intent = await initiateSubscriptionCheckout(redirectUrl(), 'api')
       await finishCharge(intent.order_key, {
@@ -237,6 +265,7 @@ export function useDirectCheckout() {
     verifying,
     activated,
     timedOut,
+    declined,
     waitingNequiApproval,
     payWithSavedSource,
     payWithNewCard,
