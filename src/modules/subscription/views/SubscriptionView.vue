@@ -16,6 +16,7 @@ import { formatCop } from '@/utils/formatCop'
 
 import DirectCheckoutPanel from '../components/DirectCheckoutPanel.vue'
 import { useDirectCheckout } from '../composables/useDirectCheckout'
+import { usePaymentMethodsCatalog } from '../composables/usePaymentMethodsCatalog'
 import { useSubscriptionCheckout } from '../composables/useSubscriptionCheckout'
 import { useSubscriptionStatus } from '../composables/useSubscriptionStatus'
 
@@ -24,6 +25,12 @@ const router = useRouter()
 const auth = useAuthStore()
 const businessQuery = useBusiness()
 const business = computed(() => businessQuery.data.value ?? null)
+
+// Prendido/apagado desde Payments Core (Integration.widget_enabled) - ver
+// docs/APP_INTEGRATION.md del Core. Arranca en false mientras carga o si el
+// Core no lo trae, asi el boton del widget nunca aparece "de mas".
+const catalogQuery = usePaymentMethodsCatalog()
+const widgetEnabled = computed(() => catalogQuery.data.value?.widget_enabled ?? false)
 
 const statusQuery = useSubscriptionStatus()
 const data = computed(() => statusQuery.data.value ?? null)
@@ -243,15 +250,17 @@ onUnmounted(() => {
 
         <DirectCheckoutPanel :direct="direct" />
 
-        <div class="my-4 flex items-center gap-3 text-xs text-slate-400">
-          <span class="h-px flex-1 bg-slate-200" />
-          o
-          <span class="h-px flex-1 bg-slate-200" />
-        </div>
+        <template v-if="widgetEnabled">
+          <div class="my-4 flex items-center gap-3 text-xs text-slate-400">
+            <span class="h-px flex-1 bg-slate-200" />
+            o
+            <span class="h-px flex-1 bg-slate-200" />
+          </div>
 
-        <NxButton class="w-full" variant="outline" size="lg" icon="pi pi-credit-card" :loading="checkout.paying.value" @click="payNow">
-          {{ checkout.paying.value ? 'Abriendo pasarela de pago...' : 'Pagar con el widget de Wompi' }}
-        </NxButton>
+          <NxButton class="w-full" variant="outline" size="lg" icon="pi pi-credit-card" :loading="checkout.paying.value" @click="payNow">
+            {{ checkout.paying.value ? 'Abriendo pasarela de pago...' : 'Pagar con el widget de Wompi' }}
+          </NxButton>
+        </template>
 
         <p v-if="checkout.error.value" class="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {{ checkout.error.value }}

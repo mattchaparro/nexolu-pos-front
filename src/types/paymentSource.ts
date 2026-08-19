@@ -16,6 +16,11 @@ export interface PaymentMethodsCatalog {
   // Interseccion entre lo que el comercio de Wompi tiene habilitado y lo
   // que el Core sabe orquestar - solo pueden aparecer estos 4.
   accepted_payment_methods: ('CARD' | 'NEQUI' | 'PSE' | 'BANCOLOMBIA_TRANSFER')[]
+  // Prende/apaga el flow="widget" (checkout.wompi.co/widget.js embebido)
+  // para esta Integration - se controla del lado de Payments Core (por
+  // ahora via su API de provisioning, mas adelante desde un front propio).
+  // Arranca en false.
+  widget_enabled: boolean
 }
 
 export interface PseFinancialInstitution {
