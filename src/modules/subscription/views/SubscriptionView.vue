@@ -5,9 +5,10 @@
 // historial de pagos. Sin la seccion de addon de IA del legacy (ya no se
 // factura aparte, ver docs/MIGRATION_BACKLOG.md) ni el fallback de pago
 // manual/WhatsApp (no hay precedente de esos datos en este repo todavia).
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useBusiness } from '@/composables/useBusiness'
 import { useAuthStore } from '@/stores/auth.store'
 import type { SubscriptionPayment, SubscriptionStatus } from '@/types/subscription'
 import { NxButton, NxCard, NxPageHeader } from '@/ui'
@@ -21,10 +22,18 @@ import { useSubscriptionStatus } from '../composables/useSubscriptionStatus'
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const businessQuery = useBusiness()
+const business = computed(() => businessQuery.data.value ?? null)
 
 const statusQuery = useSubscriptionStatus()
 const data = computed(() => statusQuery.data.value ?? null)
 const isActive = computed(() => data.value?.status === 'paid' || data.value?.status === 'trial')
+
+// Colapsado por defecto: en mobile, el detalle (dias, fechas, plan, promo)
+// empujaba fuera de la primera pantalla tanto el boton de pagar como el
+// aviso de "verificando tu pago" - lo mas importante para el usuario en
+// ese momento. Ver tambien anyVerifying/anyDeclined/anyTimedOut mas abajo.
+const showDetails = ref(false)
 
 const statusConfig: Record<SubscriptionStatus, { label: string; class: string; icon: string }> = {
   paid: { label: 'Activa', class: 'bg-emerald-100 text-emerald-700', icon: 'pi pi-check-circle' },
@@ -88,13 +97,11 @@ onUnmounted(() => {
     </template>
 
     <template v-else-if="data">
-      <!-- Tarjeta de estado -->
+      <!-- Tarjeta de estado: negocio + estado siempre visibles, el detalle
+           colapsado por defecto (ver comentario de showDetails). -->
       <NxCard>
-        <div class="flex items-start justify-between gap-4">
-          <div class="min-w-0">
-            <p class="text-xs font-semibold tracking-wide text-slate-500 uppercase">Estado</p>
-            <p class="mt-1 text-lg font-bold text-slate-900">{{ auth.user?.full_name ?? '—' }}</p>
-          </div>
+        <div class="flex min-w-0 flex-col items-start gap-2">
+          <p class="truncate text-lg font-bold text-slate-900">{{ business?.name ?? '—' }}</p>
           <span
             class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold"
             :class="statusConfig[data.status].class"
@@ -104,39 +111,54 @@ onUnmounted(() => {
           </span>
         </div>
 
-        <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
-            <p class="mb-0.5 text-xs text-slate-500">Días restantes</p>
-            <p class="text-2xl font-extrabold" :class="data.days_remaining <= 5 ? 'text-red-700' : 'text-slate-900'">
-              {{ data.days_remaining }}
-            </p>
-          </div>
-          <div v-if="data.paid_until" class="rounded-xl border border-slate-100 bg-slate-50 p-3">
-            <p class="mb-0.5 text-xs text-slate-500">{{ isActive ? 'Activa hasta' : 'Venció el' }}</p>
-            <p class="text-sm font-bold text-slate-900">{{ formatDate(data.paid_until) }}</p>
-          </div>
-          <div v-else-if="data.trial_ends_at" class="rounded-xl border border-slate-100 bg-slate-50 p-3">
-            <p class="mb-0.5 text-xs text-slate-500">Prueba hasta</p>
-            <p class="text-sm font-bold text-slate-900">{{ formatDate(data.trial_ends_at) }}</p>
-          </div>
-          <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
-            <p class="mb-0.5 text-xs text-slate-500">Plan mensual</p>
-            <div v-if="data.pricing.has_custom_price" class="flex flex-col gap-0.5">
-              <p class="text-xs text-slate-400 line-through">{{ formatCop(data.pricing.plan_standard_cop) }}</p>
-              <p class="text-sm font-bold text-indigo-700">{{ formatCop(data.pricing.plan_base_cop) }}</p>
-            </div>
-            <p v-else class="text-sm font-bold text-slate-900">{{ formatCop(data.pricing.plan_base_cop) }}</p>
-          </div>
-        </div>
+        <details
+          class="mt-4 rounded-lg border border-slate-200"
+          :open="showDetails"
+          @toggle="showDetails = ($event.target as HTMLDetailsElement).open"
+        >
+          <summary
+            class="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-xs font-semibold tracking-wide text-slate-500 uppercase [&::-webkit-details-marker]:hidden"
+          >
+            Detalle de tu suscripción
+            <i class="pi text-sm" :class="showDetails ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </summary>
 
-        <div v-if="data.pricing.is_promo_eligible" class="mt-3 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-          <i class="pi pi-tag shrink-0 text-emerald-600" />
-          <p class="text-sm text-emerald-800">
-            <strong>Promo {{ data.pricing.promo_discount_percent }}% dto</strong>
-            aplicada · mes {{ data.pricing.paid_cycles + 1 }} de {{ data.pricing.promo_months }} · pagas
-            <strong>{{ formatCop(data.pricing.total_cop) }}</strong> este ciclo
-          </p>
-        </div>
+          <div class="border-t border-slate-200 p-3">
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <p class="mb-0.5 text-xs text-slate-500">Días restantes</p>
+                <p class="text-2xl font-extrabold" :class="data.days_remaining <= 5 ? 'text-red-700' : 'text-slate-900'">
+                  {{ data.days_remaining }}
+                </p>
+              </div>
+              <div v-if="data.paid_until" class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <p class="mb-0.5 text-xs text-slate-500">{{ isActive ? 'Activa hasta' : 'Venció el' }}</p>
+                <p class="text-sm font-bold text-slate-900">{{ formatDate(data.paid_until) }}</p>
+              </div>
+              <div v-else-if="data.trial_ends_at" class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <p class="mb-0.5 text-xs text-slate-500">Prueba hasta</p>
+                <p class="text-sm font-bold text-slate-900">{{ formatDate(data.trial_ends_at) }}</p>
+              </div>
+              <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <p class="mb-0.5 text-xs text-slate-500">Plan mensual</p>
+                <div v-if="data.pricing.has_custom_price" class="flex flex-col gap-0.5">
+                  <p class="text-xs text-slate-400 line-through">{{ formatCop(data.pricing.plan_standard_cop) }}</p>
+                  <p class="text-sm font-bold text-indigo-700">{{ formatCop(data.pricing.plan_base_cop) }}</p>
+                </div>
+                <p v-else class="text-sm font-bold text-slate-900">{{ formatCop(data.pricing.plan_base_cop) }}</p>
+              </div>
+            </div>
+
+            <div v-if="data.pricing.is_promo_eligible" class="mt-3 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+              <i class="pi pi-tag shrink-0 text-emerald-600" />
+              <p class="text-sm text-emerald-800">
+                <strong>Promo {{ data.pricing.promo_discount_percent }}% dto</strong>
+                aplicada · mes {{ data.pricing.paid_cycles + 1 }} de {{ data.pricing.promo_months }} · pagas
+                <strong>{{ formatCop(data.pricing.total_cop) }}</strong> este ciclo
+              </p>
+            </div>
+          </div>
+        </details>
       </NxCard>
 
       <!-- Verificando pago -->
