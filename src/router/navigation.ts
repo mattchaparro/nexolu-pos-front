@@ -10,10 +10,10 @@ export const adminNavItems: NavItem[] = [
   { label: 'Asistente IA', icon: 'pi pi-comments', disabled: true },
   { label: 'Vender', icon: 'pi pi-shopping-cart', routeName: 'sales.create' },
   { label: 'Cuentas abiertas', icon: 'pi pi-receipt', routeName: 'open-tabs.index', featureKey: 'open_tabs' },
-  { label: 'Servicios', icon: 'pi pi-wrench', disabled: true, featureKey: 'services' },
-  { label: 'Agenda', icon: 'pi pi-calendar', disabled: true, featureKey: 'scheduling' },
-  { label: 'Fiados', icon: 'pi pi-wallet', disabled: true, featureKey: 'receivables' },
-  { label: 'Apartados', icon: 'pi pi-bookmark', disabled: true, featureKey: 'layaway' },
+  { label: 'Servicios', icon: 'pi pi-wrench', routeName: 'service-orders.index', featureKey: 'services' },
+  { label: 'Agenda', icon: 'pi pi-calendar', routeName: 'appointments.index', featureKey: 'scheduling' },
+  { label: 'Fiados', icon: 'pi pi-wallet', routeName: 'receivables.index', featureKey: 'receivables' },
+  { label: 'Apartados', icon: 'pi pi-bookmark', routeName: 'layaways.index', featureKey: 'layaway' },
   { label: 'Comandera', icon: 'pi pi-list', routeName: 'kitchen.index', featureKey: 'kitchen_board' },
   { label: 'Catálogo', icon: 'pi pi-shop', routeName: 'catalog.index' },
   // Sin equivalente en admin.json del legacy a proposito: legacy tiene las
@@ -23,18 +23,18 @@ export const adminNavItems: NavItem[] = [
   // gap que se repite.
   { label: 'Clientes', icon: 'pi pi-users', routeName: 'clients.index', featureKey: 'clients' },
   { label: 'Turnos de caja', icon: 'pi pi-clock', disabled: true, featureKey: 'cash_closing' },
-  { label: 'Resumen del día', icon: 'pi pi-chart-bar', disabled: true, routeName: 'daily-summary.index' },
+  { label: 'Resumen del día', icon: 'pi pi-chart-bar', routeName: 'daily-summary.index' },
   { label: 'Gastos', icon: 'pi pi-money-bill', routeName: 'expenses.index', featureKey: 'expenses' },
   { label: 'Planificador', icon: 'pi pi-calendar-clock', routeName: 'reminders.index', featureKey: 'reminders' },
-  { label: 'Descuentos', icon: 'pi pi-tag', disabled: true, featureKey: 'discounts' },
+  { label: 'Descuentos', icon: 'pi pi-tag', routeName: 'discounts.index', featureKey: 'discounts' },
   { label: 'Reportes', icon: 'pi pi-chart-line', disabled: true },
   // Sin featureKey: gestionar el equipo (alta/baja/roles) no es un extra de
   // plan, solo la edicion granular de permisos lo es (feature
   // permissions_management, que UsersView.vue chequea aparte para mostrar o
   // no la accion "Permisos" por fila) - ver la nota en el meta requiresAdmin
   // de router/index.ts.
-  { label: 'Usuarios', icon: 'pi pi-users', disabled: true },
-  { label: 'Auditoría', icon: 'pi pi-history', disabled: true, featureKey: 'audit_logs' },
+  { label: 'Usuarios', icon: 'pi pi-users', routeName: 'employees.index' },
+  { label: 'Auditoría', icon: 'pi pi-history', routeName: 'audit-logs.index', featureKey: 'audit_logs' },
   { label: 'Ajustes', icon: 'pi pi-cog', routeName: 'business-settings.index' },
   { label: 'Mi suscripción', icon: 'pi pi-credit-card', routeName: 'subscription.index' },
   { label: 'Mi negocio', icon: 'pi pi-building', disabled: true },
