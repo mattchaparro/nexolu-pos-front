@@ -15,6 +15,7 @@ import { NxButton } from '@/ui'
 import type { DirectCheckout, PseChargeInput } from '../composables/useDirectCheckout'
 import { usePaymentMethodsCatalog, usePseFinancialInstitutions } from '../composables/usePaymentMethodsCatalog'
 import { usePaymentSources, useRemovePaymentSource } from '../composables/usePaymentSources'
+import { paymentMethodImage } from '../support/paymentMethodImages'
 import type { CardInput } from '../services/wompiTokenization'
 
 import AddCardModal from './AddCardModal.vue'
@@ -42,10 +43,6 @@ const institutions = computed<PseFinancialInstitution[]>(() => institutionsQuery
 const showAddCard = ref(false)
 const showAddNequi = ref(false)
 const showPse = ref(false)
-
-function iconFor(type: string): string {
-  return type === 'CARD' ? 'pi pi-credit-card' : 'pi pi-mobile'
-}
 
 async function handleAddCard(card: CardInput, saveLabel: string | null): Promise<void> {
   await props.direct.payWithNewCard(card, saveLabel)
@@ -80,7 +77,7 @@ async function handlePse(payload: PseChargeInput): Promise<void> {
           class="flex items-center justify-between gap-2 rounded-xl border border-slate-200 p-3"
         >
           <div class="flex items-center gap-2 text-sm font-medium text-slate-700">
-            <i :class="iconFor(source.type)" class="text-indigo-500" />
+            <img :src="paymentMethodImage(source.type)" alt="" class="h-7 w-auto rounded-md" />
             {{ source.label }}
           </div>
           <div class="flex items-center gap-2">
@@ -101,10 +98,12 @@ async function handlePse(payload: PseChargeInput): Promise<void> {
       </div>
 
       <div class="flex flex-wrap gap-2">
-        <NxButton v-if="hasCard" size="sm" variant="outline" icon="pi pi-credit-card" @click="showAddCard = true">
+        <NxButton v-if="hasCard" size="sm" variant="outline" @click="showAddCard = true">
+          <img :src="paymentMethodImage('CARD')" alt="" class="h-5 w-auto rounded" />
           Agregar tarjeta
         </NxButton>
-        <NxButton v-if="hasNequi" size="sm" variant="outline" icon="pi pi-mobile" @click="showAddNequi = true">
+        <NxButton v-if="hasNequi" size="sm" variant="outline" @click="showAddNequi = true">
+          <img :src="paymentMethodImage('NEQUI')" alt="" class="h-5 w-auto rounded" />
           Agregar Nequi
         </NxButton>
       </div>
@@ -113,17 +112,18 @@ async function handlePse(payload: PseChargeInput): Promise<void> {
     <div v-if="hasPse || hasBancolombia">
       <p class="mb-2 text-xs font-semibold tracking-wide text-slate-500 uppercase">Pagos normales</p>
       <div class="flex flex-wrap gap-2">
-        <NxButton v-if="hasPse" size="sm" variant="outline" icon="pi pi-building-columns" @click="showPse = true">
+        <NxButton v-if="hasPse" size="sm" variant="outline" @click="showPse = true">
+          <img :src="paymentMethodImage('PSE')" alt="" class="h-5 w-auto rounded" />
           PSE
         </NxButton>
         <NxButton
           v-if="hasBancolombia"
           size="sm"
           variant="outline"
-          icon="pi pi-university"
           :loading="direct.paying.value"
           @click="direct.payWithBancolombiaTransfer()"
         >
+          <img :src="paymentMethodImage('BANCOLOMBIA_TRANSFER')" alt="" class="h-5 w-auto rounded" />
           Botón Bancolombia
         </NxButton>
       </div>

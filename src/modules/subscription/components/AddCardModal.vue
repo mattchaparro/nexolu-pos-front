@@ -58,7 +58,7 @@ function submit(): void {
     <template #footer>
       <div class="flex gap-2">
         <NxButton variant="outline" class="flex-1" :disabled="paying" @click="emit('update:modelValue', false)">Cancelar</NxButton>
-        <NxButton class="flex-1" :loading="paying" @click="submit">Pagar</NxButton>
+        <NxButton class="flex-[2]" :loading="paying" @click="submit">Pagar</NxButton>
       </div>
     </template>
   </NxModal>
