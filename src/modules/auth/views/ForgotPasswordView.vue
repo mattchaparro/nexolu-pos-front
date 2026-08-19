@@ -30,6 +30,10 @@ const isSubmitting = ref(false)
 
 const onSubmit = handleSubmit(async (values) => {
   const result = forgotPasswordSchema.safeParse(values)
+  // Sin validationSchema, vee-validate no revalida solo al tipear (ver
+  // CLAUDE.md) - sin este clear, un error de un intento anterior se queda
+  // pegado en pantalla aunque el campo ya sea valido.
+  setErrors({ email: undefined })
   if (!result.success) {
     setErrors({ email: result.error.flatten().fieldErrors.email?.[0] })
     return

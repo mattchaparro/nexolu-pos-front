@@ -87,6 +87,18 @@ const [address, addressAttrs] = defineField('address')
 
 const goToStep2 = handleSubmit((values) => {
   const result = step1Schema.safeParse(values)
+  // Sin validationSchema, vee-validate no revalida solo al tipear (ver
+  // CLAUDE.md) - sin este clear, un error de un intento anterior se queda
+  // pegado en pantalla aunque el campo ya sea valido.
+  setErrors({
+    business_name: undefined,
+    owner_name: undefined,
+    email: undefined,
+    password: undefined,
+    password_confirmation: undefined,
+    whatsapp_number: undefined,
+    phone: undefined,
+  })
   if (!result.success) {
     const fieldErrors = result.error.flatten().fieldErrors
     setErrors({
