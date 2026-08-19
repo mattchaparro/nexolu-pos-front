@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+import { useUpdateBillingProfile } from '@/composables/useBillingProfile'
 import { NxButton, NxModal, NxSwitch } from '@/ui'
 
+import BillingDetailsFields from './BillingDetailsFields.vue'
 import CardPaymentFields from './CardPaymentFields.vue'
 import type { CardInput } from '../services/wompiTokenization'
 
@@ -25,10 +27,31 @@ const cvc = ref('')
 const cardValid = ref(false)
 const save = ref(true)
 
+const documentType = ref<'CC' | 'NIT' | 'CE'>('CC')
+const documentNumber = ref('')
+const billingFullName = ref('')
+const billingPhone = ref('')
+const billingEmail = ref('')
+const billingAddress = ref('')
+const billingCity = ref('')
+const billingValid = ref(false)
+const updateBillingProfileMutation = useUpdateBillingProfile()
+
 function submit(): void {
-  if (!cardValid.value) {
+  if (!cardValid.value || !billingValid.value) {
     return
   }
+  // Se guarda para la proxima vez - sin esperar la respuesta ni bloquear
+  // el pago si falla, es solo comodidad, no un requisito del cobro.
+  updateBillingProfileMutation.mutate({
+    document_type: documentType.value,
+    document_number: documentNumber.value,
+    full_name: billingFullName.value.trim(),
+    phone: billingPhone.value,
+    email: billingEmail.value || undefined,
+    address: billingAddress.value || undefined,
+    city: billingCity.value || undefined,
+  })
   const card: CardInput = {
     number: number.value,
     cvc: cvc.value,
@@ -45,6 +68,18 @@ function submit(): void {
   <NxModal :model-value="modelValue" title="Pagar con tarjeta" size="md" @update:model-value="emit('update:modelValue', $event)">
     <div class="flex flex-col gap-3">
       <p class="text-xs text-slate-500">Tu tarjeta se envía directo a Wompi, nunca pasa por nuestros servidores.</p>
+
+      <BillingDetailsFields
+        v-model:document-type="documentType"
+        v-model:document-number="documentNumber"
+        v-model:full-name="billingFullName"
+        v-model:phone="billingPhone"
+        v-model:email="billingEmail"
+        v-model:address="billingAddress"
+        v-model:city="billingCity"
+        v-model:valid="billingValid"
+      />
+
       <CardPaymentFields
         v-model:card-holder="cardHolder"
         v-model:number="number"
@@ -64,7 +99,7 @@ function submit(): void {
     <template #footer>
       <div class="flex gap-2">
         <NxButton variant="outline" class="flex-1" :disabled="paying" @click="emit('update:modelValue', false)">Cancelar</NxButton>
-        <NxButton class="flex-[2]" :loading="paying" :disabled="!cardValid" @click="submit">Pagar</NxButton>
+        <NxButton class="flex-[2]" :loading="paying" :disabled="!cardValid || !billingValid" @click="submit">Pagar</NxButton>
       </div>
     </template>
   </NxModal>

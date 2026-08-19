@@ -5,14 +5,13 @@
 // historial de pagos. Sin la seccion de addon de IA del legacy (ya no se
 // factura aparte, ver docs/MIGRATION_BACKLOG.md) ni el fallback de pago
 // manual/WhatsApp (no hay precedente de esos datos en este repo todavia).
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { useBillingProfile, useUpdateBillingProfile } from '@/composables/useBillingProfile'
 import { useBusiness } from '@/composables/useBusiness'
 import { useAuthStore } from '@/stores/auth.store'
 import type { SubscriptionPayment, SubscriptionStatus } from '@/types/subscription'
-import { NxButton, NxCard, NxInput, NxPageHeader, NxSelect } from '@/ui'
+import { NxButton, NxCard, NxPageHeader } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
 import DirectCheckoutPanel from '../components/DirectCheckoutPanel.vue'
@@ -72,55 +71,6 @@ function formatDate(value: string | null): string {
 const methodLabels: Record<string, string> = { wompi: 'Wompi', wava: 'Wava', manual: 'Transferencia', nequi: 'Nequi' }
 function methodLabel(payment: SubscriptionPayment): string {
   return methodLabels[payment.payment_method ?? ''] ?? payment.payment_method ?? 'Manual'
-}
-
-// Datos de facturacion: se piden una sola vez (aca o al pagar por PSE,
-// PseModal.vue guarda lo mismo) y quedan prellenados con opcion de
-// actualizarlos - ver App\Models\BillingProfile (nexolu-pos-api).
-const billingProfileQuery = useBillingProfile()
-const updateBillingProfileMutation = useUpdateBillingProfile()
-const billingForm = ref({
-  document_type: 'CC' as 'CC' | 'NIT' | 'CE',
-  document_number: '',
-  full_name: '',
-  phone: '',
-  email: '',
-  address: '',
-  city: '',
-})
-const documentTypeOptions = [
-  { label: 'Cédula de ciudadanía', value: 'CC' },
-  { label: 'NIT', value: 'NIT' },
-  { label: 'Cédula de extranjería', value: 'CE' },
-]
-let billingFormPrefilled = false
-watch(
-  () => billingProfileQuery.data.value,
-  (profile) => {
-    if (!profile || billingFormPrefilled) {
-      return
-    }
-    billingFormPrefilled = true
-    billingForm.value = {
-      document_type: profile.document_type ?? 'CC',
-      document_number: profile.document_number ?? '',
-      full_name: profile.full_name ?? '',
-      phone: profile.phone ?? '',
-      email: profile.email ?? '',
-      address: profile.address ?? '',
-      city: profile.city ?? '',
-    }
-  },
-  { immediate: true },
-)
-const billingSaved = ref(false)
-function saveBillingProfile(): void {
-  billingSaved.value = false
-  updateBillingProfileMutation.mutate(billingForm.value, {
-    onSuccess: () => {
-      billingSaved.value = true
-    },
-  })
 }
 
 async function payNow(): Promise<void> {
@@ -344,47 +294,6 @@ onUnmounted(() => {
         </ul>
       </NxCard>
       <p v-else class="py-4 text-center text-xs text-slate-400">Sin pagos registrados todavía.</p>
-
-      <!-- Datos de facturacion: colapsado por defecto, mismo criterio que
-           el detalle de suscripcion - no es lo primero que hay que ver. -->
-      <NxCard>
-        <details class="rounded-lg border border-slate-200">
-          <summary
-            class="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-xs font-semibold tracking-wide text-slate-500 uppercase [&::-webkit-details-marker]:hidden"
-          >
-            Datos de facturación
-            <i class="pi pi-chevron-down text-sm" />
-          </summary>
-          <div class="flex flex-col gap-3 border-t border-slate-200 p-3">
-            <p class="text-xs text-slate-500">
-              Se usan para prellenar pagos por PSE - se piden una sola vez, podés actualizarlos cuando quieras.
-            </p>
-            <div class="grid grid-cols-2 gap-3">
-              <NxSelect
-                v-model="billingForm.document_type"
-                :options="documentTypeOptions"
-                option-label="label"
-                option-value="value"
-                label="Tipo de documento"
-              />
-              <NxInput v-model="billingForm.document_number" label="Número de documento" inputmode="numeric" />
-            </div>
-            <NxInput v-model="billingForm.full_name" label="Nombre completo" />
-            <NxInput v-model="billingForm.phone" label="Teléfono" inputmode="numeric" />
-            <NxInput v-model="billingForm.email" label="Correo de facturación" type="email" />
-            <NxInput v-model="billingForm.address" label="Dirección" />
-            <NxInput v-model="billingForm.city" label="Ciudad" />
-            <div class="flex items-center gap-3">
-              <NxButton size="sm" :loading="updateBillingProfileMutation.isPending.value" @click="saveBillingProfile">
-                Guardar
-              </NxButton>
-              <span v-if="billingSaved" class="text-xs font-medium text-emerald-600">
-                <i class="pi pi-check" /> Guardado
-              </span>
-            </div>
-          </div>
-        </details>
-      </NxCard>
     </template>
   </div>
 </template>
