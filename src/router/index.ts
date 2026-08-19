@@ -320,6 +320,14 @@ const router = createRouter({
           meta: { requiresPermission: 'reports.sales' },
         },
         {
+          // Mismo permiso que Resumen del dia - es el mismo reports.sales
+          // que ya protege GET /reports/sales/business-overview.
+          path: 'mi-negocio',
+          name: 'business-overview.index',
+          component: () => import('@/modules/business-overview/views/BusinessOverviewView.vue'),
+          meta: { requiresPermission: 'reports.sales' },
+        },
+        {
           // Alguno de los dos permisos alcanza para ver la pantalla - dentro,
           // cada pestaña (Mi turno / Cierre de caja) se muestra u oculta
           // segun cual de los dos tenga el usuario (ver CashShiftsView.vue).

@@ -37,7 +37,7 @@ export const adminNavItems: NavItem[] = [
   { label: 'Auditoría', icon: 'pi pi-history', routeName: 'audit-logs.index', featureKey: 'audit_logs' },
   { label: 'Ajustes', icon: 'pi pi-cog', routeName: 'business-settings.index' },
   { label: 'Mi suscripción', icon: 'pi pi-credit-card', routeName: 'subscription.index' },
-  { label: 'Mi negocio', icon: 'pi pi-building', disabled: true },
+  { label: 'Mi negocio', icon: 'pi pi-building', routeName: 'business-overview.index' },
 ]
 
 // Menu de super admin portado 1:1 de pos-saas-legacy/resources/js/menu/superadmin.json
