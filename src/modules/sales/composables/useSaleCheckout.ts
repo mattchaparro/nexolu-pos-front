@@ -32,15 +32,16 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
   const customerIdentification = ref('')
   const clientId = ref<number | null>(null)
 
-  /** Vincula la venta a un Client real (ClientQuickAssociate) y prellena nombre/telefono. */
+  /** Vincula la venta a un Client real (ClientQuickAssociate) y prellena nombre/telefono/cedula. */
   function applyClient(client: ClientSearchResult): void {
     customerName.value = client.name
     customerPhone.value = client.phone ?? ''
+    customerIdentification.value = client.identification ?? ''
     clientId.value = client.id
   }
 
   /**
-   * Editar nombre/telefono a mano invalida el vinculo con el Client
+   * Editar nombre/telefono/cedula a mano invalida el vinculo con el Client
    * aplicado: ya no es certeza de que el texto siga describiendo a esa
    * misma persona, y guardar un client_id que ya no corresponde es peor que
    * no guardar ninguno.
@@ -52,6 +53,11 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
 
   function setCustomerPhone(value: string): void {
     customerPhone.value = value
+    clientId.value = null
+  }
+
+  function setCustomerIdentification(value: string): void {
+    customerIdentification.value = value
     clientId.value = null
   }
 
@@ -188,6 +194,7 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     applyClient,
     setCustomerName,
     setCustomerPhone,
+    setCustomerIdentification,
     isDelivery,
     cartDiscountId,
     itemDiscounts,

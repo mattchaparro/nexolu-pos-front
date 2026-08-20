@@ -23,6 +23,7 @@ import { createClient } from '../services/clientService'
 const props = defineProps<{
   name: string
   phone: string
+  identification?: string
 }>()
 
 const emit = defineEmits<{ apply: [client: ClientSearchResult] }>()
@@ -34,7 +35,7 @@ const { notify } = useSystemAlert()
 
 const mode = ref<'closed' | 'search' | 'create'>('closed')
 const search = ref('')
-const clientsQuery = useClientSearch(search)
+const clientsQuery = useClientSearch(search, clientsFeatureEnabled)
 
 function pickClient(id: number | null): void {
   const client = clientsQuery.data.value?.find((c) => c.id === id)
@@ -48,12 +49,14 @@ function pickClient(id: number | null): void {
 
 const quickName = ref('')
 const quickPhone = ref('')
+const quickIdentification = ref('')
 const quickCreateError = ref<string | null>(null)
 const isCreating = ref(false)
 
 function openCreate(): void {
   quickName.value = props.name
   quickPhone.value = props.phone
+  quickIdentification.value = props.identification ?? ''
   quickCreateError.value = null
   mode.value = 'create'
 }
@@ -65,7 +68,11 @@ async function quickCreate(): Promise<void> {
   isCreating.value = true
   quickCreateError.value = null
   try {
-    const client = await createClient({ name: quickName.value.trim(), phone: quickPhone.value.trim() || null })
+    const client = await createClient({
+      name: quickName.value.trim(),
+      phone: quickPhone.value.trim() || null,
+      identification: quickIdentification.value.trim() || null,
+    })
     notify('Cliente guardado')
     emit('apply', client)
     mode.value = 'closed'
@@ -99,8 +106,8 @@ async function quickCreate(): Promise<void> {
         option-label="name"
         option-value="id"
         filter
-        :filter-fields="['name', 'phone', 'email']"
-        placeholder="Nombre o telefono"
+        :filter-fields="['name', 'phone', 'email', 'identification']"
+        placeholder="Nombre, telefono o cedula"
         @update:model-value="pickClient($event as number | null)"
         @filter="search = $event"
       />
@@ -114,6 +121,7 @@ async function quickCreate(): Promise<void> {
       <p v-if="quickCreateError" class="text-red-600">{{ quickCreateError }}</p>
       <NxInput v-model="quickName" label="Nombre" size="sm" />
       <NxInput v-model="quickPhone" label="Teléfono (opcional)" size="sm" />
+      <NxInput v-model="quickIdentification" label="Cédula (opcional)" size="sm" />
       <NxButton size="sm" :loading="isCreating" @click="quickCreate">Guardar cliente</NxButton>
     </div>
   </div>

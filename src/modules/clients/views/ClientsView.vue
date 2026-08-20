@@ -68,7 +68,7 @@ async function removeClient(client: Client): Promise<void> {
 
     <NxInput
       v-model="searchInput"
-      label="Buscar por nombre, teléfono o correo"
+      label="Buscar por nombre, teléfono, correo o cédula"
       size="lg"
       icon="pi pi-search"
       clearable
@@ -99,6 +99,11 @@ async function removeClient(client: Client): Promise<void> {
         <NxColumn header="Teléfono">
           <template #body="{ data }: { data: Client }">
             {{ data.phone || '—' }}
+          </template>
+        </NxColumn>
+        <NxColumn header="Cédula">
+          <template #body="{ data }: { data: Client }">
+            {{ data.identification || '—' }}
           </template>
         </NxColumn>
         <NxColumn header="Correo">

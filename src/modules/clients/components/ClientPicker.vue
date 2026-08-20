@@ -22,8 +22,6 @@ defineProps<{
 
 const emit = defineEmits<{ 'update:modelValue': [value: number | null] }>()
 
-const search = ref('')
-const clientsQuery = useClientSearch(search)
 const { notify } = useSystemAlert()
 // GET /clients/search y POST /clients solo exigen la feature clients (ver
 // routes/api.php) - no el permiso clients.manage, que es aparte para el
@@ -32,6 +30,9 @@ const { notify } = useSystemAlert()
 // cita ya puede buscar o dar de alta uno desde aca.
 const { data: business } = useBusiness()
 const clientsFeatureEnabled = computed(() => hasFeature(business.value, 'clients'))
+
+const search = ref('')
+const clientsQuery = useClientSearch(search, clientsFeatureEnabled)
 
 const showQuickCreate = ref(false)
 const quickName = ref('')
@@ -69,7 +70,7 @@ async function quickCreate(): Promise<void> {
       option-value="id"
       label="Cliente (opcional)"
       filter
-      :filter-fields="['name', 'phone', 'email']"
+      :filter-fields="['name', 'phone', 'email', 'identification']"
       :error="error"
       @update:model-value="emit('update:modelValue', $event as number | null)"
       @filter="search = $event"

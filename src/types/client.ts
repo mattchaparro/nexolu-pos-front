@@ -6,6 +6,7 @@ export interface Client {
   business_id: number
   name: string
   phone: string | null
+  identification: string | null
   email: string | null
   notes: string | null
 }
@@ -13,16 +14,19 @@ export interface Client {
 export interface ClientPayload {
   name: string
   phone?: string | null
+  identification?: string | null
   email?: string | null
   notes?: string | null
 }
 
-// Respuesta liviana de GET /clients/search (id/name/phone/email nada mas,
-// hasta 10 resultados) - distinta de Client, que trae todo lo que devuelve
-// el CRUD completo (GET /clients, gateado por clients.manage).
+// Respuesta liviana de GET /clients/search (id/name/phone/identification/
+// email nada mas, hasta 10 resultados) - distinta de Client, que trae todo
+// lo que devuelve el CRUD completo (GET /clients, gateado por
+// clients.manage).
 export interface ClientSearchResult {
   id: number
   name: string
   phone: string | null
+  identification: string | null
   email: string | null
 }

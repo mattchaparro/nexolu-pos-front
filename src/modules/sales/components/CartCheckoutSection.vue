@@ -38,7 +38,7 @@ function submitLabel(): string {
       :required="false"
       @update:name="checkout.setCustomerName($event)"
       @update:phone="checkout.setCustomerPhone($event)"
-      @update:identification="checkout.customerIdentification.value = $event"
+      @update:identification="checkout.setCustomerIdentification($event)"
       @select-client="checkout.applyClient($event)"
     />
 

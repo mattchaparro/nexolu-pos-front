@@ -65,7 +65,7 @@ watch(
           @update:model-value="$emit('update:identification', $event)"
         />
       </div>
-      <ClientQuickAssociate :name="name" :phone="phone" @apply="emit('select-client', $event)" />
+      <ClientQuickAssociate :name="name" :phone="phone" :identification="identification" @apply="emit('select-client', $event)" />
     </div>
   </details>
 </template>

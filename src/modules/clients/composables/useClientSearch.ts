@@ -9,11 +9,17 @@ import { searchClients } from '../services/clientService'
 // respuestas siguen resolviendo despues de que el usuario dejo de tipear,
 // reemplazando la lista ya renderizada justo cuando intenta hacer click en
 // una opcion.
-export function useClientSearch(search: Ref<string>) {
+//
+// enabled: la feature "clients" puede estar apagada para el negocio - sin
+// esto la query se disparaba igual al montar el picker (aunque quedara
+// oculto por v-if en el template), y GET /clients/search devuelve 403 para
+// esos negocios (mismo patron que useIngredients.ts).
+export function useClientSearch(search: Ref<string>, enabled: Ref<boolean>) {
   const debouncedSearch = refDebounced(search, 300)
 
   return useQuery({
     queryKey: computed(() => ['clients', 'search', debouncedSearch.value] as const),
     queryFn: () => searchClients(debouncedSearch.value),
+    enabled,
   })
 }

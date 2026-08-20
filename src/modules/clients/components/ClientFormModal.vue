@@ -23,6 +23,7 @@ const { notify } = useSystemAlert()
 
 const name = ref('')
 const phone = ref('')
+const identification = ref('')
 const email = ref('')
 const notes = ref('')
 const fieldErrors = ref<Record<string, string>>({})
@@ -31,6 +32,7 @@ const formError = ref<string | null>(null)
 function resetForm(): void {
   name.value = props.client?.name ?? ''
   phone.value = props.client?.phone ?? ''
+  identification.value = props.client?.identification ?? ''
   email.value = props.client?.email ?? ''
   notes.value = props.client?.notes ?? ''
   fieldErrors.value = {}
@@ -62,6 +64,7 @@ async function submit(): Promise<void> {
   const payload = {
     name: name.value.trim(),
     phone: phone.value.trim() || null,
+    identification: identification.value.trim() || null,
     email: email.value.trim() || null,
     notes: notes.value.trim() || null,
   }
@@ -98,6 +101,7 @@ async function submit(): Promise<void> {
 
       <NxInput v-model="name" label="Nombre" required :error="fieldErrors.name" />
       <NxInput v-model="phone" label="Teléfono (opcional)" :error="fieldErrors.phone" />
+      <NxInput v-model="identification" label="Cédula (opcional)" :error="fieldErrors.identification" />
       <NxInput v-model="email" label="Correo (opcional)" type="email" :error="fieldErrors.email" />
       <NxTextarea v-model="notes" label="Notas (opcional)" :rows="2" />
     </div>
