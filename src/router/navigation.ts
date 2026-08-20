@@ -27,7 +27,7 @@ export const adminNavItems: NavItem[] = [
   { label: 'Gastos', icon: 'pi pi-money-bill', routeName: 'expenses.index', featureKey: 'expenses' },
   { label: 'Planificador', icon: 'pi pi-calendar-clock', routeName: 'reminders.index', featureKey: 'reminders' },
   { label: 'Descuentos', icon: 'pi pi-tag', routeName: 'discounts.index', featureKey: 'discounts' },
-  { label: 'Reportes', icon: 'pi pi-chart-line', disabled: true },
+  { label: 'Reportes', icon: 'pi pi-chart-line', routeName: 'reports.index' },
   // Sin featureKey: gestionar el equipo (alta/baja/roles) no es un extra de
   // plan, solo la edicion granular de permisos lo es (feature
   // permissions_management, que UsersView.vue chequea aparte para mostrar o

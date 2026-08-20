@@ -328,6 +328,45 @@ const router = createRouter({
           meta: { requiresPermission: 'reports.sales' },
         },
         {
+          // Hub "Reportes": tarjetas que enlazan a Resumen del dia/Mi negocio
+          // (ya existian) y a los reportes nuevos - cada tarjeta se gatea
+          // aparte adentro (ReportsHubView.vue), asi que la ruta en si solo
+          // exige estar autenticado en un negocio (sin permiso unico: no
+          // existe un permiso que cubra "puede ver ALGUN reporte").
+          path: 'reportes',
+          name: 'reports.index',
+          component: () => import('@/modules/reports/views/ReportsHubView.vue'),
+        },
+        {
+          path: 'reportes/historial-ventas',
+          name: 'sales-history.index',
+          component: () => import('@/modules/sales-history/views/SalesHistoryView.vue'),
+          meta: { requiresPermission: 'reports.sales' },
+        },
+        {
+          path: 'reportes/ventas-por-vendedor',
+          name: 'sales-by-seller.index',
+          component: () => import('@/modules/sales-by-seller/views/SalesBySellerView.vue'),
+          meta: { requiresPermission: 'reports.sales' },
+        },
+        {
+          // Sin requiresFeature: el gate real es un OR (inventory_advanced ||
+          // ingredients) que el backend ya resuelve con un 403 - no vale la
+          // pena generalizar requiresFeature para este unico caso compuesto
+          // (mismo criterio que requiresPurchasesAccess), la pantalla misma
+          // maneja el 403 mostrando su propio mensaje.
+          path: 'reportes/inventario',
+          name: 'inventory-reports.index',
+          component: () => import('@/modules/inventory-reports/views/InventoryReportsView.vue'),
+          meta: { requiresPermission: 'reports.inventory' },
+        },
+        {
+          path: 'reportes/contabilidad',
+          name: 'accounting.index',
+          component: () => import('@/modules/accounting/views/AccountingView.vue'),
+          meta: { requiresFeature: 'managerial_accounting', requiresPermission: 'accounting.manage' },
+        },
+        {
           // Alguno de los dos permisos alcanza para ver la pantalla - dentro,
           // cada pestaña (Mi turno / Cierre de caja) se muestra u oculta
           // segun cual de los dos tenga el usuario (ver CashShiftsView.vue).
