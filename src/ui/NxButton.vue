@@ -81,6 +81,7 @@ const primeSize = computed<'small' | 'large' | undefined>(() => {
     :loading="loading"
     :disabled="disabled || loading"
     :type="type"
+    :class="variant === 'outline' ? 'bg-white hover:bg-slate-50' : undefined"
   >
     <i v-if="loading" class="pi pi-spinner pi-spin" aria-hidden="true" />
     <i v-else-if="icon" :class="icon" aria-hidden="true" />

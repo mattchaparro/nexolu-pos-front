@@ -10,6 +10,7 @@ import { useRouter } from 'vue-router'
 import { useBusiness } from '@/composables/useBusiness'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { BulkUpdateIngredientItem, BulkUpdateProductItem } from '@/types/bulkStockUpdate'
+import type { IngredientStockFilter } from '@/types/catalogSummary'
 import type { Ingredient, Product } from '@/types/product'
 import { NxButton, NxInput, NxPageHeader, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
@@ -37,6 +38,8 @@ interface ProductRow {
   // editar a mano (ver ProductResource/StockService en nexolu-pos-api) -
   // editar esta celda igual dejaria el guardado entero rechazado con 422.
   can_manage_stock: boolean
+  is_active: boolean
+  low_stock_alert_threshold: number | null
   new_name: string | null
   new_stock: number | null
   new_cost: number | null
@@ -49,6 +52,8 @@ interface IngredientRow {
   unit: string
   current_stock: number
   current_cost: number
+  is_active: boolean
+  min_stock: number | null
   new_name: string | null
   new_stock: number | null
   new_cost: number | null
@@ -63,6 +68,8 @@ function toProductRow(product: Product): ProductRow {
     current_cost: Number(product.cost_price),
     current_price: Number(product.price),
     can_manage_stock: product.can_manage_stock !== false,
+    is_active: product.is_active,
+    low_stock_alert_threshold: product.low_stock_alert_threshold,
     new_name: null,
     new_stock: null,
     new_cost: null,
@@ -77,6 +84,8 @@ function toIngredientRow(ingredient: Ingredient): IngredientRow {
     unit: ingredient.unit,
     current_stock: Number(ingredient.stock),
     current_cost: Number(ingredient.cost_price ?? 0),
+    is_active: ingredient.is_active,
+    min_stock: ingredient.min_stock,
     new_name: null,
     new_stock: null,
     new_cost: null,
@@ -104,7 +113,32 @@ watch(ingredientsQuery.data, (ingredients) => {
 
 const search = ref('')
 const categoryFilter = ref('')
+const statusFilter = ref<IngredientStockFilter | null>(null)
 const notes = ref('')
+
+const statusFilterOptions: { label: string; value: IngredientStockFilter | null }[] = [
+  { label: 'Todos', value: null },
+  { label: 'Inventario bajo', value: 'low_stock' },
+  { label: 'Sin stock', value: 'out_of_stock' },
+  { label: 'Inactivos', value: 'inactive' },
+]
+
+const lowStockThreshold = computed(() => business.value?.low_stock_alert_threshold ?? 5)
+
+function matchesStatusFilter(row: ProductRow | IngredientRow): boolean {
+  if (!statusFilter.value) {
+    return true
+  }
+  if (statusFilter.value === 'inactive') {
+    return !row.is_active
+  }
+  if (statusFilter.value === 'out_of_stock') {
+    return row.current_stock <= 0
+  }
+  const minThreshold = 'low_stock_alert_threshold' in row ? row.low_stock_alert_threshold : row.min_stock
+  const threshold = minThreshold && minThreshold > 0 ? minThreshold : lowStockThreshold.value
+  return row.current_stock <= threshold
+}
 
 const categoryOptions = computed(() => {
   const seen = new Set<string>()
@@ -117,7 +151,7 @@ const categoryOptions = computed(() => {
 })
 
 const filteredProducts = computed(() => {
-  let rows = productRows.value
+  let rows = productRows.value.filter(matchesStatusFilter)
   if (search.value) {
     const q = search.value.toLowerCase()
     rows = rows.filter((r) => r.name.toLowerCase().includes(q) || r.category.toLowerCase().includes(q))
@@ -129,11 +163,12 @@ const filteredProducts = computed(() => {
 })
 
 const filteredIngredients = computed(() => {
-  if (!search.value) {
-    return ingredientRows.value
+  let rows = ingredientRows.value.filter(matchesStatusFilter)
+  if (search.value) {
+    const q = search.value.toLowerCase()
+    rows = rows.filter((r) => r.name.toLowerCase().includes(q))
   }
-  const q = search.value.toLowerCase()
-  return ingredientRows.value.filter((r) => r.name.toLowerCase().includes(q))
+  return rows
 })
 
 // --- Edicion inline (doble clic + tab) ---
@@ -428,6 +463,15 @@ function goBack(): void {
           option-value="value"
           label="Categoría"
           @update:model-value="categoryFilter = ($event as string | null) ?? ''"
+        />
+      </div>
+      <div class="min-w-[160px]">
+        <NxSelect
+          v-model="statusFilter"
+          :options="statusFilterOptions"
+          option-label="label"
+          option-value="value"
+          label="Estado"
         />
       </div>
     </div>

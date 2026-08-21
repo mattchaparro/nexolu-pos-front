@@ -46,6 +46,16 @@ const props = withDefaults(
 
 const emit = defineEmits<{ 'update:modelValue': [value: number | null] }>()
 
+// PrimeVue InputNumber solo llama a updateModel (lo que emite
+// update:modelValue) en blur, Enter o los botones +/-, NO en cada tecla -
+// onUserInput/updateValue solo emiten su propio evento "input" (value ya
+// parseado) sin tocar el v-model. Sin este listener, cualquier calculo
+// derivado del modelValue (ej. vueltas en PaymentModal) se quedaba
+// esperando a que el campo perdiera el foco para actualizarse.
+function onRawInput(event: { originalEvent: Event; value: string | number | undefined; formattedValue: string }): void {
+  emit('update:modelValue', typeof event.value === 'number' ? event.value : null)
+}
+
 const generatedId = useId()
 const inputId = computed(() => props.id ?? generatedId)
 const isInvalid = computed(() => props.invalid || Boolean(props.error))
@@ -88,6 +98,7 @@ const effectivePlaceholder = computed(() => (props.label ? undefined : props.pla
         :max-fraction-digits="0"
         fluid
         @update:model-value="(value) => emit('update:modelValue', (value as number | undefined) ?? null)"
+        @input="onRawInput"
       />
       <label v-if="label" :for="inputId">{{ label }}<span v-if="required" class="text-red-600"> *</span></label>
     </PrimeFloatLabel>

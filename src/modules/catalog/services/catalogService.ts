@@ -1,5 +1,11 @@
 import { httpClient } from '@/services/http/client'
-import type { IngredientsSummary, ProductsSummary, ProductStockFilter, ServicesSummary } from '@/types/catalogSummary'
+import type {
+  IngredientsSummary,
+  IngredientStockFilter,
+  ProductsSummary,
+  ProductStockFilter,
+  ServicesSummary,
+} from '@/types/catalogSummary'
 import type { PaginatedResponse } from '@/types/pagination'
 import type {
   Ingredient,
@@ -112,6 +118,7 @@ export interface FetchIngredientsParams {
   page?: number
   per_page?: number
   search?: string
+  filter?: IngredientStockFilter
 }
 
 // Listado paginado para la pestaña Ingredientes del Catalogo (a diferencia

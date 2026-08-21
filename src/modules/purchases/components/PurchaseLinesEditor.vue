@@ -8,7 +8,6 @@ import { computed } from 'vue'
 
 import type { Ingredient, Product } from '@/types/product'
 import { NxInput, NxInputNumber, NxSelect } from '@/ui'
-import { formatCop } from '@/utils/formatCop'
 
 import { newPurchaseLineRow, type PurchaseLineRow } from '../support/purchaseLine'
 
@@ -42,13 +41,13 @@ function unitFor(row: PurchaseLineRow): string {
   return props.ingredients.find((i) => i.id === row.ingredient_id)?.unit ?? ''
 }
 
-function unitCostLabel(row: PurchaseLineRow): string {
+function unitCostValue(row: PurchaseLineRow): number | null {
   const quantity = Number(row.quantity) || 0
   const total = Number(row.line_total_cop) || 0
   if (quantity <= 0) {
-    return '—'
+    return null
   }
-  return formatCop(total / quantity)
+  return total / quantity
 }
 
 function addRow(): void {
@@ -137,12 +136,7 @@ function onKindChange(row: PurchaseLineRow, value: 'product' | 'ingredient'): vo
               :error="errorFor(index, 'line_total_cop')"
               @update:model-value="row.line_total_cop = $event"
             />
-            <div class="flex flex-col gap-1">
-              <p class="text-xs font-medium text-slate-500">Costo unitario</p>
-              <p class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-right text-sm tabular-nums text-slate-600">
-                {{ unitCostLabel(row) }}
-              </p>
-            </div>
+            <NxInputNumber :model-value="unitCostValue(row)" label="Costo unitario" size="sm" disabled />
             <NxInput v-model="row.notes" label="Nota (opcional)" size="sm" />
           </div>
         </div>

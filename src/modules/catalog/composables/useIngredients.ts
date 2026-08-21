@@ -1,6 +1,8 @@
 import { keepPreviousData, useQuery } from '@tanstack/vue-query'
 import { computed, type Ref } from 'vue'
 
+import type { IngredientStockFilter } from '@/types/catalogSummary'
+
 import { fetchIngredients } from '../services/catalogService'
 
 const INGREDIENTS_PER_PAGE = 20
@@ -11,10 +13,21 @@ const INGREDIENTS_PER_PAGE = 20
 // para esos negocios (ver EnsureBusinessFeatureEnabled) - el interceptor
 // de axios ahora SI muestra ese 403 como toast (ver client.ts), asi que
 // dispararla sin necesidad ya no es inofensivo como antes.
-export function useIngredients(search: Ref<string>, page: Ref<number>, enabled: Ref<boolean>) {
+export function useIngredients(
+  search: Ref<string>,
+  page: Ref<number>,
+  enabled: Ref<boolean>,
+  filter: Ref<IngredientStockFilter | null>,
+) {
   return useQuery({
-    queryKey: computed(() => ['ingredients', 'admin', search.value, page.value] as const),
-    queryFn: () => fetchIngredients({ search: search.value || undefined, page: page.value, per_page: INGREDIENTS_PER_PAGE }),
+    queryKey: computed(() => ['ingredients', 'admin', search.value, page.value, filter.value] as const),
+    queryFn: () =>
+      fetchIngredients({
+        search: search.value || undefined,
+        page: page.value,
+        per_page: INGREDIENTS_PER_PAGE,
+        filter: filter.value ?? undefined,
+      }),
     placeholderData: keepPreviousData,
     enabled,
   })

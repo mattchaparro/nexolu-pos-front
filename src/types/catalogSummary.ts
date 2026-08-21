@@ -22,7 +22,14 @@ export type ProductStockFilter = 'out_of_stock' | 'low_stock' | 'inactive' | 'si
 export interface IngredientsSummary {
   active_count: number
   low_stock_count: number
+  out_of_stock_count: number
+  inactive_count: number
 }
+
+// Valores de ?filter en GET /ingredients (ver IngredientController::index()
+// en nexolu-pos-api) - mismo criterio que ProductStockFilter, sin
+// single_sale/recipe (no aplican a un insumo).
+export type IngredientStockFilter = 'out_of_stock' | 'low_stock' | 'inactive'
 
 // Refleja GET /products/services-summary (ProductController::servicesSummary()).
 export interface ServicesSummary {

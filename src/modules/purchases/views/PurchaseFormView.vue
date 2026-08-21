@@ -153,8 +153,10 @@ async function submit(): Promise<void> {
         <p v-if="fieldErrors.lines" class="mt-2 text-xs text-red-600">{{ fieldErrors.lines }}</p>
       </div>
 
+      <p class="text-sm font-semibold text-slate-700">Opciones adicionales</p>
+
       <div class="flex flex-col gap-2">
-        <NxToggleButton v-model="isCredit" label="Esta compra quedó a crédito con el proveedor" icon="pi pi-receipt" />
+        <NxToggleButton v-model="isCredit" label="Registrar como compra a crédito" icon="pi pi-receipt" />
 
         <div v-if="isCredit" class="flex flex-col gap-3 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4">
           <p class="text-sm font-medium text-slate-700">¿Quieres que te recuerde el pago? (opcional)</p>

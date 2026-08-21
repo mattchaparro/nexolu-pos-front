@@ -7,15 +7,16 @@ import { fetchIngredientOptions, fetchProducts } from '../services/catalogServic
 // fetchIngredientOptions (recipe picker), trae "casi todo" en una sola
 // pagina en vez de paginar - el backend limita per_page a 200
 // (ProductController::index), mismo techo ya aceptado para el picker de
-// insumos. Solo productos activos que no sean servicio (un servicio no
-// tiene stock/costo que ajustar) - igual que Admin\StockController::bulk()
-// del legacy.
+// insumos. Sin filtrar por is_active: BulkStockUpdateView ahora tiene su
+// propio filtro de estado (incluye inactivos), igual que el Catalogo - solo
+// se excluyen servicios (un servicio no tiene stock/costo que ajustar),
+// igual que Admin\StockController::bulk() del legacy.
 export function useBulkEditableProducts(enabled: ComputedRef<boolean>) {
   return useQuery({
     queryKey: ['products', 'admin', 'bulk-edit'] as const,
     queryFn: async () => {
       const { data } = await fetchProducts({ per_page: 200 })
-      return data.filter((p) => p.is_active && !p.is_service)
+      return data.filter((p) => !p.is_service)
     },
     enabled,
   })
@@ -24,10 +25,7 @@ export function useBulkEditableProducts(enabled: ComputedRef<boolean>) {
 export function useBulkEditableIngredients(enabled: ComputedRef<boolean>) {
   return useQuery({
     queryKey: ['ingredients', 'options', 'bulk-edit'] as const,
-    queryFn: async () => {
-      const ingredients = await fetchIngredientOptions()
-      return ingredients.filter((i) => i.is_active)
-    },
+    queryFn: () => fetchIngredientOptions(),
     enabled,
   })
 }

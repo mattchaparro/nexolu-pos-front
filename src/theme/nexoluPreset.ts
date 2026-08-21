@@ -45,5 +45,32 @@ export const nexoluPreset = definePreset(Aura, {
         checkedShadow: 'none',
       },
     },
+    // El boton "outline" (severity secondary) de Aura trae texto/borde gris
+    // claro pensado para vivir sobre una tarjeta blanca - no tiene token de
+    // background propio (el outlined queda transparente por diseño, ver
+    // node_modules/primevue/button: ninguna regla de background para esa
+    // variante). Varias pantallas lo usan flotando directo sobre el fondo
+    // gris de la app (ej. "Edición masiva" en Catalogo) y el texto claro se
+    // pierde. El fondo blanco se agrega aparte con Tailwind en NxButton.vue
+    // (no hay token que tocar aca para eso); esto solo oscurece el texto.
+    button: {
+      outlined: {
+        secondary: {
+          color: '{surface.700}',
+          borderColor: '{surface.300}',
+        },
+      },
+    },
+    // Aura le pone a las flechas de scroll de los tabs (navButton) un
+    // box-shadow con 50px de spread para "desvanecer" el texto de la
+    // pestaña que queda debajo - pensado para tablists anchos. En un modal
+    // angosto (ej. PaymentModal con 4 tabs) ese halo se extiende tanto que
+    // opaca las pestañas vecinas, no solo la que está bajo la flecha. Se
+    // reduce el spread para que solo tape lo que la flecha realmente cubre.
+    tabs: {
+      navButton: {
+        shadow: '0px 0px 8px 8px light-dark(rgba(255, 255, 255, 0.9), color-mix(in srgb, {content.background}, transparent 10%))',
+      },
+    },
   },
 })

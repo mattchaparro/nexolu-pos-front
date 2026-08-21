@@ -8,7 +8,7 @@ import { useRouter } from 'vue-router'
 
 import { useBusiness } from '@/composables/useBusiness'
 import { usePermissions } from '@/composables/usePermissions'
-import type { ProductStockFilter } from '@/types/catalogSummary'
+import type { IngredientStockFilter, ProductStockFilter } from '@/types/catalogSummary'
 import type { StockMovementType } from '@/types/inventory'
 import type { Ingredient, Product } from '@/types/product'
 import {
@@ -88,8 +88,34 @@ function toggleProductFilter(filter: ProductStockFilter): void {
   productPage.value = 1
 }
 
+function onProductFilterSelect(value: unknown): void {
+  productFilter.value = value as ProductStockFilter | null
+  productPage.value = 1
+}
+
 watch(productCategoryId, () => {
   productPage.value = 1
+})
+
+// Colapsable: en negocios con muchas cards de resumen (venta unica, con
+// receta, valor de inventario) el buscador quedaba empujado varias filas
+// mas abajo - se puede ocultar sin perder la capacidad de filtrar (el
+// filtro real vive en productFilter, no en que las cards esten visibles).
+const showProductsSummary = ref(true)
+const showIngredientsSummary = ref(true)
+
+const productFilterOptions = computed(() => {
+  const options: { label: string; value: ProductStockFilter | null }[] = [
+    { label: 'Todos', value: null },
+    { label: 'Inventario bajo', value: 'low_stock' },
+    { label: 'Sin stock', value: 'out_of_stock' },
+    { label: 'Inactivos', value: 'inactive' },
+    { label: 'Venta única', value: 'single_sale' },
+  ]
+  if (ingredientsEnabled.value) {
+    options.push({ label: 'Con receta', value: 'recipe' })
+  }
+  return options
 })
 
 const productsQuery = useProducts(productSearch, productPage, productCategoryId, productFilter)
@@ -134,10 +160,30 @@ watch(ingredientSearchInput, (value) => {
   }, 300)
 })
 
+const ingredientFilter = ref<IngredientStockFilter | null>(null)
+
+function toggleIngredientFilter(filter: IngredientStockFilter): void {
+  ingredientFilter.value = ingredientFilter.value === filter ? null : filter
+  ingredientPage.value = 1
+}
+
+function onIngredientFilterSelect(value: unknown): void {
+  ingredientFilter.value = value as IngredientStockFilter | null
+  ingredientPage.value = 1
+}
+
+const ingredientFilterOptions: { label: string; value: IngredientStockFilter | null }[] = [
+  { label: 'Todos', value: null },
+  { label: 'Bajo mínimo', value: 'low_stock' },
+  { label: 'Sin stock', value: 'out_of_stock' },
+  { label: 'Inactivos', value: 'inactive' },
+]
+
 const ingredientsQuery = useIngredients(
   ingredientSearch,
   ingredientPage,
   computed(() => ingredientsEnabled.value && activeArticleTab.value === 'ingredientes'),
+  ingredientFilter,
 )
 const { deleteMutation: deleteIngredientMutation } = useIngredientMutations()
 const ingredientMeta = computed(() => ingredientsQuery.data.value?.meta)
@@ -224,7 +270,17 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
       <NxTabPanels>
         <NxTabPanel value="productos">
           <div class="flex flex-col gap-3">
-            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-semibold tracking-wide text-slate-400 uppercase">Resumen</p>
+              <button
+                type="button"
+                class="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                @click="showProductsSummary = !showProductsSummary"
+              >
+                {{ showProductsSummary ? 'Ocultar' : 'Mostrar' }}
+              </button>
+            </div>
+            <div v-if="showProductsSummary" class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
               <NxStatCard
                 v-if="productMeta"
                 label="Total de productos"
@@ -300,6 +356,15 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                 label="Categoría"
                 filter
                 class="sm:w-64"
+              />
+              <NxSelect
+                :model-value="productFilter"
+                :options="productFilterOptions"
+                option-label="label"
+                option-value="value"
+                label="Estado"
+                class="sm:w-48"
+                @update:model-value="onProductFilterSelect"
               />
             </div>
 
@@ -379,7 +444,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                         </div>
                       </div>
 
-                      <div class="flex flex-wrap justify-around gap-x-1 gap-y-2 border-t border-slate-100 pt-2">
+                      <div class="flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-slate-100 pt-2 sm:gap-x-8">
                         <template v-if="data.track_stock && !data.is_service && data.can_manage_stock">
                           <button
                             v-if="canAdjust"
@@ -470,7 +535,17 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
 
         <NxTabPanel v-if="ingredientsEnabled" value="ingredientes">
           <div class="flex flex-col gap-3">
-            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-semibold tracking-wide text-slate-400 uppercase">Resumen</p>
+              <button
+                type="button"
+                class="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                @click="showIngredientsSummary = !showIngredientsSummary"
+              >
+                {{ showIngredientsSummary ? 'Ocultar' : 'Mostrar' }}
+              </button>
+            </div>
+            <div v-if="showIngredientsSummary" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <NxStatCard
                 v-if="ingredientMeta"
                 label="Total de insumos"
@@ -487,18 +562,49 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                   label="Bajo mínimo"
                   :value="String(ingredientsSummaryQuery.data.value.low_stock_count)"
                   icon="pi pi-exclamation-triangle"
+                  clickable
+                  :active="ingredientFilter === 'low_stock'"
+                  @click="toggleIngredientFilter('low_stock')"
+                />
+                <NxStatCard
+                  label="Sin stock"
+                  :value="String(ingredientsSummaryQuery.data.value.out_of_stock_count)"
+                  icon="pi pi-ban"
+                  clickable
+                  :active="ingredientFilter === 'out_of_stock'"
+                  @click="toggleIngredientFilter('out_of_stock')"
+                />
+                <NxStatCard
+                  label="Inactivos"
+                  :value="String(ingredientsSummaryQuery.data.value.inactive_count)"
+                  icon="pi pi-eye-slash"
+                  clickable
+                  :active="ingredientFilter === 'inactive'"
+                  @click="toggleIngredientFilter('inactive')"
                 />
               </template>
             </div>
 
-            <NxInput
-              v-model="ingredientSearchInput"
-              label="Buscar insumo"
-              size="lg"
-              icon="pi pi-search"
-              clearable
-              blur-after-typing
-            />
+            <div class="flex flex-col gap-3 sm:flex-row">
+              <NxInput
+                v-model="ingredientSearchInput"
+                label="Buscar insumo"
+                size="lg"
+                icon="pi pi-search"
+                clearable
+                blur-after-typing
+                class="flex-1"
+              />
+              <NxSelect
+                :model-value="ingredientFilter"
+                :options="ingredientFilterOptions"
+                option-label="label"
+                option-value="value"
+                label="Estado"
+                class="sm:w-48"
+                @update:model-value="onIngredientFilterSelect"
+              />
+            </div>
 
             <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
               <NxDataTable
@@ -552,7 +658,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                         </div>
                       </div>
 
-                      <div class="flex flex-wrap justify-around gap-x-1 gap-y-2 border-t border-slate-100 pt-2">
+                      <div class="flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-slate-100 pt-2 sm:gap-x-8">
                         <button
                           v-if="canAdjust"
                           type="button"
