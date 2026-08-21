@@ -10,14 +10,18 @@ export function useServiceOrders(
   search: Ref<string>,
   page: Ref<number>,
   stageId: Ref<number | null>,
+  dateFrom: Ref<string>,
+  dateTo: Ref<string>,
 ) {
   return useQuery({
-    queryKey: computed(() => ['service-orders', status.value, search.value, page.value, stageId.value] as const),
+    queryKey: computed(() => ['service-orders', status.value, search.value, page.value, stageId.value, dateFrom.value, dateTo.value] as const),
     queryFn: () =>
       fetchServiceOrders({
         status: status.value || undefined,
         search: search.value || undefined,
         stage_id: stageId.value ?? undefined,
+        date_from: dateFrom.value || undefined,
+        date_to: dateTo.value || undefined,
         page: page.value,
       }),
     placeholderData: keepPreviousData,

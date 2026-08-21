@@ -11,6 +11,8 @@ export interface FetchServiceOrdersParams {
   status?: ServiceOrderStatus | ''
   search?: string
   stage_id?: number
+  date_from?: string
+  date_to?: string
   page?: number
 }
 

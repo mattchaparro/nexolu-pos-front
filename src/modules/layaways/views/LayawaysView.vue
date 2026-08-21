@@ -23,6 +23,8 @@ const statusOptions = [
 const status = ref<LayawayStatus | ''>('')
 const searchInput = ref('')
 const search = ref('')
+const dateFrom = ref('')
+const dateTo = ref('')
 const page = ref(1)
 let debounce: number | undefined
 
@@ -33,11 +35,11 @@ watch(searchInput, (value) => {
     page.value = 1
   }, 300)
 })
-watch(status, () => {
+watch([status, dateFrom, dateTo], () => {
   page.value = 1
 })
 
-const layawaysQuery = useLayaways(status, search, page)
+const layawaysQuery = useLayaways(status, search, page, dateFrom, dateTo)
 const meta = computed(() => layawaysQuery.data.value?.meta)
 
 function onPage(event: { page: number }): void {
@@ -99,6 +101,8 @@ function statusLabel(layaway: Layaway): string {
         class="min-w-[180px]"
         @update:model-value="status = $event as LayawayStatus | ''"
       />
+      <NxInput v-model="dateFrom" type="date" label="Desde" class="min-w-[160px]" />
+      <NxInput v-model="dateTo" type="date" label="Hasta" class="min-w-[160px]" />
     </div>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">

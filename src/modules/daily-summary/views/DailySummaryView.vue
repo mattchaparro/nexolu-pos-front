@@ -230,15 +230,23 @@ function openReceipt(row: TransactionRow): void {
       <h1 class="text-lg font-bold text-slate-900">Resumen del día</h1>
     </div>
 
-    <div class="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <NxInput v-model="dateFrom" type="date" label="Desde" size="sm" class="w-40" />
-      <NxInput v-model="dateTo" type="date" label="Hasta" size="sm" class="w-40" />
-      <button type="button" class="h-9 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50" @click="setToday">
-        Hoy
-      </button>
-      <button type="button" class="h-9 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50" @click="setLast7Days">
-        Últimos 7 días
-      </button>
+    <div class="flex flex-wrap items-end justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="flex flex-wrap items-end gap-3">
+        <NxInput v-model="dateFrom" type="date" label="Desde" size="sm" class="w-40" />
+        <NxInput v-model="dateTo" type="date" label="Hasta" size="sm" class="w-40" />
+        <div class="flex gap-2">
+          <button type="button" class="h-9 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50" @click="setToday">
+            Hoy
+          </button>
+          <button
+            type="button"
+            class="h-9 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            @click="setLast7Days"
+          >
+            Últimos 7 días
+          </button>
+        </div>
+      </div>
       <NxSelect
         v-model="paymentMethodFilter"
         :options="paymentMethodOptions"

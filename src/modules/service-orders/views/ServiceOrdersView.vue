@@ -33,6 +33,8 @@ const searchInput = ref('')
 const search = ref('')
 const page = ref(1)
 const stageId = ref<number | null>(null)
+const dateFrom = ref('')
+const dateTo = ref('')
 let debounce: number | undefined
 
 watch(searchInput, (value) => {
@@ -42,7 +44,7 @@ watch(searchInput, (value) => {
     page.value = 1
   }, 300)
 })
-watch(status, () => {
+watch([status, dateFrom, dateTo], () => {
   page.value = 1
 })
 watch(stageId, () => {
@@ -53,7 +55,7 @@ function toggleStage(id: number): void {
   stageId.value = stageId.value === id ? null : id
 }
 
-const ordersQuery = useServiceOrders(status, search, page, stageId)
+const ordersQuery = useServiceOrders(status, search, page, stageId, dateFrom, dateTo)
 const meta = computed(() => ordersQuery.data.value?.meta)
 const summaryQuery = useServiceOrdersSummary()
 
@@ -105,6 +107,8 @@ function statusBadgeClass(order: ServiceOrder): string {
         class="min-w-[180px]"
         @update:model-value="status = $event as ServiceOrderStatus | ''"
       />
+      <NxInput v-model="dateFrom" type="date" label="Desde" class="min-w-[160px]" />
+      <NxInput v-model="dateTo" type="date" label="Hasta" class="min-w-[160px]" />
     </div>
 
     <div v-if="hasWorkflow" class="flex flex-wrap gap-2">

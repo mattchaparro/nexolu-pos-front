@@ -11,6 +11,8 @@ import type { PaginatedResponse } from '@/types/pagination'
 export interface FetchLayawaysParams {
   status?: LayawayStatus | ''
   search?: string
+  date_from?: string
+  date_to?: string
   page?: number
 }
 
