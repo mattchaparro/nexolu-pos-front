@@ -50,6 +50,17 @@ const severity = computed<'primary' | 'secondary' | 'danger' | 'contrast'>(() =>
 const outlined = computed(() => props.variant === 'outline')
 const text = computed(() => props.variant === 'ghost')
 
+// PrimeVue inyecta `.p-button-outlined { background: transparent }` en un
+// <style> propio en tiempo de ejecucion, DESPUES de que carga la hoja de
+// Tailwind - a igual especificidad (una sola clase de cada lado), gana el
+// que aparece despues en el documento, asi que una clase Tailwind normal
+// (ej. bg-white) nunca le gana (confirmado con getComputedStyle: la clase
+// quedaba en el DOM pero el fondo seguia transparent). Mismo tipo de
+// problema que el font-size de `.pi` (ver CatalogView) - la unica forma
+// confiable de ganarle es un estilo inline, que SIEMPRE le gana a
+// cualquier regla de hoja de estilos sin `!important`.
+const outlineBackgroundStyle = computed(() => (props.variant === 'outline' ? { backgroundColor: '#ffffff' } : undefined))
+
 // PrimeVue solo tiene "small"/"large" nativos - "md" es su tamaño por
 // defecto (undefined).
 const primeSize = computed<'small' | 'large' | undefined>(() => {
@@ -81,7 +92,7 @@ const primeSize = computed<'small' | 'large' | undefined>(() => {
     :loading="loading"
     :disabled="disabled || loading"
     :type="type"
-    :class="variant === 'outline' ? 'bg-white hover:bg-slate-50' : undefined"
+    :style="outlineBackgroundStyle"
   >
     <i v-if="loading" class="pi pi-spinner pi-spin" aria-hidden="true" />
     <i v-else-if="icon" :class="icon" aria-hidden="true" />

@@ -76,7 +76,7 @@ export function useNavItems() {
         if (item.label === 'Auditoría' && showAuditLogs.value) {
           return { ...item, routeName: 'audit-logs.index', disabled: false }
         }
-        if (item.label === 'Resumen del día' && showDailySummary.value) {
+        if (item.label === 'Resumen' && showDailySummary.value) {
           return { ...item, routeName: 'daily-summary.index', disabled: false }
         }
         return item

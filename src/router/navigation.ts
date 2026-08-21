@@ -9,6 +9,10 @@ export const adminNavItems: NavItem[] = [
   { label: 'Inicio', icon: 'pi pi-home', routeName: 'dashboard' },
   { label: 'Asistente IA', icon: 'pi pi-comments', disabled: true },
   { label: 'Vender', icon: 'pi pi-shopping-cart', routeName: 'sales.create' },
+  // Unica desviacion del orden 1:1 del legacy en este menu, a pedido
+  // explicito: Resumen vive justo al lado de Vender por lo seguido que se
+  // consulta durante el dia, no mas abajo despues de Turnos de caja.
+  { label: 'Resumen', icon: 'pi pi-chart-bar', routeName: 'daily-summary.index' },
   { label: 'Cuentas abiertas', icon: 'pi pi-receipt', routeName: 'open-tabs.index', featureKey: 'open_tabs' },
   { label: 'Servicios', icon: 'pi pi-wrench', routeName: 'service-orders.index', featureKey: 'services' },
   { label: 'Agenda', icon: 'pi pi-calendar', routeName: 'appointments.index', featureKey: 'scheduling' },
@@ -23,7 +27,6 @@ export const adminNavItems: NavItem[] = [
   // gap que se repite.
   { label: 'Clientes', icon: 'pi pi-users', routeName: 'clients.index', featureKey: 'clients' },
   { label: 'Turnos de caja', icon: 'pi pi-clock', routeName: 'cash-shifts.index', featureKey: 'cash_closing' },
-  { label: 'Resumen del día', icon: 'pi pi-chart-bar', routeName: 'daily-summary.index' },
   { label: 'Gastos', icon: 'pi pi-money-bill', routeName: 'expenses.index', featureKey: 'expenses' },
   { label: 'Planificador', icon: 'pi pi-calendar-clock', routeName: 'reminders.index', featureKey: 'reminders' },
   { label: 'Descuentos', icon: 'pi pi-tag', routeName: 'discounts.index', featureKey: 'discounts' },

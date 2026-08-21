@@ -15,10 +15,11 @@ import type { Business } from '@/types/business'
 import { NxButton, NxInput, NxInputNumber, NxModal, NxSelect, NxTextarea, NxToggleButton } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
+import { formatCop } from '@/utils/formatCop'
 import { isCreditPaymentMethodId } from '@/utils/paymentMethod'
 
 import PaymentMethodPicker from '@/components/PaymentMethodPicker.vue'
-import ClientPicker from '@/modules/clients/components/ClientPicker.vue'
+import ClientQuickAssociate from '@/modules/clients/components/ClientQuickAssociate.vue'
 import { useAppointmentMutations } from '../composables/useAppointmentMutations'
 import {
   clearAppointmentDraft,
@@ -60,9 +61,23 @@ const timeValue = ref('')
 const durationMinutes = ref(60)
 const notes = ref('')
 
-const registerInitialPayment = ref(false)
+// Seleccionado por defecto - "opcional" queda explicito en el label del
+// monto, no en si la seccion esta abierta o no (mismo criterio que
+// ServiceOrderFormView).
+const registerInitialPayment = ref(true)
 const initialPayment = ref<number | null>(null)
 const initialPaymentMethod = ref<string | null>(null)
+
+const totalPrice = computed(() => {
+  const list = servicesQuery.data.value ?? []
+  return services.value.reduce((sum, line) => {
+    const svc = list.find((s) => s.id === line.id)
+    const price = line.custom_price ?? Number(svc?.price ?? 0)
+    return sum + price
+  }, 0)
+})
+const remainingAfterInitialPayment = computed(() => Math.max(0, totalPrice.value - (initialPayment.value ?? 0)))
+const initialPaymentExceedsTotal = computed(() => (initialPayment.value ?? 0) > totalPrice.value + 0.02)
 
 const fieldErrors = ref<Record<string, string>>({})
 const formError = ref<string | null>(null)
@@ -164,7 +179,7 @@ watch(
       skipNextReset = false
       fieldErrors.value = {}
       formError.value = null
-      registerInitialPayment.value = false
+      registerInitialPayment.value = true
       initialPayment.value = null
       initialPaymentMethod.value = nonCreditPaymentMethods.value[0]?.id ?? null
       return
@@ -173,7 +188,7 @@ watch(
     isRestoringDraft = true
     fieldErrors.value = {}
     formError.value = null
-    registerInitialPayment.value = false
+    registerInitialPayment.value = true
     initialPayment.value = null
     initialPaymentMethod.value = nonCreditPaymentMethods.value[0]?.id ?? null
 
@@ -214,6 +229,27 @@ watch(autoDuration, (value) => {
 
 const isSaving = computed(() => createMutation.isPending.value || updateMutation.isPending.value)
 
+// Editar nombre/telefono a mano invalida el vinculo con el Client aplicado
+// via ClientQuickAssociate - mismo criterio que PaymentModal.setCustomerName/
+// setCustomerPhone: un client_id que ya no corresponde al texto es peor que
+// no guardar ninguno.
+function setClientName(value: string): void {
+  clientName.value = value
+  clientId.value = null
+}
+
+function setClientPhone(value: string): void {
+  clientPhone.value = value
+  clientId.value = null
+}
+
+function applyClient(client: { id: number; name: string; phone: string | null; email?: string | null }): void {
+  clientName.value = client.name
+  clientPhone.value = client.phone ?? ''
+  clientEmail.value = client.email ?? ''
+  clientId.value = client.id
+}
+
 async function submit(): Promise<void> {
   fieldErrors.value = {}
   formError.value = null
@@ -231,7 +267,7 @@ async function submit(): Promise<void> {
     starts_at: start.toISOString(),
     ends_at: end.toISOString(),
     notes: notes.value.trim() || null,
-    ...(!isEdit.value && registerInitialPayment.value && initialPayment.value
+    ...(!isEdit.value && registerInitialPayment.value && initialPayment.value && !initialPaymentExceedsTotal.value
       ? { initial_payment: initialPayment.value, payment_method: initialPaymentMethod.value }
       : {}),
   }
@@ -266,12 +302,18 @@ async function submit(): Promise<void> {
     <div class="flex flex-col gap-4">
       <p v-if="formError" class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{{ formError }}</p>
 
-      <ClientPicker v-model="clientId" :error="fieldErrors.client_id" />
-      <NxInput v-model="clientName" label="Nombre del cliente" required :error="fieldErrors.client_name" />
+      <NxInput
+        :model-value="clientName"
+        label="Nombre del cliente"
+        required
+        :error="fieldErrors.client_name"
+        @update:model-value="setClientName"
+      />
       <div class="grid grid-cols-2 gap-3">
-        <NxInput v-model="clientPhone" label="Teléfono (opcional)" :error="fieldErrors.client_phone" />
+        <NxInput :model-value="clientPhone" label="Teléfono (opcional)" :error="fieldErrors.client_phone" @update:model-value="setClientPhone" />
         <NxInput v-model="clientEmail" label="Correo (opcional)" :error="fieldErrors.client_email" />
       </div>
+      <ClientQuickAssociate :name="clientName" :phone="clientPhone" @apply="applyClient" />
 
       <AppointmentServicesPicker v-model="services" :services="servicesQuery.data.value ?? []" :error="fieldErrors.services" />
 
@@ -302,7 +344,18 @@ async function submit(): Promise<void> {
       <div v-if="!isEdit" class="flex flex-col gap-2">
         <NxToggleButton v-model="registerInitialPayment" label="Registrar abono inicial" icon="pi pi-wallet" />
         <div v-if="registerInitialPayment" class="flex flex-col gap-3 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4">
-          <NxInputNumber v-model="initialPayment" label="Monto del abono" :min="0" />
+          <NxInputNumber v-model="initialPayment" label="Monto del abono (opcional)" :min="0" :max="totalPrice" />
+          <p
+            v-if="initialPayment !== null"
+            class="rounded-lg px-3 py-1.5 text-sm font-semibold"
+            :class="initialPaymentExceedsTotal ? 'bg-red-50 text-red-700' : 'bg-white text-slate-700'"
+          >
+            {{
+              initialPaymentExceedsTotal
+                ? 'El abono no puede superar el total de los servicios.'
+                : `Quedaría debiendo: ${formatCop(remainingAfterInitialPayment)}`
+            }}
+          </p>
           <div>
             <p class="mb-2 text-sm font-medium text-slate-700">Método de pago</p>
             <PaymentMethodPicker

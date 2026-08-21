@@ -49,9 +49,15 @@ const itemized = ref(false)
 const flatTotal = ref<number | null>(null)
 const lines = ref<ServiceOrderLineRow[]>([newServiceOrderLineRow()])
 
-const registerInitialPayment = ref(false)
+// Seleccionado por defecto - la mayoria de las ordenes cobran algo al
+// crearlas (igual que en Agendar cita) - "opcional" queda explicito en el
+// label del monto, no en si la seccion esta abierta o no.
+const registerInitialPayment = ref(true)
 const initialPayment = ref<number | null>(null)
 const initialPaymentMethod = ref<string | null>(null)
+
+const remainingAfterInitialPayment = computed(() => Math.max(0, total.value - (initialPayment.value ?? 0)))
+const initialPaymentExceedsTotal = computed(() => (initialPayment.value ?? 0) > total.value + 0.02)
 
 // Nombre por defecto configurado en Ajustes > Ordenes de servicio (ver
 // BusinessSettingsView.vue) - solo aplica al crear, nunca pisa el nombre
@@ -140,7 +146,7 @@ async function submit(): Promise<void> {
     service_name: serviceName.value.trim(),
     notes: notes.value.trim() || null,
     ...(itemized.value ? { items } : { total: flatTotal.value }),
-    ...(!isEdit.value && registerInitialPayment.value && initialPayment.value
+    ...(!isEdit.value && registerInitialPayment.value && initialPayment.value && !initialPaymentExceedsTotal.value
       ? { initial_payment: initialPayment.value, initial_payment_method: initialPaymentMethod.value }
       : {}),
   }
@@ -222,7 +228,18 @@ async function submit(): Promise<void> {
         <NxToggleButton v-model="registerInitialPayment" label="Registrar abono inicial" icon="pi pi-wallet" />
 
         <div v-if="registerInitialPayment" class="flex flex-col gap-3 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4">
-          <NxInputNumber v-model="initialPayment" label="Monto del abono" :min="0" />
+          <NxInputNumber v-model="initialPayment" label="Monto del abono (opcional)" :min="0" :max="total" />
+          <p
+            v-if="initialPayment !== null"
+            class="rounded-lg px-3 py-1.5 text-sm font-semibold"
+            :class="initialPaymentExceedsTotal ? 'bg-red-50 text-red-700' : 'bg-slate-50 text-slate-700'"
+          >
+            {{
+              initialPaymentExceedsTotal
+                ? 'El abono no puede superar el total de la orden.'
+                : `Quedaría debiendo: ${formatCop(remainingAfterInitialPayment)}`
+            }}
+          </p>
           <div>
             <p class="mb-2 text-sm font-medium text-slate-700">Método de pago</p>
             <PaymentMethodPicker
