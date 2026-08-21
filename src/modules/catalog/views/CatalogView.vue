@@ -325,140 +325,142 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                 </template>
                 <NxColumn header="Producto">
                   <template #body="{ data }: { data: Product }">
-                    <div class="flex items-center gap-2">
-                      <span
-                        class="material-icons shrink-0 rounded-lg bg-indigo-50 p-1.5 text-base text-indigo-600"
-                      >
-                        {{ data.category?.icon || 'inventory_2' }}
-                      </span>
-                      <div class="min-w-0">
-                        <p
-                          class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm font-semibold text-slate-900"
-                        >
-                          <span class="truncate">{{ data.name }}</span>
+                    <div class="flex flex-col gap-2 py-1">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="flex min-w-0 items-center gap-2">
                           <span
-                            v-if="!data.is_active"
-                            class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500"
+                            class="material-icons shrink-0 rounded-lg bg-indigo-50 p-1.5 text-base text-indigo-600"
                           >
-                            Inactivo
+                            {{ data.category?.icon || 'inventory_2' }}
                           </span>
+                          <div class="min-w-0">
+                            <p
+                              class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm font-semibold text-slate-900"
+                            >
+                              <span class="truncate">{{ data.name }}</span>
+                              <span
+                                v-if="!data.is_active"
+                                class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500"
+                              >
+                                Inactivo
+                              </span>
+                              <span
+                                v-if="data.is_single_sale"
+                                class="inline-flex items-center rounded border border-amber-200 bg-amber-50 px-1.5 py-px text-[10px] leading-none font-medium whitespace-nowrap text-amber-700"
+                                title="Venta única: una sola unidad en inventario"
+                              >
+                                Venta única
+                              </span>
+                              <span
+                                v-if="data.has_recipe"
+                                class="rounded border border-indigo-200 bg-indigo-50 px-1 py-0.5 text-[10px] font-medium text-indigo-600"
+                                title="Descuenta inventario desde ingredientes de receta"
+                              >
+                                Receta
+                              </span>
+                            </p>
+                            <p class="truncate text-xs text-slate-400">
+                              {{ data.category?.name ?? 'Sin categoría' }}
+                              {{ data.price_varies_at_sale ? 'Variable' : formatCop(data.price) }}
+                              <span v-if="data.cost_price">· costo: {{ formatCop(data.cost_price) }}</span>
+                            </p>
+                          </div>
+                        </div>
+                        <div class="shrink-0 text-right">
                           <span
-                            v-if="data.is_single_sale"
-                            class="inline-flex items-center rounded border border-amber-200 bg-amber-50 px-1.5 py-px text-[10px] leading-none font-medium whitespace-nowrap text-amber-700"
-                            title="Venta única: una sola unidad en inventario"
+                            :class="productStockBadge(data).class"
+                            class="rounded-md px-2 py-1 text-xs font-semibold"
                           >
-                            Venta única
+                            {{ productStockBadge(data).label }}
                           </span>
-                          <span
-                            v-if="data.has_recipe"
-                            class="rounded border border-indigo-200 bg-indigo-50 px-1 py-0.5 text-[10px] font-medium text-indigo-600"
-                            title="Descuenta inventario desde ingredientes de receta"
-                          >
-                            Receta
-                          </span>
-                        </p>
-                        <p class="truncate text-xs text-slate-400">
-                          {{ data.category?.name ?? 'Sin categoría'
-                          }}<span v-if="data.sku"> · {{ data.sku }}</span>
-                        </p>
-                        <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                          <template v-if="data.track_stock && !data.is_service && data.can_manage_stock">
-                            <button
-                              v-if="canAdjust"
-                              type="button"
-                              class="text-emerald-500 hover:text-emerald-700"
-                              title="Agregar stock"
-                              @click="
-                                openStockModal(
-                                  { kind: 'product', id: data.id, name: data.name, stock: data.stock },
-                                  'entry',
-                                )
-                              "
-                            >
-                              <i class="pi pi-plus-circle text-sm" />
-                            </button>
-                            <button
-                              v-if="canAdjust"
-                              type="button"
-                              class="text-red-400 hover:text-red-600"
-                              title="Retirar stock"
-                              @click="
-                                openStockModal(
-                                  { kind: 'product', id: data.id, name: data.name, stock: data.stock },
-                                  'exit',
-                                )
-                              "
-                            >
-                              <i class="pi pi-minus-circle text-sm" />
-                            </button>
-                            <button
-                              v-if="canAdjust"
-                              type="button"
-                              class="text-slate-400 hover:text-indigo-600"
-                              title="Ajustar stock"
-                              @click="
-                                openStockModal(
-                                  { kind: 'product', id: data.id, name: data.name, stock: data.stock },
-                                  'adjustment',
-                                )
-                              "
-                            >
-                              <i class="pi pi-sliders-h text-sm" />
-                            </button>
-                            <RouterLink
-                              :to="{ name: 'catalog.products.stock-history', params: { id: data.id } }"
-                              class="text-slate-400 hover:text-indigo-600"
-                              title="Historial de movimientos"
-                            >
-                              <i class="pi pi-history text-sm" />
-                            </RouterLink>
-                          </template>
-                          <RouterLink
-                            v-if="canAdd"
-                            :to="{ name: 'catalog.products.edit', params: { id: data.id } }"
-                            class="text-slate-400 hover:text-indigo-600"
-                            title="Editar"
-                          >
-                            <i class="pi pi-pencil text-sm" />
-                          </RouterLink>
-                          <button
-                            v-if="canAdd"
-                            type="button"
-                            class="text-slate-400 hover:text-indigo-600"
-                            title="Duplicar"
-                            :disabled="duplicateProductMutation.isPending.value"
-                            @click="duplicateProductRow(data)"
-                          >
-                            <i class="pi pi-copy text-sm" />
-                          </button>
-                          <button
-                            v-if="canAdd"
-                            type="button"
-                            class="text-slate-300 hover:text-red-500"
-                            title="Eliminar"
-                            :disabled="deleteProductMutation.isPending.value"
-                            @click="removeProduct(data)"
-                          >
-                            <i class="pi pi-trash text-sm" />
-                          </button>
+                          <p v-if="data.low_stock_alert_threshold" class="mt-0.5 text-[10px] whitespace-nowrap text-slate-400">
+                            umbral: {{ data.low_stock_alert_threshold }}
+                          </p>
                         </div>
                       </div>
+
+                      <div class="flex flex-wrap justify-around gap-x-1 gap-y-2 border-t border-slate-100 pt-2">
+                        <template v-if="data.track_stock && !data.is_service && data.can_manage_stock">
+                          <button
+                            v-if="canAdjust"
+                            type="button"
+                            class="flex flex-col items-center gap-0.5 px-1 text-emerald-600 hover:text-emerald-700"
+                            @click="
+                              openStockModal(
+                                { kind: 'product', id: data.id, name: data.name, stock: data.stock },
+                                'entry',
+                              )
+                            "
+                          >
+                            <i class="pi pi-plus-circle" style="font-size: 1.125rem" />
+                            <span class="text-[11px] font-medium">Agregar</span>
+                          </button>
+                          <button
+                            v-if="canAdjust"
+                            type="button"
+                            class="flex flex-col items-center gap-0.5 px-1 text-red-500 hover:text-red-700"
+                            @click="
+                              openStockModal(
+                                { kind: 'product', id: data.id, name: data.name, stock: data.stock },
+                                'exit',
+                              )
+                            "
+                          >
+                            <i class="pi pi-minus-circle" style="font-size: 1.125rem" />
+                            <span class="text-[11px] font-medium">Retirar</span>
+                          </button>
+                          <button
+                            v-if="canAdjust"
+                            type="button"
+                            class="flex flex-col items-center gap-0.5 px-1 text-indigo-600 hover:text-indigo-700"
+                            @click="
+                              openStockModal(
+                                { kind: 'product', id: data.id, name: data.name, stock: data.stock },
+                                'adjustment',
+                              )
+                            "
+                          >
+                            <i class="pi pi-sliders-h" style="font-size: 1.125rem" />
+                            <span class="text-[11px] font-medium">Ajustar</span>
+                          </button>
+                          <RouterLink
+                            :to="{ name: 'catalog.products.stock-history', params: { id: data.id } }"
+                            class="flex flex-col items-center gap-0.5 px-1 text-slate-400 hover:text-indigo-600"
+                          >
+                            <i class="pi pi-history" style="font-size: 1.125rem" />
+                            <span class="text-[11px] font-medium">Historial</span>
+                          </RouterLink>
+                        </template>
+                        <RouterLink
+                          v-if="canAdd"
+                          :to="{ name: 'catalog.products.edit', params: { id: data.id } }"
+                          class="flex flex-col items-center gap-0.5 px-1 text-indigo-600 hover:text-indigo-700"
+                        >
+                          <i class="pi pi-pencil" style="font-size: 1.125rem" />
+                          <span class="text-[11px] font-medium">Editar</span>
+                        </RouterLink>
+                        <button
+                          v-if="canAdd"
+                          type="button"
+                          class="flex flex-col items-center gap-0.5 px-1 text-slate-400 hover:text-indigo-600"
+                          :disabled="duplicateProductMutation.isPending.value"
+                          @click="duplicateProductRow(data)"
+                        >
+                          <i class="pi pi-copy" style="font-size: 1.125rem" />
+                          <span class="text-[11px] font-medium">Duplicar</span>
+                        </button>
+                        <button
+                          v-if="canAdd"
+                          type="button"
+                          class="flex flex-col items-center gap-0.5 px-1 text-red-500 hover:text-red-700"
+                          :disabled="deleteProductMutation.isPending.value"
+                          @click="removeProduct(data)"
+                        >
+                          <i class="pi pi-trash" style="font-size: 1.125rem" />
+                          <span class="text-[11px] font-medium">Eliminar</span>
+                        </button>
+                      </div>
                     </div>
-                  </template>
-                </NxColumn>
-                <NxColumn header="Precio">
-                  <template #body="{ data }: { data: Product }">
-                    {{ data.price_varies_at_sale ? 'Variable' : formatCop(data.price) }}
-                  </template>
-                </NxColumn>
-                <NxColumn header="Stock">
-                  <template #body="{ data }: { data: Product }">
-                    <span
-                      :class="productStockBadge(data).class"
-                      class="rounded-md px-2 py-1 text-xs font-semibold"
-                    >
-                      {{ productStockBadge(data).label }}
-                    </span>
                   </template>
                 </NxColumn>
               </NxDataTable>
@@ -520,127 +522,133 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                 </template>
                 <NxColumn header="Insumo">
                   <template #body="{ data }: { data: Ingredient }">
-                    <p class="text-sm font-semibold text-slate-900">
-                      {{ data.name }}
-                      <span
-                        v-if="!data.is_active"
-                        class="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500"
-                      >
-                        Inactivo
-                      </span>
-                    </p>
-                    <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                      <button
-                        v-if="canAdjust"
-                        type="button"
-                        class="text-emerald-500 hover:text-emerald-700"
-                        title="Agregar stock"
-                        @click="
-                          openStockModal(
-                            {
-                              kind: 'ingredient',
-                              id: data.id,
-                              name: data.name,
-                              stock: Number(data.stock),
-                              unit: data.unit,
-                            },
-                            'entry',
-                          )
-                        "
-                      >
-                        <i class="pi pi-plus-circle text-sm" />
-                      </button>
-                      <button
-                        v-if="canAdjust"
-                        type="button"
-                        class="text-red-400 hover:text-red-600"
-                        title="Retirar stock"
-                        @click="
-                          openStockModal(
-                            {
-                              kind: 'ingredient',
-                              id: data.id,
-                              name: data.name,
-                              stock: Number(data.stock),
-                              unit: data.unit,
-                            },
-                            'exit',
-                          )
-                        "
-                      >
-                        <i class="pi pi-minus-circle text-sm" />
-                      </button>
-                      <button
-                        v-if="canAdjust"
-                        type="button"
-                        class="text-slate-400 hover:text-indigo-600"
-                        title="Ajustar stock"
-                        @click="
-                          openStockModal(
-                            {
-                              kind: 'ingredient',
-                              id: data.id,
-                              name: data.name,
-                              stock: Number(data.stock),
-                              unit: data.unit,
-                            },
-                            'adjustment',
-                          )
-                        "
-                      >
-                        <i class="pi pi-sliders-h text-sm" />
-                      </button>
-                      <RouterLink
-                        :to="{ name: 'catalog.ingredients.stock-history', params: { id: data.id } }"
-                        class="text-slate-400 hover:text-indigo-600"
-                        title="Historial de movimientos"
-                      >
-                        <i class="pi pi-history text-sm" />
-                      </RouterLink>
-                      <button
-                        type="button"
-                        class="text-orange-500 hover:text-orange-700"
-                        title="Platos que lo usan"
-                        @click="usedInModalIngredient = data"
-                      >
-                        <i class="pi pi-book text-sm" />
-                      </button>
-                      <button
-                        v-if="canAdd"
-                        type="button"
-                        class="text-slate-400 hover:text-indigo-600"
-                        title="Editar"
-                        @click="openEditIngredient(data)"
-                      >
-                        <i class="pi pi-pencil text-sm" />
-                      </button>
-                      <button
-                        v-if="canAdd"
-                        type="button"
-                        class="text-slate-300 hover:text-red-500"
-                        title="Eliminar"
-                        :disabled="deleteIngredientMutation.isPending.value"
-                        @click="removeIngredient(data)"
-                      >
-                        <i class="pi pi-trash text-sm" />
-                      </button>
+                    <div class="flex flex-col gap-2 py-1">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                          <p class="text-sm font-semibold text-slate-900">
+                            {{ data.name }}
+                            <span
+                              v-if="!data.is_active"
+                              class="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500"
+                            >
+                              Inactivo
+                            </span>
+                          </p>
+                          <p class="truncate text-xs text-slate-400">
+                            {{ data.unit }}
+                            <span v-if="data.cost_price != null"> · costo: {{ formatCop(Number(data.cost_price)) }}</span>
+                          </p>
+                        </div>
+                        <div class="shrink-0 text-right">
+                          <span
+                            :class="ingredientStockBadge(data).class"
+                            class="rounded-md px-2 py-1 text-xs font-semibold"
+                          >
+                            {{ ingredientStockBadge(data).label }}
+                          </span>
+                          <p v-if="data.min_stock" class="mt-0.5 text-[10px] whitespace-nowrap text-slate-400">
+                            umbral: {{ data.min_stock }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div class="flex flex-wrap justify-around gap-x-1 gap-y-2 border-t border-slate-100 pt-2">
+                        <button
+                          v-if="canAdjust"
+                          type="button"
+                          class="flex flex-col items-center gap-0.5 px-1 text-emerald-600 hover:text-emerald-700"
+                          @click="
+                            openStockModal(
+                              {
+                                kind: 'ingredient',
+                                id: data.id,
+                                name: data.name,
+                                stock: Number(data.stock),
+                                unit: data.unit,
+                              },
+                              'entry',
+                            )
+                          "
+                        >
+                          <i class="pi pi-plus-circle" style="font-size: 1.125rem" />
+                          <span class="text-[11px] font-medium">Agregar</span>
+                        </button>
+                        <button
+                          v-if="canAdjust"
+                          type="button"
+                          class="flex flex-col items-center gap-0.5 px-1 text-red-500 hover:text-red-700"
+                          @click="
+                            openStockModal(
+                              {
+                                kind: 'ingredient',
+                                id: data.id,
+                                name: data.name,
+                                stock: Number(data.stock),
+                                unit: data.unit,
+                              },
+                              'exit',
+                            )
+                          "
+                        >
+                          <i class="pi pi-minus-circle" style="font-size: 1.125rem" />
+                          <span class="text-[11px] font-medium">Retirar</span>
+                        </button>
+                        <button
+                          v-if="canAdjust"
+                          type="button"
+                          class="flex flex-col items-center gap-0.5 px-1 text-indigo-600 hover:text-indigo-700"
+                          @click="
+                            openStockModal(
+                              {
+                                kind: 'ingredient',
+                                id: data.id,
+                                name: data.name,
+                                stock: Number(data.stock),
+                                unit: data.unit,
+                              },
+                              'adjustment',
+                            )
+                          "
+                        >
+                          <i class="pi pi-sliders-h" style="font-size: 1.125rem" />
+                          <span class="text-[11px] font-medium">Ajustar</span>
+                        </button>
+                        <RouterLink
+                          :to="{ name: 'catalog.ingredients.stock-history', params: { id: data.id } }"
+                          class="flex flex-col items-center gap-0.5 px-1 text-slate-400 hover:text-indigo-600"
+                        >
+                          <i class="pi pi-history" style="font-size: 1.125rem" />
+                          <span class="text-[11px] font-medium">Historial</span>
+                        </RouterLink>
+                        <button
+                          type="button"
+                          class="flex flex-col items-center gap-0.5 px-1 text-amber-600 hover:text-amber-700"
+                          @click="usedInModalIngredient = data"
+                        >
+                          <i class="pi pi-book" style="font-size: 1.125rem" />
+                          <span class="text-[11px] font-medium">Platos</span>
+                        </button>
+                        <button
+                          v-if="canAdd"
+                          type="button"
+                          class="flex flex-col items-center gap-0.5 px-1 text-indigo-600 hover:text-indigo-700"
+                          @click="openEditIngredient(data)"
+                        >
+                          <i class="pi pi-pencil" style="font-size: 1.125rem" />
+                          <span class="text-[11px] font-medium">Editar</span>
+                        </button>
+                        <button
+                          v-if="canAdd"
+                          type="button"
+                          class="flex flex-col items-center gap-0.5 px-1 text-red-500 hover:text-red-700"
+                          :disabled="deleteIngredientMutation.isPending.value"
+                          @click="removeIngredient(data)"
+                        >
+                          <i class="pi pi-trash" style="font-size: 1.125rem" />
+                          <span class="text-[11px] font-medium">Eliminar</span>
+                        </button>
+                      </div>
                     </div>
-                  </template>
-                </NxColumn>
-                <NxColumn header="Unidad" field="unit" />
-                <NxColumn header="Stock">
-                  <template #body="{ data }: { data: Ingredient }">
-                    <span
-                      :class="ingredientStockBadge(data).class"
-                      class="rounded-md px-2 py-1 text-xs font-semibold"
-                    >
-                      {{ ingredientStockBadge(data).label }}
-                    </span>
-                  </template>
-                </NxColumn>
-                <NxColumn header="Costo/unidad">
-                  <template #body="{ data }: { data: Ingredient }">
-                    {{ data.cost_price != null ? formatCop(Number(data.cost_price)) : '—' }}
                   </template>
                 </NxColumn>
               </NxDataTable>
