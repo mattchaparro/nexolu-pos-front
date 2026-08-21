@@ -5,7 +5,7 @@
 // docs/BACKEND_READINESS.md). Vive en un composable y no en el componente
 // de la vista para poder testear/razonar la aritmetica de dinero sin
 // montar el DOM.
-import { computed, ref, type Ref } from 'vue'
+import { computed, ref, watch, type Ref } from 'vue'
 
 import type { ClientSearchResult } from '@/types/client'
 import type { Business } from '@/types/business'
@@ -14,6 +14,7 @@ import type { Product } from '@/types/product'
 import type { CreateSalePayload } from '@/types/sale'
 import { hasFeature } from '@/utils/hasFeature'
 
+import { clearSaleDraft, isDraftEmpty, loadSaleDraft, saveSaleDraft } from '../support/saleDraftStorage'
 import { computeSaleTotals, type CartLine } from '../support/saleMath'
 
 // Cortesia/cargos (servicio/ipoconsumo)/metodo de pago (unico o dividido)
@@ -183,6 +184,99 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     clientId.value = null
     isDelivery.value = false
     cartDiscountId.value = null
+    if (business.value) {
+      clearSaleDraft(business.value.id)
+    }
+  }
+
+  // Persistencia del carrito en localStorage - sobrevive que el navegador
+  // descarte la pestaña en segundo plano (Safari/Chrome moviles, no hay
+  // app nativa/PWA instalada aca) y la recargue de cero al volver, algo
+  // que pasa seguido si el cajero cambia a WhatsApp un momento a mitad de
+  // una venta. Ver saleDraftStorage.ts para el detalle.
+  let isRestoring = false
+
+  watch(
+    [lines, customerName, customerPhone, customerIdentification, clientId, isDelivery, cartDiscountId],
+    () => {
+      if (isRestoring || !business.value) {
+        return
+      }
+      const draft = {
+        lines: lines.value.map((l) => ({
+          productId: l.product.id,
+          quantity: l.quantity,
+          unitPrice: l.unitPrice,
+          discountId: l.discountId,
+        })),
+        customerName: customerName.value,
+        customerPhone: customerPhone.value,
+        customerIdentification: customerIdentification.value,
+        clientId: clientId.value,
+        isDelivery: isDelivery.value,
+        cartDiscountId: cartDiscountId.value,
+      }
+      if (isDraftEmpty(draft)) {
+        clearSaleDraft(business.value.id)
+        return
+      }
+      saveSaleDraft(business.value.id, draft)
+    },
+    { deep: true },
+  )
+
+  /**
+   * Llamar una vez que el catalogo de productos ya cargo (SellView, cuando
+   * productsQuery.data.value deja de estar vacio) - resuelve cada linea
+   * guardada contra el Product ACTUAL (precio/stock de ahora, nunca un
+   * snapshot viejo). Un producto borrado/desactivado desde que se guardo
+   * el borrador se descarta en silencio en vez de restaurarse roto.
+   * Devuelve true si de verdad restauro algo, para que SellView pueda
+   * avisarle al cajero que retomo una venta en curso.
+   */
+  function restoreDraft(products: Product[]): boolean {
+    if (!business.value) {
+      return false
+    }
+    const draft = loadSaleDraft(business.value.id)
+    if (!draft) {
+      return false
+    }
+
+    isRestoring = true
+    try {
+      const restoredLines: CartLine[] = draft.lines
+        .map((l): CartLine | null => {
+          const product = products.find((p) => p.id === l.productId)
+          if (!product) {
+            return null
+          }
+          return {
+            cartKey: crypto.randomUUID(),
+            product,
+            quantity: l.quantity,
+            unitPrice: l.unitPrice,
+            discountId: l.discountId,
+          }
+        })
+        .filter((l): l is CartLine => l !== null)
+
+      if (restoredLines.length === 0 && isDraftEmpty(draft)) {
+        return false
+      }
+
+      lines.value = restoredLines
+      customerName.value = draft.customerName
+      customerPhone.value = draft.customerPhone
+      customerIdentification.value = draft.customerIdentification
+      clientId.value = draft.clientId
+      isDelivery.value = draft.isDelivery
+      cartDiscountId.value = draft.cartDiscountId
+
+      return true
+    } finally {
+      isRestoring = false
+    }
   }
 
   return {
@@ -210,5 +304,6 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     setLineUnitPrice,
     buildPayload,
     reset,
+    restoreDraft,
   }
 }

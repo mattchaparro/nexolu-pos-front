@@ -7,7 +7,7 @@
 // sigue existiendo para gestion mas a fondo (mesas, buscador dedicado).
 // Dictado por voz e impresion/envio de recibo quedan fuera, igual que
 // antes - ver docs/BACKEND_READINESS.md.
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { useBusiness } from '@/composables/useBusiness'
@@ -65,6 +65,26 @@ const discountList = computed(() => discounts.value ?? [])
 const checkout = useSaleCheckout(
   computed(() => business.value),
   discountList,
+)
+
+// Retoma el carrito si el navegador descarto la pestaña en segundo plano
+// (ver saleDraftStorage.ts) - espera a que el catalogo tenga productos de
+// verdad antes de intentarlo, sino cada linea se descartaria por "producto
+// no encontrado" (el catalogo todavia vacio, no que el producto ya no
+// exista). Una sola vez: watch con stop() apenas se dispara, no en cada
+// refetch de productsQuery.
+const stopDraftRestore = watch(
+  () => productsQuery.data.value,
+  (products) => {
+    if (!products || products.length === 0) {
+      return
+    }
+    if (checkout.restoreDraft(products)) {
+      notify('Retomamos la venta que tenías en curso')
+    }
+    stopDraftRestore()
+  },
+  { immediate: true },
 )
 
 // --- Cuentas abiertas/mesas embebidas ---

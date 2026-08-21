@@ -11,6 +11,7 @@ import { useServiceOptions } from '@/composables/useServiceOptions'
 import { useStaffOptions } from '@/composables/useStaffOptions'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { Appointment, AppointmentPayload, AppointmentServiceLineInput } from '@/types/appointment'
+import type { Business } from '@/types/business'
 import { NxButton, NxInput, NxInputNumber, NxModal, NxSelect, NxTextarea, NxToggleButton } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
@@ -19,6 +20,12 @@ import { isCreditPaymentMethodId } from '@/utils/paymentMethod'
 import PaymentMethodPicker from '@/components/PaymentMethodPicker.vue'
 import ClientPicker from '@/modules/clients/components/ClientPicker.vue'
 import { useAppointmentMutations } from '../composables/useAppointmentMutations'
+import {
+  clearAppointmentDraft,
+  isAppointmentDraftEmpty,
+  loadAppointmentDraft,
+  saveAppointmentDraft,
+} from '../support/appointmentDraftStorage'
 import { addMinutes, combineDateAndTime, DURATION_OPTIONS, toDateInputValue, toTimeInputValue } from '../support/appointmentTime'
 import AppointmentServicesPicker from './AppointmentServicesPicker.vue'
 
@@ -69,12 +76,101 @@ const autoDuration = computed(() => {
   return total > 0 ? total : null
 })
 
+// Borrador de cita nueva (ver appointmentDraftStorage.ts) - sobrevive que
+// el navegador descarte la pestaña en segundo plano y la recargue de cero
+// (ej. el usuario cambia a WhatsApp a copiar el numero del cliente a mitad
+// de agendar). `skipNextReset` evita que el watcher de abajo (que en
+// condiciones normales limpia el formulario cada vez que el modal abre
+// para una cita nueva) pise el borrador recien restaurado apenas se emite
+// el modelValue:true que lo vuelve a abrir.
+let skipNextReset = false
+
+function checkDraftAndMaybeRestore(biz: Business): void {
+  if (props.appointment) {
+    return
+  }
+  const draft = loadAppointmentDraft(biz.id)
+  if (draft && !isAppointmentDraftEmpty(draft)) {
+    clientId.value = draft.clientId
+    clientName.value = draft.clientName
+    clientPhone.value = draft.clientPhone
+    clientEmail.value = draft.clientEmail
+    services.value = draft.services
+    staffId.value = draft.staffId
+    dateValue.value = draft.dateValue
+    timeValue.value = draft.timeValue
+    durationMinutes.value = draft.durationMinutes
+    notes.value = draft.notes
+    skipNextReset = true
+    emit('update:modelValue', true)
+  }
+}
+
+// business.value puede llegar sincronico (ya en cache de TanStack Query) o
+// asincronico (primera carga) - a diferencia de un watch({immediate:true})
+// que se auto-detiene, evita la referencia circular de llamar stop() desde
+// dentro del propio callback immediate antes de que la variable exista.
+if (business.value) {
+  checkDraftAndMaybeRestore(business.value)
+} else {
+  const stopDraftCheck = watch(business, (biz) => {
+    if (!biz) {
+      return
+    }
+    checkDraftAndMaybeRestore(biz)
+    stopDraftCheck()
+  })
+}
+
+let isRestoringDraft = false
+
+watch(
+  [clientId, clientName, clientPhone, clientEmail, services, staffId, dateValue, timeValue, durationMinutes, notes],
+  () => {
+    if (isRestoringDraft || isEdit.value || !business.value || !props.modelValue) {
+      return
+    }
+    const draft = {
+      clientId: clientId.value,
+      clientName: clientName.value,
+      clientPhone: clientPhone.value,
+      clientEmail: clientEmail.value,
+      services: services.value,
+      staffId: staffId.value,
+      dateValue: dateValue.value,
+      timeValue: timeValue.value,
+      durationMinutes: durationMinutes.value,
+      notes: notes.value,
+    }
+    if (isAppointmentDraftEmpty(draft)) {
+      clearAppointmentDraft(business.value.id)
+      return
+    }
+    saveAppointmentDraft(business.value.id, draft)
+  },
+  { deep: true },
+)
+
 watch(
   () => props.modelValue,
   (open) => {
     if (!open) {
+      if (!isEdit.value && business.value) {
+        clearAppointmentDraft(business.value.id)
+      }
       return
     }
+    if (skipNextReset) {
+      skipNextReset = false
+      fieldErrors.value = {}
+      formError.value = null
+      registerInitialPayment.value = false
+      initialPayment.value = null
+      initialPaymentMethod.value = nonCreditPaymentMethods.value[0]?.id ?? null
+      return
+    }
+
+    isRestoringDraft = true
     fieldErrors.value = {}
     formError.value = null
     registerInitialPayment.value = false
@@ -106,6 +202,7 @@ watch(
       timeValue.value = toTimeInputValue(start)
       durationMinutes.value = 60
     }
+    isRestoringDraft = false
   },
 )
 
