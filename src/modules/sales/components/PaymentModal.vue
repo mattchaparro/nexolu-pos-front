@@ -222,6 +222,17 @@ function fillExactAmount(): void {
   receivedInput.value = Math.round(amountDue.value)
 }
 
+// Si la venta/cuenta YA traia un cliente antes de abrir este modal
+// (CustomerFieldsSection del carrito, o una cuenta abierta ya con
+// cliente), no hace falta pedirlo de nuevo - se muestra como resumen en
+// vez de campos editables. A diferencia de needsCustomerInfoForCredit,
+// esto NUNCA depende de customerName/customerPhone (lo que se esta
+// tipeando ACA): si dependiera, el campo se ocultaria apenas se escribe
+// el primer caracter (el propio valor tipeado hacia que la condicion de
+// "falta info" pasara a false a mitad de escritura, ver bug real
+// 2026-08-20).
+const hasExistingCustomerInfo = computed(() => Boolean(props.existingCustomerName || props.existingCustomerPhone))
+
 const needsCustomerInfoForCredit = computed(() => {
   if (isCourtesy.value || isSplitTab.value) {
     return false
@@ -384,11 +395,11 @@ function applyClient(client: { id: number; name: string; phone: string | null })
             <PaymentMethodPicker :methods="business.payment_methods" :model-value="singleMethod" @update:model-value="singleMethod = $event" />
 
             <div v-if="isCreditPaymentMethodId(singleMethod)" class="mt-3 flex flex-col gap-2">
-              <p v-if="!needsCustomerInfoForCredit" class="text-xs text-slate-500">
-                Cliente: {{ existingCustomerName || existingCustomerPhone || customerName || customerPhone }}
+              <p v-if="hasExistingCustomerInfo" class="text-xs text-slate-500">
+                Cliente: {{ existingCustomerName || existingCustomerPhone }}
               </p>
               <template v-else>
-                <p class="text-xs text-red-600">
+                <p v-if="needsCustomerInfoForCredit" class="text-xs text-red-600">
                   Un fiado necesita al menos un dato del cliente (nombre o teléfono).
                 </p>
                 <NxInput :model-value="customerName" label="Nombre del cliente" size="sm" @update:model-value="setCustomerName" />

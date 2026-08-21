@@ -32,6 +32,5 @@ const isChecked = computed({
     :on-label="label"
     :off-label="label"
     :disabled="disabled"
-    class="flex-1"
   />
 </template>
