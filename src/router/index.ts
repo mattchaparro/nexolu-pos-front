@@ -312,20 +312,20 @@ const router = createRouter({
         },
         {
           // Sin requiresFeature: no es un extra de plan (igual que Ajustes),
-          // cualquier negocio puede ver su propio resumen de ingresos -
-          // reports.sales es el mismo permiso que ya protege /reports/sales/*.
+          // reports.daily_summary - permiso propio (antes compartia
+          // reports.sales con los otros 3 reportes de ventas, separado a
+          // pedido explicito - ver PermissionCatalog en nexolu-pos-api).
           path: 'resumen-del-dia',
           name: 'daily-summary.index',
           component: () => import('@/modules/daily-summary/views/DailySummaryView.vue'),
-          meta: { requiresPermission: 'reports.sales' },
+          meta: { requiresPermission: 'reports.daily_summary' },
         },
         {
-          // Mismo permiso que Resumen del dia - es el mismo reports.sales
-          // que ya protege GET /reports/sales/business-overview.
+          // reports.business_overview - idem, permiso propio.
           path: 'mi-negocio',
           name: 'business-overview.index',
           component: () => import('@/modules/business-overview/views/BusinessOverviewView.vue'),
-          meta: { requiresPermission: 'reports.sales' },
+          meta: { requiresPermission: 'reports.business_overview' },
         },
         {
           // Hub "Reportes": tarjetas que enlazan a Resumen del dia/Mi negocio
@@ -338,6 +338,8 @@ const router = createRouter({
           component: () => import('@/modules/reports/views/ReportsHubView.vue'),
         },
         {
+          // reports.sales ahora es puntual a este reporte (Historial de
+          // ventas) - antes cubria los 4 de la seccion, ver la nota arriba.
           path: 'reportes/historial-ventas',
           name: 'sales-history.index',
           component: () => import('@/modules/sales-history/views/SalesHistoryView.vue'),
@@ -347,7 +349,7 @@ const router = createRouter({
           path: 'reportes/ventas-por-vendedor',
           name: 'sales-by-seller.index',
           component: () => import('@/modules/sales-by-seller/views/SalesBySellerView.vue'),
-          meta: { requiresPermission: 'reports.sales' },
+          meta: { requiresPermission: 'reports.sales_by_seller' },
         },
         {
           // Sin requiresFeature: el gate real es un OR (inventory_advanced ||

@@ -33,14 +33,14 @@ const cards = computed<ReportCard[]>(() => [
     label: 'Resumen del día',
     description: 'Ingreso del negocio de hoy o un rango, por canal y medio de pago.',
     icon: 'pi pi-chart-bar',
-    visible: hasPermission('reports.sales'),
+    visible: hasPermission('reports.daily_summary'),
   },
   {
     routeName: 'business-overview.index',
     label: 'Mi negocio',
     description: 'Crecimiento, horas pico, descuentos, fiado y rotación de productos.',
     icon: 'pi pi-chart-line',
-    visible: hasPermission('reports.sales'),
+    visible: hasPermission('reports.business_overview'),
   },
   {
     routeName: 'sales-history.index',
@@ -54,7 +54,7 @@ const cards = computed<ReportCard[]>(() => [
     label: 'Ventas por vendedor',
     description: 'Totales, ticket promedio y unidades vendidas por cada cajero.',
     icon: 'pi pi-users',
-    visible: hasPermission('reports.sales'),
+    visible: hasPermission('reports.sales_by_seller'),
   },
   {
     routeName: 'inventory-reports.index',

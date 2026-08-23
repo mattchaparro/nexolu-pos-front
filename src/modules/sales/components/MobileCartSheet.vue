@@ -92,15 +92,15 @@ function close(): void {
 
       <div class="min-h-0 flex-1 overflow-y-auto p-4">
         <CartItemsList :checkout="checkout" />
+      </div>
 
-        <div v-if="checkout.lines.value.length > 0" class="mt-3 border-t border-slate-200 pt-3">
-          <CartCheckoutSection
-            :checkout="checkout"
-            :business="business"
-            :submitting="submitting"
-            @submit="emit('submit')"
-          />
-        </div>
+      <div v-if="checkout.lines.value.length > 0" class="shrink-0 border-t border-slate-200 p-4 pt-3">
+        <CartCheckoutSection
+          :checkout="checkout"
+          :business="business"
+          :submitting="submitting"
+          @submit="emit('submit')"
+        />
       </div>
     </div>
   </template>
