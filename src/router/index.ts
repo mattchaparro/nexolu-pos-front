@@ -379,18 +379,25 @@ const router = createRouter({
           // Sin requiresFeature/requiresPermission: a diferencia de los modulos
           // de arriba, Ajustes no depende de un feature flag propio - cada
           // seccion adentro decide si aplica segun el negocio (ver
-          // BusinessSettingsView.vue).
+          // BusinessSettingsView.vue). requiresAdmin: configuracion del
+          // negocio no es delegable via permisos de empleado (ver
+          // EnsureBusinessAdmin en nexolu-pos-api) - mismo criterio que
+          // Usuarios, mas abajo.
           path: 'ajustes',
           name: 'business-settings.index',
           component: () => import('@/modules/settings/views/BusinessSettingsView.vue'),
+          meta: { requiresAdmin: true },
         },
         {
-          // Tampoco depende de un feature flag - cualquier usuario del
-          // negocio puede ver/pagar la suscripcion, igual que en el legacy
-          // (SubscriptionController::billing no restringe por rol).
+          // requiresAdmin: ver la suscripcion (y sobre todo poder cobrarla)
+          // tampoco es delegable via permisos de empleado - mismo criterio
+          // que Ajustes arriba (antes esta ruta no tenia ningun guard, ver
+          // el bug reportado 2026-08-22: un empleado nuevo veia y podia usar
+          // esta pantalla igual que el admin).
           path: 'suscripcion',
           name: 'subscription.index',
           component: () => import('@/modules/subscription/views/SubscriptionView.vue'),
+          meta: { requiresAdmin: true },
         },
       ],
     },
