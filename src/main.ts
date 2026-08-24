@@ -22,12 +22,17 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 import { queryClient } from './services/query/queryClient'
+import { initSentry } from './sentry'
 import { nexoluPreset } from './theme/nexoluPreset'
 
 const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
+// Despues de Pinia+router (los necesita: tagea business_id/user del store
+// de auth en cada navegacion, ver src/sentry.ts) y antes de mount() - no-op
+// si VITE_SENTRY_DSN_PUBLIC esta vacio.
+initSentry(app, router)
 // Tema propio de PrimeVue (Aura + indigo de marca, ver theme/nexoluPreset.ts)
 // en vez de unstyled: la identidad sobria que pide el producto es la que ya
 // trae PrimeVue con su propio sistema de estilos, no una reconstruida a mano
