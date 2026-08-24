@@ -5,11 +5,16 @@
 // nota en types/receivable.ts) - esta pantalla solo lista y cobra.
 import { computed, ref, watch } from 'vue'
 
+import { useBusiness } from '@/composables/useBusiness'
+import { useSystemAlert } from '@/composables/useSystemAlert'
+import PaymentModal from '@/modules/sales/components/PaymentModal.vue'
+import type { CloseOpenTabPayload } from '@/modules/open-tabs/types'
 import type { Receivable, ReceivableStatus } from '@/types/receivable'
 import { NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect, NxStatCard } from '@/ui'
+import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 
-import CollectReceivableModal from '../components/CollectReceivableModal.vue'
+import { useReceivableMutations } from '../composables/useReceivableMutations'
 import { useReceivables } from '../composables/useReceivables'
 import { useReceivablesSummary } from '../composables/useReceivablesSummary'
 
@@ -58,18 +63,51 @@ function formatDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+const { data: business } = useBusiness()
+const { notify } = useSystemAlert()
+const { collectMutation } = useReceivableMutations()
+
 const collectModalOpen = ref(false)
 const collectingReceivable = ref<Receivable | null>(null)
+const collectError = ref<string | null>(null)
 
 function openCollect(receivable: Receivable): void {
   collectingReceivable.value = receivable
+  collectError.value = null
   collectModalOpen.value = true
+}
+
+async function submitCollect(payload: CloseOpenTabPayload): Promise<void> {
+  if (!collectingReceivable.value || !payload.payment_method) {
+    return
+  }
+  collectError.value = null
+  try {
+    await collectMutation.mutateAsync({
+      id: collectingReceivable.value.id,
+      payload: {
+        payment_method: payload.payment_method,
+        customer_name: payload.customer_name,
+        customer_phone: payload.customer_phone,
+        customer_identification: payload.customer_identification,
+      },
+    })
+    notify('Fiado cobrado')
+    collectModalOpen.value = false
+  } catch (error) {
+    // Banner en la pantalla, no toast - mismo patron que OpenTabsView/
+    // SellView con sus respectivos PaymentModal (el modal sigue abierto
+    // tras un error, el toast quedaria tapado detras de el).
+    collectError.value = extractErrorMessage(error, 'No pudimos cobrar el fiado.')
+  }
 }
 </script>
 
 <template>
   <div class="flex flex-col gap-4 pb-20 lg:pb-0">
     <NxPageHeader title="Fiados" icon="pi pi-wallet" compact />
+
+    <p v-if="collectError" class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ collectError }}</p>
 
     <div v-if="summaryQuery.data.value" class="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <NxStatCard
@@ -169,6 +207,19 @@ function openCollect(receivable: Receivable): void {
       </NxDataTable>
     </div>
 
-    <CollectReceivableModal v-model="collectModalOpen" :receivable="collectingReceivable" />
+    <PaymentModal
+      v-if="business"
+      v-model="collectModalOpen"
+      :business="business"
+      :submitting="collectMutation.isPending.value"
+      :sale="null"
+      receivable-mode
+      :fallback-charge-base="Number(collectingReceivable?.balance ?? 0)"
+      :title="collectingReceivable ? `Cobrar fiado — ${collectingReceivable.customer_name || 'Cliente sin nombre'}` : 'Cobrar fiado'"
+      :existing-customer-name="collectingReceivable?.customer_name ?? null"
+      :existing-customer-phone="collectingReceivable?.customer_phone ?? null"
+      :existing-customer-identification="collectingReceivable?.customer_identification ?? null"
+      @confirm="submitCollect"
+    />
   </div>
 </template>

@@ -22,6 +22,11 @@
 // crear la venta/cuenta (carrito o alta de cuenta), nunca al cerrarla -
 // moverlo aca solo para venta directa rompería esa simetría entre los dos
 // flujos.
+//
+// receivableMode=true: tambien lo reusa el cobro de Fiados (antes tenia su
+// propio CollectReceivableModal aparte) - misma experiencia de cobro que
+// venta/cuenta abierta, con cortesia/cargos/pestañas extra ocultas por no
+// aplicar al backend de Receivable (ver el comentario de la prop).
 import { computed, ref, watch } from 'vue'
 
 import PaymentMethodPicker from '@/components/PaymentMethodPicker.vue'
@@ -57,14 +62,27 @@ const props = withDefaults(
     fallbackDeliveryFee?: number
     existingCustomerName?: string | null
     existingCustomerPhone?: string | null
+    existingCustomerIdentification?: string | null
     title?: string
+    // Cobro de un fiado (Receivable) - a diferencia de venta/cuenta
+    // abierta, ese backend solo soporta un pago unico y completo (sin
+    // payment_splits ni abonos parciales, ver ReceivableService::collect()),
+    // y ademas no vuelve a aplicar cargos/cortesia (esos ya se resolvieron
+    // cuando se creo la venta a credito original). Oculta cortesia, cargos
+    // y las pestañas de Varios medios/Dividir/Abonar - solo "Pago unico",
+    // sin la pestaña visible (no tiene sentido mostrar una sola opcion como
+    // si hubiera para elegir), y excluye 'credit' del selector de medio
+    // (no se puede pagar un fiado con otro fiado).
+    receivableMode?: boolean
   }>(),
   {
     fallbackChargeBase: 0,
     fallbackDeliveryFee: 0,
     existingCustomerName: null,
     existingCustomerPhone: null,
+    existingCustomerIdentification: null,
     title: undefined,
+    receivableMode: false,
   },
 )
 
@@ -92,6 +110,7 @@ const splitPeopleCount = ref<number | null>(2)
 const singleMethod = ref<string | null>(null)
 const customerName = ref('')
 const customerPhone = ref('')
+const customerIdentification = ref('')
 const clientId = ref<number | null>(null)
 const partialAmount = ref<number | null>(null)
 const partialMethod = ref<string | null>(null)
@@ -106,9 +125,10 @@ function resetForm(): void {
   activeTab.value = 'single'
   splitRows.value = []
   splitPeopleCount.value = 2
-  singleMethod.value = defaultMethodId.value
+  singleMethod.value = props.receivableMode ? defaultSplitMethodId.value : defaultMethodId.value
   customerName.value = ''
   customerPhone.value = ''
+  customerIdentification.value = ''
   clientId.value = null
   partialAmount.value = null
   partialMethod.value = defaultSplitMethodId.value
@@ -151,14 +171,17 @@ const balanceBeforeCharges = computed(() => {
 })
 
 const serviceChargeAmount = computed(() => {
-  if (isCourtesy.value || !props.business.charges.service_charge_enabled || !applyServiceCharge.value) {
+  // receivableMode: un fiado nunca vuelve a llevar cargos - esos ya se
+  // resolvieron sobre la venta a credito original, ver el comentario de la
+  // prop mas arriba.
+  if (props.receivableMode || isCourtesy.value || !props.business.charges.service_charge_enabled || !applyServiceCharge.value) {
     return 0
   }
   return round2((chargeBase.value * props.business.charges.service_charge_rate) / 100)
 })
 
 const ipoconsumoAmount = computed(() => {
-  if (isCourtesy.value || !props.business.charges.ipoconsumo_enabled || !applyIpoconsumo.value) {
+  if (props.receivableMode || isCourtesy.value || !props.business.charges.ipoconsumo_enabled || !applyIpoconsumo.value) {
     return 0
   }
   return round2((chargeBase.value * props.business.charges.ipoconsumo_rate) / 100)
@@ -231,7 +254,9 @@ function fillExactAmount(): void {
 // el primer caracter (el propio valor tipeado hacia que la condicion de
 // "falta info" pasara a false a mitad de escritura, ver bug real
 // 2026-08-20).
-const hasExistingCustomerInfo = computed(() => Boolean(props.existingCustomerName || props.existingCustomerPhone))
+const hasExistingCustomerInfo = computed(() =>
+  Boolean(props.existingCustomerName || props.existingCustomerPhone || props.existingCustomerIdentification),
+)
 
 const needsCustomerInfoForCredit = computed(() => {
   if (isCourtesy.value || isSplitTab.value) {
@@ -242,6 +267,12 @@ const needsCustomerInfoForCredit = computed(() => {
   }
   return !props.existingCustomerName && !props.existingCustomerPhone && !customerName.value && !customerPhone.value
 })
+
+// En receivableMode se pide siempre (el medio nunca es credito, asi que
+// needsCustomerInfoForCredit nunca aplicaria) - es la misma seccion de
+// "completar datos del cliente" que en pago con fiado, pero disparada por
+// estar cobrando un fiado en vez de por el medio elegido.
+const showCustomerCapture = computed(() => props.receivableMode || isCreditPaymentMethodId(singleMethod.value))
 
 const canConfirm = computed(() => {
   if (isCourtesy.value) {
@@ -274,9 +305,12 @@ function submitConfirm(): void {
       .map((r) => ({ method: r.method, amount: Number(r.amount), label: r.label || undefined }))
   } else if (!isCourtesy.value) {
     payload.payment_method = singleMethod.value
-    if (isCreditPaymentMethodId(singleMethod.value)) {
+    if (showCustomerCapture.value) {
       payload.customer_name = customerName.value || undefined
       payload.customer_phone = customerPhone.value || undefined
+      if (props.receivableMode) {
+        payload.customer_identification = customerIdentification.value || undefined
+      }
       if (clientId.value) {
         payload.client_id = clientId.value
       }
@@ -300,7 +334,9 @@ function submitPartial(): void {
   partialLabel.value = ''
 }
 
-const modalTitle = computed(() => props.title ?? (props.sale ? 'Cobrar cuenta' : 'Cobrar venta'))
+const modalTitle = computed(
+  () => props.title ?? (props.receivableMode ? 'Cobrar fiado' : props.sale ? 'Cobrar cuenta' : 'Cobrar venta'),
+)
 
 // Editar nombre/telefono a mano invalida el vinculo con el Client aplicado
 // via ClientQuickAssociate - mismo criterio que useSaleCheckout.setCustomerName/
@@ -340,7 +376,7 @@ function applyClient(client: { id: number; name: string; phone: string | null })
         <p class="text-xs text-slate-400">{{ amountPaid > 0 ? 'Saldo a cobrar ahora' : 'Total a cobrar' }}</p>
       </div>
 
-      <div>
+      <div v-if="!receivableMode">
         <NxToggleButton
           v-model="isCourtesy"
           label="Cerrar como cortesía"
@@ -358,7 +394,7 @@ function applyClient(client: { id: number; name: string; phone: string | null })
       />
 
       <div
-        v-if="!isCourtesy && (business.charges.service_charge_enabled || business.charges.ipoconsumo_enabled)"
+        v-if="!receivableMode && !isCourtesy && (business.charges.service_charge_enabled || business.charges.ipoconsumo_enabled)"
         class="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3"
       >
         <label
@@ -384,7 +420,7 @@ function applyClient(client: { id: number; name: string; phone: string | null })
       </div>
 
       <NxTabs v-if="!isCourtesy" v-model:value="activeTab">
-        <NxTabList>
+        <NxTabList v-if="!receivableMode">
           <NxTab value="single" icon="pi pi-wallet">Pago único</NxTab>
           <NxTab value="multi" icon="pi pi-credit-card">Varios medios</NxTab>
           <NxTab value="split" icon="pi pi-users">Dividir</NxTab>
@@ -392,19 +428,27 @@ function applyClient(client: { id: number; name: string; phone: string | null })
         </NxTabList>
         <NxTabPanels>
           <NxTabPanel value="single">
-            <PaymentMethodPicker :methods="business.payment_methods" :model-value="singleMethod" @update:model-value="singleMethod = $event" />
+            <PaymentMethodPicker
+              :methods="receivableMode ? splitMethods : business.payment_methods"
+              :model-value="singleMethod"
+              @update:model-value="singleMethod = $event"
+            />
 
-            <div v-if="isCreditPaymentMethodId(singleMethod)" class="mt-3 flex flex-col gap-2">
+            <div v-if="showCustomerCapture" class="mt-3 flex flex-col gap-2">
               <p v-if="hasExistingCustomerInfo" class="text-xs text-slate-500">
-                Cliente: {{ existingCustomerName || existingCustomerPhone }}
+                Cliente: {{ existingCustomerName || existingCustomerPhone || existingCustomerIdentification }}
               </p>
               <template v-else>
                 <p v-if="needsCustomerInfoForCredit" class="text-xs text-red-600">
                   Un fiado necesita al menos un dato del cliente (nombre o teléfono).
                 </p>
+                <p v-else-if="receivableMode" class="text-xs text-slate-400">
+                  Esta cuenta se registró sin datos del cliente. Puedes completarlos ahora (opcional).
+                </p>
                 <NxInput :model-value="customerName" label="Nombre del cliente" size="sm" @update:model-value="setCustomerName" />
                 <NxInput :model-value="customerPhone" label="Teléfono" size="sm" @update:model-value="setCustomerPhone" />
-                <ClientQuickAssociate :name="customerName" :phone="customerPhone" @apply="applyClient" />
+                <NxInput v-if="receivableMode" v-model="customerIdentification" label="Cédula" size="sm" />
+                <ClientQuickAssociate v-if="!receivableMode" :name="customerName" :phone="customerPhone" @apply="applyClient" />
               </template>
             </div>
 
@@ -425,7 +469,7 @@ function applyClient(client: { id: number; name: string; phone: string | null })
             </div>
           </NxTabPanel>
 
-          <NxTabPanel value="multi">
+          <NxTabPanel v-if="!receivableMode" value="multi">
             <p class="text-xs text-slate-500">
               Saldo {{ formatCop(amountDue) }}. Diferencia:
               <span :class="Math.abs(splitRemainder) < 0.02 ? 'font-semibold text-emerald-600' : 'font-semibold text-red-600'">
@@ -462,7 +506,7 @@ function applyClient(client: { id: number; name: string; phone: string | null })
             </div>
           </NxTabPanel>
 
-          <NxTabPanel value="split">
+          <NxTabPanel v-if="!receivableMode" value="split">
             <p class="text-xs text-slate-500">
               Saldo {{ formatCop(amountDue) }}. Diferencia:
               <span :class="Math.abs(splitRemainder) < 0.02 ? 'font-semibold text-emerald-600' : 'font-semibold text-red-600'">
