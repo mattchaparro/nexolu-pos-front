@@ -105,6 +105,15 @@ const router = createRouter({
           component: () => import('@/modules/dashboard/views/DashboardView.vue'),
         },
         {
+          // Sin requiresAdmin/requiresPermission a proposito: cualquier
+          // usuario autenticado (admin o empleado) edita su propio perfil,
+          // no es una pantalla de negocio (ver BusinessSettingsView.vue,
+          // esa si requiresAdmin).
+          path: 'mi-perfil',
+          name: 'profile.index',
+          component: () => import('@/modules/profile/views/ProfileView.vue'),
+        },
+        {
           path: 'vender',
           name: 'sales.create',
           component: () => import('@/modules/sales/views/SellView.vue'),

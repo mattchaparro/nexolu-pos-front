@@ -40,13 +40,21 @@ async function stopImpersonating(): Promise<void> {
       <NxSidebar :items="navItems" :logo="logo" />
       <div class="flex min-w-0 flex-1 flex-col">
         <NxNavbar :logo="logo" :user-name="auth.user?.full_name ?? ''" @logout="handleLogout">
-          <template v-if="auth.user?.roles?.includes('superadmin')" #actions>
+          <template #actions>
             <RouterLink
+              v-if="auth.user?.roles?.includes('superadmin')"
               :to="{ name: 'superadmin.businesses.index' }"
               class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/10 hover:text-white"
             >
               <i class="pi pi-shield" />
               Panel Super Admin
+            </RouterLink>
+            <RouterLink
+              :to="{ name: 'profile.index' }"
+              class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <i class="pi pi-user" />
+              Mi perfil
             </RouterLink>
           </template>
         </NxNavbar>

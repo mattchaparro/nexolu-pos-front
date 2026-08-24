@@ -4,7 +4,14 @@ import { defineStore } from 'pinia'
 import { httpClient } from '@/services/http/client'
 import { tokenStorage } from '@/services/http/tokenStorage'
 import { queryClient } from '@/services/query/queryClient'
-import type { AuthResponse, LoginCredentials, RegisterPayload, User } from '@/types/auth'
+import type {
+  AuthResponse,
+  LoginCredentials,
+  RegisterPayload,
+  UpdatePasswordPayload,
+  UpdateProfilePayload,
+  User,
+} from '@/types/auth'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -76,6 +83,18 @@ export const useAuthStore = defineStore('auth', () => {
     return data
   }
 
+  /** Perfil propio (nombre, apellido, correo, celular) - actualiza el usuario en memoria con la respuesta. */
+  async function updateProfile(payload: UpdateProfilePayload): Promise<User> {
+    const { data } = await httpClient.put<User>('/me', payload)
+    user.value = data
+    return data
+  }
+
+  /** Cambio de contraseña autoservicio - exige la contraseña actual (ver UpdatePasswordRequest). */
+  async function updatePassword(payload: UpdatePasswordPayload): Promise<void> {
+    await httpClient.put('/me/password', payload)
+  }
+
   async function logout(): Promise<void> {
     try {
       await httpClient.post('/logout')
@@ -127,6 +146,8 @@ export const useAuthStore = defineStore('auth', () => {
     forgotPassword,
     resetPassword,
     fetchCurrentUser,
+    updateProfile,
+    updatePassword,
     clearSession,
     impersonate,
     stopImpersonating,

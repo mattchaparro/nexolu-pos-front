@@ -51,3 +51,19 @@ export interface AuthResponse {
   token: string
   user: User
 }
+
+// Refleja UpdateProfileRequest (nexolu-pos-api) - nunca la contraseña, eso
+// va por UpdatePasswordPayload/PUT /me/password.
+export interface UpdateProfilePayload {
+  name: string
+  last_name?: string | null
+  email: string
+  cellphone?: string | null
+}
+
+// Refleja UpdatePasswordRequest.
+export interface UpdatePasswordPayload {
+  current_password: string
+  password: string
+  password_confirmation: string
+}
