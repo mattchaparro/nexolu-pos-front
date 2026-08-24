@@ -3,19 +3,36 @@
 // (resumen del dia), el nombre real del negocio, el card de onboarding de
 // WhatsApp y el "consejo del dia". Queda afuera para cuando exista el
 // modulo de chat IA: la tarjeta de insight IA (esa si depende de la
-// conversacion, que este frontend todavia no tiene). La grilla de atajos
-// personalizable queda para cuando haya 2-3 modulos reales a los que
-// apuntar.
+// conversacion, que este frontend todavia no tiene).
+//
+// La grilla de atajos SI esta migrada (a diferencia del comentario
+// original de este archivo, que la dejaba pendiente) - a diferencia del
+// legacy (solo el admin personalizaba, el empleado tenia una grilla fija
+// de hasta 4 botones sin poder tocarla), aca admin y empleado personalizan
+// por igual: dashboard_shortcuts es una columna por usuario, y los
+// candidatos salen de useNavItems() (ya filtrado por permiso/feature para
+// quien sea que este mirando), asi que no hace falta una lista separada
+// por rol.
+import { computed, ref } from 'vue'
+
 import { useBusiness } from '@/composables/useBusiness'
+import { useNavItems } from '@/composables/useNavItems'
 import { NxPageHeader, NxStatCard } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
 import ConsejoDelDiaCard from '../components/ConsejoDelDiaCard.vue'
+import ShortcutCustomizer from '../components/ShortcutCustomizer.vue'
+import ShortcutsGrid from '../components/ShortcutsGrid.vue'
 import WhatsappOnboardingCard from '../components/WhatsappOnboardingCard.vue'
 import { useDashboardSummary } from '../composables/useDashboardSummary'
+import { resolveShortcuts } from '../support/shortcuts'
 
 const { data: stats, isPending, isError } = useDashboardSummary()
 const { data: business } = useBusiness()
+const navItems = useNavItems()
+
+const customizerOpen = ref(false)
+const shortcuts = computed(() => resolveShortcuts(stats.value?.shortcuts ?? null, navItems.value))
 </script>
 
 <template>
@@ -65,5 +82,9 @@ const { data: business } = useBusiness()
 
     <WhatsappOnboardingCard class="mt-6" />
     <ConsejoDelDiaCard class="mt-6" />
+
+    <ShortcutsGrid v-if="stats" class="mt-6" :shortcuts="shortcuts" @customize="customizerOpen = true" />
+
+    <ShortcutCustomizer v-model="customizerOpen" :saved-shortcuts="stats?.shortcuts ?? null" :nav-items="navItems" />
   </div>
 </template>

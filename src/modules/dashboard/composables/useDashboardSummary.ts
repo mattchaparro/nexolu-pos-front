@@ -1,11 +1,34 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
-import { dismissWhatsappOnboarding, fetchDashboardSummary, fetchWhatsappOnboarding } from '../services/dashboardService'
+import type { DashboardSummary } from '@/types/dashboard'
+
+import {
+  dismissWhatsappOnboarding,
+  fetchDashboardSummary,
+  fetchWhatsappOnboarding,
+  updateDashboardShortcuts,
+} from '../services/dashboardService'
 
 export function useDashboardSummary() {
   return useQuery({
     queryKey: ['dashboard', 'summary'],
     queryFn: fetchDashboardSummary,
+  })
+}
+
+export function useUpdateDashboardShortcuts() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: updateDashboardShortcuts,
+    // setQueryData en vez de invalidateQueries + refetch: la respuesta ya
+    // trae los shortcuts guardados, no hace falta un GET /dashboard/summary
+    // completo de nuevo solo para reflejar el cambio.
+    onSuccess: (shortcuts) => {
+      queryClient.setQueryData<DashboardSummary>(['dashboard', 'summary'], (current) =>
+        current ? { ...current, shortcuts } : current,
+      )
+    },
   })
 }
 
