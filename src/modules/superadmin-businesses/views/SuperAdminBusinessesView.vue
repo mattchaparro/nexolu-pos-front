@@ -106,6 +106,11 @@ function statusBadge(business: SuperAdminBusiness): { label: string; class: stri
         <template #empty>
           <p class="py-6 text-center text-sm text-slate-400">No encontramos negocios con esos criterios.</p>
         </template>
+        <NxColumn header="ID">
+          <template #body="{ data }: { data: SuperAdminBusiness }">
+            <span class="font-mono text-xs text-slate-500">{{ data.id }}</span>
+          </template>
+        </NxColumn>
         <NxColumn header="Negocio">
           <template #body="{ data }: { data: SuperAdminBusiness }">
             <p class="cursor-pointer text-sm font-semibold text-slate-900 hover:text-indigo-600" @click="openBusiness(data)">
