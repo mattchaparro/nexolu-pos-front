@@ -80,10 +80,10 @@ const shortcuts = computed(() => resolveShortcuts(stats.value?.shortcuts ?? null
       </template>
     </div>
 
+    <ShortcutsGrid v-if="stats" class="mt-6" :shortcuts="shortcuts" @customize="customizerOpen = true" />
+
     <WhatsappOnboardingCard class="mt-6" />
     <ConsejoDelDiaCard class="mt-6" />
-
-    <ShortcutsGrid v-if="stats" class="mt-6" :shortcuts="shortcuts" @customize="customizerOpen = true" />
 
     <ShortcutCustomizer v-model="customizerOpen" :saved-shortcuts="stats?.shortcuts ?? null" :nav-items="navItems" />
   </div>
