@@ -49,8 +49,11 @@ export async function updateBusiness(payload: UpdateBusinessPayload): Promise<Bu
   return data
 }
 
-export async function updateBusinessNotifications(preferences: Record<string, boolean>): Promise<void> {
-  await httpClient.put('/business/notifications', { preferences })
+export async function updateBusinessNotifications(
+  preferences: Record<string, boolean>,
+  schedule: Record<string, string>,
+): Promise<void> {
+  await httpClient.put('/business/notifications', { preferences, schedule })
 }
 
 export async function clearLowStockSnooze(): Promise<void> {

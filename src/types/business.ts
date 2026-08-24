@@ -64,6 +64,10 @@ export interface Business {
   email_footer_text: string | null
   email_whatsapp_cta: boolean
   notification_preferences: Record<string, boolean> | null
+  // A diferencia de notification_preferences, el backend siempre lo manda
+  // ya resuelto con los defaults de la plataforma aplicados (ver
+  // BusinessResource) - nunca null ni con claves faltantes.
+  notification_schedule: Record<string, string>
   feature_flags: Record<string, boolean> | null
   // Las 20 banderas del catalogo YA resueltas (Business::resolvedFeatures())
   // - lo que hasFeature() lee, en vez de replicar la logica de resolucion

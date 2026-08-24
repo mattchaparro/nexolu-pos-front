@@ -6,7 +6,8 @@ export function useUpdateBusinessNotificationsMutation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: updateBusinessNotifications,
+    mutationFn: (payload: { preferences: Record<string, boolean>; schedule: Record<string, string> }) =>
+      updateBusinessNotifications(payload.preferences, payload.schedule),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['business'] }),
   })
 }

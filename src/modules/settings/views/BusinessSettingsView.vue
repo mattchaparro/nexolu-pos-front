@@ -198,13 +198,19 @@ const showCatalog = ref(true)
 const defaultServiceName = ref('')
 
 // ---------- Notificaciones por WhatsApp -----------------------------------
+// schedulable: ademas del on/off, el negocio puede elegir A QUE HORA le
+// llega (ver NotificationTypes::SCHEDULABLE en nexolu-pos-api) - recordatorios
+// no aplica (cada recordatorio ya trae su propia hora, no hay "una hora" de
+// negocio que fijar) ni fiados_vencidos (todavia no existe un comando que lo
+// envie).
 const NOTIFICATION_TYPES = [
-  { key: 'resumen_diario', label: 'Resumen del dia', desc: 'Cada noche: cuanto vendiste, como quedo la caja y lo importante del dia.' },
-  { key: 'inventario_bajo', label: 'Inventario bajo', desc: 'Cuando un producto esta por agotarse, para que puedas reponer a tiempo.' },
-  { key: 'recordatorios', label: 'Recordatorios y citas', desc: 'Tus recordatorios del planificador y las citas del dia.' },
-  { key: 'fiados_vencidos', label: 'Fiados vencidos', desc: 'Cuando un fiado pasa su fecha de pago.' },
+  { key: 'resumen_diario', label: 'Resumen del dia', desc: 'Cada noche: cuanto vendiste, como quedo la caja y lo importante del dia.', schedulable: true },
+  { key: 'inventario_bajo', label: 'Inventario bajo', desc: 'Cuando un producto esta por agotarse, para que puedas reponer a tiempo.', schedulable: true },
+  { key: 'recordatorios', label: 'Recordatorios y citas', desc: 'Tus recordatorios del planificador y las citas del dia.', schedulable: false },
+  { key: 'fiados_vencidos', label: 'Fiados vencidos', desc: 'Cuando un fiado pasa su fecha de pago.', schedulable: false },
 ] as const
 const notificationPrefs = reactive<Record<string, boolean>>({})
+const notificationSchedule = reactive<Record<string, string>>({})
 const whatsappLinkStatus = useWhatsappLinkStatus()
 const whatsappLinked = computed(() => whatsappLinkStatus.data.value?.linked === true)
 const updateNotifications = useUpdateBusinessNotificationsMutation()
@@ -213,7 +219,7 @@ const notificationsSaving = ref(false)
 async function saveNotifications(): Promise<void> {
   notificationsSaving.value = true
   try {
-    await updateNotifications.mutateAsync({ ...notificationPrefs })
+    await updateNotifications.mutateAsync({ preferences: { ...notificationPrefs }, schedule: { ...notificationSchedule } })
     notify('Preferencias de notificaciones guardadas')
   } catch (error) {
     notify(extractErrorMessage(error, 'No pudimos guardar las preferencias.'))
@@ -267,6 +273,9 @@ watch(
     const prefs = value.notification_preferences ?? {}
     for (const type of NOTIFICATION_TYPES) {
       notificationPrefs[type.key] = Boolean(prefs[type.key])
+      if (type.schedulable) {
+        notificationSchedule[type.key] = value.notification_schedule[type.key]
+      }
     }
   },
   { immediate: true },
@@ -676,12 +685,23 @@ async function submitServicios(): Promise<void> {
 
               <template v-else>
                 <div class="flex flex-col gap-4">
-                  <div v-for="type in NOTIFICATION_TYPES" :key="type.key" class="flex items-start justify-between gap-4 border-b border-slate-100 pb-3 last:border-0">
+                  <div v-for="type in NOTIFICATION_TYPES" :key="type.key" class="flex flex-col gap-2 border-b border-slate-100 pb-3 last:border-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                     <div>
                       <p class="text-sm font-medium text-slate-700">{{ type.label }}</p>
                       <p class="text-xs text-slate-500">{{ type.desc }}</p>
                     </div>
-                    <NxSwitch v-model="notificationPrefs[type.key]" :disabled="!canEdit" />
+                    <div class="flex items-center gap-3">
+                      <NxInput
+                        v-if="type.schedulable && notificationPrefs[type.key]"
+                        v-model="notificationSchedule[type.key]"
+                        type="time"
+                        label="Hora"
+                        size="sm"
+                        class="w-28"
+                        :disabled="!canEdit"
+                      />
+                      <NxSwitch v-model="notificationPrefs[type.key]" :disabled="!canEdit" />
+                    </div>
                   </div>
                 </div>
 
