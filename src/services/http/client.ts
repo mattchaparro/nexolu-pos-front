@@ -1,6 +1,7 @@
 import axios from 'axios'
 
 import router from '@/router'
+import { useAuthStore } from '@/stores/auth.store'
 import { useFlashStore } from '@/stores/flash.store'
 
 import { tokenStorage } from './tokenStorage'
@@ -35,7 +36,14 @@ httpClient.interceptors.response.use(
     const onLogin = router.currentRoute.value.name === 'login'
 
     if (status === 401 && !onLogin) {
-      tokenStorage.clear()
+      // clearSession() (no solo tokenStorage.clear()) es necesario: el guard
+      // de router/index.ts redirige de vuelta a home si to.name === 'login'
+      // y auth.isAuthenticated es true, e isAuthenticated se calcula del
+      // token en memoria del store de Pinia, no de localStorage - limpiar
+      // solo el storage dejaba el store todavia "autenticado" y el push a
+      // login rebotaba de inmediato, sin sacar al usuario (bug reportado:
+      // la alerta aparecia pero la app seguia navegable como logueado).
+      useAuthStore().clearSession()
       useFlashStore().set('Tu sesión expiró. Inicia sesión de nuevo.', 'warn')
       router.push({ name: 'login' })
     } else if (status === 403 && !onLogin) {

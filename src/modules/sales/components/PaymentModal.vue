@@ -387,7 +387,7 @@ function applyClient(client: { id: number; name: string; phone: string | null })
         <NxTabList>
           <NxTab value="single" icon="pi pi-wallet">Pago único</NxTab>
           <NxTab value="multi" icon="pi pi-credit-card">Varios medios</NxTab>
-          <NxTab value="split" icon="pi pi-users">Cuentas divididas</NxTab>
+          <NxTab value="split" icon="pi pi-users">Dividir</NxTab>
           <NxTab v-if="allowPartial" value="partial" icon="pi pi-history">Abonar</NxTab>
         </NxTabList>
         <NxTabPanels>
@@ -539,12 +539,7 @@ function applyClient(client: { id: number; name: string; phone: string | null })
     </div>
 
     <template #footer>
-      <div class="grid grid-cols-4 gap-2">
-        <NxButton variant="outline" class="col-span-1" @click="emit('update:modelValue', false)">
-          Cancelar
-        </NxButton>
-        <NxButton class="col-span-3" :disabled="!canConfirm" :loading="submitting" @click="submitConfirm">Cobrar</NxButton>
-      </div>
+      <NxButton class="w-full" :disabled="!canConfirm" :loading="submitting" @click="submitConfirm">Cobrar</NxButton>
     </template>
   </NxModal>
 </template>

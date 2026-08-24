@@ -354,6 +354,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                 option-label="label"
                 option-value="id"
                 label="Categoría"
+                size="lg"
                 filter
                 class="sm:w-64"
               />
@@ -363,6 +364,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                 option-label="label"
                 option-value="value"
                 label="Estado"
+                size="lg"
                 class="sm:w-48"
                 @update:model-value="onProductFilterSelect"
               />
@@ -601,6 +603,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                 option-label="label"
                 option-value="value"
                 label="Estado"
+                size="lg"
                 class="sm:w-48"
                 @update:model-value="onIngredientFilterSelect"
               />

@@ -121,3 +121,14 @@ const onSubmit = handleSubmit(async (values) => {
     </form>
   </div>
 </template>
+
+<style scoped>
+/* A pedido explicito: los inputs de esta pantalla un poco mas redondeados
+   que el default de NxInput (6px, ver theme/nexoluPreset.ts) - NxInput no
+   expone una prop para variar el border-radius, asi que se apunta por id
+   en vez de sumarle una prop nueva solo para este caso puntual. */
+:deep(#email),
+:deep(#password) {
+  border-radius: 0.75rem;
+}
+</style>
