@@ -7,7 +7,7 @@ import { computed, ref, watch } from 'vue'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import { useAuthStore } from '@/stores/auth.store'
 import type { Expense, FixedExpenseTemplate } from '@/types/expense'
-import { NxButton, NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect, NxSwitch, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs } from '@/ui'
+import { NxButton, NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
 import ExpenseFormModal from '../components/ExpenseFormModal.vue'

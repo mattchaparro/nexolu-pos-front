@@ -260,7 +260,7 @@ async function submitRegistration(): Promise<void> {
   } catch (error) {
     submitError.value = isAxiosError<{ message?: string; errors?: Record<string, string[]> }>(error)
       ? (Object.values(error.response?.data?.errors ?? {})[0]?.[0] ?? error.response?.data?.message)
-      : undefined
+      : null
     submitError.value ??= 'No pudimos crear tu cuenta. Intenta de nuevo.'
   } finally {
     isSubmitting.value = false
