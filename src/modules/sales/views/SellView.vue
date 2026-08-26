@@ -73,7 +73,15 @@ const checkout = useSaleCheckout(
 // no encontrado" (el catalogo todavia vacio, no que el producto ya no
 // exista). Una sola vez: watch con stop() apenas se dispara, no en cada
 // refetch de productsQuery.
-const stopDraftRestore = watch(
+// stopDraftRestore se referencia dentro de su propio callback: con
+// immediate:true, si productsQuery.data.value ya tiene datos al montar, ese
+// callback corre de forma sincrona durante esta misma llamada a watch(),
+// antes de que la asignacion termine (TDZ de const/let -> ReferenceError).
+// Se declara aparte con let (ya inicializada en undefined) y se fuerza el
+// stop despues del watch() para cubrir tambien ese caso sincrono.
+let stopDraftRestore: (() => void) | undefined
+let draftRestoreHandled = false
+stopDraftRestore = watch(
   () => productsQuery.data.value,
   (products) => {
     if (!products || products.length === 0) {
@@ -82,10 +90,14 @@ const stopDraftRestore = watch(
     if (checkout.restoreDraft(products)) {
       notify('Retomamos la venta que tenías en curso')
     }
-    stopDraftRestore()
+    draftRestoreHandled = true
+    stopDraftRestore?.()
   },
   { immediate: true },
 )
+if (draftRestoreHandled) {
+  stopDraftRestore()
+}
 
 // --- Cuentas abiertas/mesas embebidas ---
 // Puerto de SalesTerminal.vue del legacy (prop openTabsEnabled): sin el
