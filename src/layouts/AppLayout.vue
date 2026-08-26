@@ -8,6 +8,7 @@ import { useRouter } from 'vue-router'
 
 import { homeRouteFor } from '@/router'
 import logo from '@/assets/nexolu-logo.png'
+import WelcomeExperienceModal from '@/components/WelcomeExperienceModal.vue'
 import { useNavItems } from '@/composables/useNavItems'
 import { useAuthStore } from '@/stores/auth.store'
 import { NxNavbar, NxSidebar } from '@/ui'
@@ -63,5 +64,6 @@ async function stopImpersonating(): Promise<void> {
         </main>
       </div>
     </div>
+    <WelcomeExperienceModal />
   </div>
 </template>

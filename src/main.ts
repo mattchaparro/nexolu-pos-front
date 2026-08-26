@@ -1,3 +1,13 @@
+// El negocio recien migrado llega aca redirigido desde legacy con
+// ?bienvenida=1 en la URL (ver CheckBusinessMigrationStatus en
+// pos-saas), pero todavia sin sesion en esta SPA - el guard del router
+// manda a /iniciar-sesion, que NO preserva query params, asi que el flag
+// se perderia si no se guarda ahora mismo, antes de cualquier navegacion
+// (ver useWelcomeExperience.ts para donde se consume, ya autenticado).
+import { stashPendingWelcomeFromUrl } from '@/composables/useWelcomeExperience'
+
+stashPendingWelcomeFromUrl()
+
 // Lato self-hosted via @fontsource - igual que el legacy (resources/js
 // no la carga por Google/Bunny Fonts, la empaqueta con @fontsource/lato).
 import '@fontsource/lato/400.css'
