@@ -61,11 +61,13 @@ function marginPctLabel(row: MarginRow): string {
 
 <template>
   <div class="flex flex-col gap-4">
-    <div class="flex flex-wrap items-end gap-3">
-      <NxSelect v-model="categoryId" :options="categoryOptions" option-label="label" option-value="id" label="Categoría" class="w-48" />
-      <NxToggleButton v-model="withSales" label="Con ventas del mes" icon="pi pi-chart-line" />
-      <NxDatePicker v-if="withSales" v-model="month" view="month" date-format="mm/yy" label="Mes" class="w-40" />
-      <NxButton variant="outline" icon="pi pi-download" :loading="exporting" class="ml-auto" @click="exportCsv">Exportar CSV</NxButton>
+    <div class="grid grid-cols-2 items-end gap-3 lg:flex lg:flex-wrap">
+      <NxSelect v-model="categoryId" :options="categoryOptions" option-label="label" option-value="id" label="Categoría" class="col-span-2 lg:w-48" />
+      <NxToggleButton v-model="withSales" label="Con ventas del mes" icon="pi pi-chart-line" class="col-span-2 justify-self-start lg:w-auto" />
+      <NxDatePicker v-if="withSales" v-model="month" view="month" date-format="mm/yy" label="Mes" class="col-span-2 lg:w-40" />
+      <NxButton variant="outline" icon="pi pi-download" :loading="exporting" class="col-span-2 justify-self-end lg:ml-auto" @click="exportCsv">
+        Exportar CSV
+      </NxButton>
     </div>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">

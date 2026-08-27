@@ -127,11 +127,11 @@ async function submitCollect(payload: CloseOpenTabPayload): Promise<void> {
       />
     </div>
 
-    <div class="flex flex-wrap gap-3">
+    <div class="grid grid-cols-2 items-end gap-3 lg:flex lg:flex-wrap">
       <NxInput
         v-model="searchInput"
         label="Buscar por cliente, teléfono o cédula"
-        class="min-w-[220px] flex-1"
+        class="col-span-2 lg:min-w-[220px] lg:flex-1"
         icon="pi pi-search"
         clearable
         blur-after-typing
@@ -142,11 +142,11 @@ async function submitCollect(payload: CloseOpenTabPayload): Promise<void> {
         option-label="label"
         option-value="value"
         label="Estado"
-        class="min-w-[180px]"
+        class="col-span-2 lg:min-w-[180px]"
         @update:model-value="status = $event as ReceivableStatus | ''"
       />
-      <NxDatePicker v-model="dateFrom" label="Desde" class="min-w-[160px]" />
-      <NxDatePicker v-model="dateTo" label="Hasta" class="min-w-[160px]" />
+      <NxDatePicker v-model="dateFrom" label="Desde" class="lg:min-w-[160px]" />
+      <NxDatePicker v-model="dateTo" label="Hasta" class="lg:min-w-[160px]" />
     </div>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">

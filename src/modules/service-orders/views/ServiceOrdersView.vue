@@ -96,19 +96,26 @@ function statusBadgeClass(order: ServiceOrder): string {
       <NxStatCard label="Saldo pendiente" :value="formatCop(summaryQuery.data.value.pending_balance)" icon="pi pi-wallet" />
     </div>
 
-    <div class="flex flex-wrap gap-3">
-      <NxInput v-model="searchInput" label="Buscar por servicio o cliente" class="min-w-[220px] flex-1" icon="pi pi-search" clearable blur-after-typing />
+    <div class="grid grid-cols-2 items-end gap-3 lg:flex lg:flex-wrap">
+      <NxInput
+        v-model="searchInput"
+        label="Buscar por servicio o cliente"
+        class="col-span-2 lg:min-w-[220px] lg:flex-1"
+        icon="pi pi-search"
+        clearable
+        blur-after-typing
+      />
       <NxSelect
         :model-value="status"
         :options="statusOptions"
         option-label="label"
         option-value="value"
         label="Estado"
-        class="min-w-[180px]"
+        class="col-span-2 lg:min-w-[180px]"
         @update:model-value="status = $event as ServiceOrderStatus | ''"
       />
-      <NxDatePicker v-model="dateFrom" label="Desde" class="min-w-[160px]" />
-      <NxDatePicker v-model="dateTo" label="Hasta" class="min-w-[160px]" />
+      <NxDatePicker v-model="dateFrom" label="Desde" class="lg:min-w-[160px]" />
+      <NxDatePicker v-model="dateTo" label="Hasta" class="lg:min-w-[160px]" />
     </div>
 
     <div v-if="hasWorkflow" class="flex flex-wrap gap-2">

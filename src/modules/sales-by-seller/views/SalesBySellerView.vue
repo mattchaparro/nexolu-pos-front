@@ -63,16 +63,14 @@ const totals = computed(() => sellerQuery.data.value?.totals)
   <div class="flex flex-col gap-4 pb-20 lg:pb-0">
     <NxPageHeader title="Ventas por vendedor" icon="pi pi-users" compact />
 
-    <div class="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <NxDatePicker v-model="dateFrom" label="Desde" class="w-40" />
-      <NxDatePicker v-model="dateTo" label="Hasta" class="w-40" />
-      <button type="button" class="h-9 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50" @click="setToday">
-        Hoy
-      </button>
-      <button type="button" class="h-9 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50" @click="setLast7Days">
-        Últimos 7 días
-      </button>
-      <NxButton variant="outline" icon="pi pi-download" :loading="exporting" class="ml-auto" @click="exportCsv">Exportar CSV</NxButton>
+    <div class="grid grid-cols-2 items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:flex lg:flex-wrap">
+      <NxDatePicker v-model="dateFrom" label="Desde" class="w-full lg:w-40" />
+      <NxDatePicker v-model="dateTo" label="Hasta" class="w-full lg:w-40" />
+      <NxButton variant="outline" class="w-full lg:w-auto" @click="setToday">Hoy</NxButton>
+      <NxButton variant="outline" class="w-full lg:w-auto" @click="setLast7Days">Últimos 7 días</NxButton>
+      <NxButton variant="outline" icon="pi pi-download" :loading="exporting" class="col-span-2 justify-self-end lg:ml-auto" @click="exportCsv">
+        Exportar CSV
+      </NxButton>
     </div>
 
     <div v-if="totals" class="grid grid-cols-2 gap-3 lg:grid-cols-4">

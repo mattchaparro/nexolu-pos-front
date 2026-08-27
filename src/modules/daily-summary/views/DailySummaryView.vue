@@ -286,30 +286,18 @@ function openReceipt(row: TransactionRow): void {
       <h1 class="text-lg font-bold text-slate-900">Resumen del día</h1>
     </div>
 
-    <div class="flex flex-wrap items-end justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div class="flex flex-wrap items-end gap-3">
-        <NxDatePicker v-model="dateFrom" label="Desde" class="w-40" />
-        <NxDatePicker v-model="dateTo" label="Hasta" class="w-40" />
-        <div class="flex gap-2">
-          <button type="button" class="h-10 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50" @click="setToday">
-            Hoy
-          </button>
-          <button
-            type="button"
-            class="h-10 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
-            @click="setLast7Days"
-          >
-            Últimos 7 días
-          </button>
-        </div>
-      </div>
+    <div class="grid grid-cols-2 items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:flex lg:flex-wrap">
+      <NxDatePicker v-model="dateFrom" label="Desde" class="w-full lg:w-40" />
+      <NxDatePicker v-model="dateTo" label="Hasta" class="w-full lg:w-40" />
+      <NxButton variant="outline" class="w-full lg:w-auto" @click="setToday">Hoy</NxButton>
+      <NxButton variant="outline" class="w-full lg:w-auto" @click="setLast7Days">Últimos 7 días</NxButton>
       <NxSelect
         v-model="paymentMethodFilter"
         :options="paymentMethodOptions"
         option-label="label"
         option-value="id"
         label="Medio de pago"
-        class="w-56"
+        class="col-span-2 lg:w-56"
       />
     </div>
 

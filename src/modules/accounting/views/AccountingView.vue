@@ -74,8 +74,8 @@ const productProfit = computed(() => monthlyQuery.data.value?.product_profit_lin
     <div class="flex flex-wrap items-center justify-between gap-3">
       <NxPageHeader title="Contabilidad gerencial" icon="pi pi-calculator" compact />
       <div class="flex gap-3">
-        <NxSelect v-model="month" :options="monthOptions" option-label="label" option-value="value" size="sm" class="w-40" />
-        <NxSelect v-model="year" :options="yearOptions" option-label="label" option-value="value" size="sm" class="w-28" />
+        <NxSelect v-model="month" :options="monthOptions" option-label="label" option-value="value" class="w-40" />
+        <NxSelect v-model="year" :options="yearOptions" option-label="label" option-value="value" class="w-28" />
       </div>
     </div>
 

@@ -186,32 +186,30 @@ async function removeTemplate(template: FixedExpenseTemplate): Promise<void> {
         <NxTabPanel value="0">
           <div class="flex flex-col gap-4 pt-3">
             <!-- Filtros de período -->
-            <div class="flex flex-wrap items-end gap-2">
-              <div class="flex gap-2">
-                <NxSelect
-                  v-model="month"
-                  label="Mes"
-                  :options="MONTH_OPTIONS"
-                  option-label="label"
-                  option-value="value"
-                  class="w-28"
-                />
-                <NxSelect
-                  v-model="year"
-                  label="Año"
-                  :options="yearOptions"
-                  option-label="label"
-                  option-value="value"
-                  class="w-24"
-                />
-              </div>
+            <div class="grid grid-cols-2 items-end gap-2 lg:flex lg:flex-wrap">
+              <NxSelect
+                v-model="month"
+                label="Mes"
+                :options="MONTH_OPTIONS"
+                option-label="label"
+                option-value="value"
+                class="lg:w-28"
+              />
+              <NxSelect
+                v-model="year"
+                label="Año"
+                :options="yearOptions"
+                option-label="label"
+                option-value="value"
+                class="lg:w-24"
+              />
               <NxSelect
                 v-model="typeIdFilter"
                 label="Tipo"
                 :options="typeFilterOptions"
                 option-label="label"
                 option-value="value"
-                class="min-w-40 flex-1"
+                class="lg:min-w-40 lg:flex-1"
               />
               <NxInput
                 v-model="searchInput"
@@ -219,7 +217,7 @@ async function removeTemplate(template: FixedExpenseTemplate): Promise<void> {
                 icon="pi pi-search"
                 clearable
                 blur-after-typing
-                class="flex-1"
+                class="lg:flex-1"
               />
             </div>
 

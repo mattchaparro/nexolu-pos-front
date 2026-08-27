@@ -151,26 +151,28 @@ async function exportCsv(): Promise<void> {
   <div class="flex flex-col gap-4 pb-20 lg:pb-0">
     <NxPageHeader title="Historial de ventas" icon="pi pi-receipt" compact />
 
-    <div class="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <NxDatePicker v-model="dateFrom" label="Desde" class="w-40" />
-      <NxDatePicker v-model="dateTo" label="Hasta" class="w-40" />
-      <button type="button" class="h-10 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50" @click="setToday">
-        Hoy
-      </button>
-      <button type="button" class="h-10 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50" @click="setLast7Days">
-        Últimos 7 días
-      </button>
-      <NxSelect v-model="status" :options="statusOptions" option-label="label" option-value="id" label="Estado" class="w-40" />
+    <div class="grid grid-cols-2 items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:flex lg:flex-wrap">
+      <NxDatePicker v-model="dateFrom" label="Desde" class="w-full lg:w-40" />
+      <NxDatePicker v-model="dateTo" label="Hasta" class="w-full lg:w-40" />
+      <NxButton variant="outline" class="w-full lg:w-auto" @click="setToday">Hoy</NxButton>
+      <NxButton variant="outline" class="w-full lg:w-auto" @click="setLast7Days">Últimos 7 días</NxButton>
+      <NxSelect v-model="status" :options="statusOptions" option-label="label" option-value="id" label="Estado" class="w-full lg:w-40" />
       <NxSelect
         v-model="paymentMethod"
         :options="paymentMethodOptions"
         option-label="label"
         option-value="id"
         label="Medio de pago"
-        class="w-48"
+        class="w-full lg:w-48"
       />
-      <NxInput v-model="searchInput" label="Buscar factura, cliente, teléfono o producto" class="min-w-[220px] flex-1" icon="pi pi-search" clearable />
-      <NxButton variant="outline" icon="pi pi-download" :loading="exporting" @click="exportCsv">Exportar CSV</NxButton>
+      <NxInput
+        v-model="searchInput"
+        label="Buscar factura, cliente, teléfono o producto"
+        class="col-span-2 lg:min-w-[220px] lg:flex-1"
+        icon="pi pi-search"
+        clearable
+      />
+      <NxButton variant="outline" icon="pi pi-download" :loading="exporting" class="col-span-2 justify-self-end" @click="exportCsv">Exportar CSV</NxButton>
     </div>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">

@@ -94,21 +94,23 @@ async function exportCsv(): Promise<void> {
 
 <template>
   <div class="flex flex-col gap-4">
-    <div class="flex flex-wrap items-end gap-3">
-      <NxDatePicker v-model="dateFrom" label="Desde" class="w-40" />
-      <NxDatePicker v-model="dateTo" label="Hasta" class="w-40" />
-      <NxSelect v-model="type" :options="typeOptions" option-label="label" option-value="id" label="Tipo" class="w-40" />
-      <NxSelect v-model="reasonId" :options="reasonOptions" option-label="label" option-value="id" label="Razón" class="w-44" />
-      <NxSelect v-model="productId" :options="productSelectOptions" option-label="label" option-value="id" label="Producto" class="w-48" />
+    <div class="grid grid-cols-2 items-end gap-3 lg:flex lg:flex-wrap">
+      <NxDatePicker v-model="dateFrom" label="Desde" class="w-full lg:w-40" />
+      <NxDatePicker v-model="dateTo" label="Hasta" class="w-full lg:w-40" />
+      <NxSelect v-model="type" :options="typeOptions" option-label="label" option-value="id" label="Tipo" class="w-full lg:w-40" />
+      <NxSelect v-model="reasonId" :options="reasonOptions" option-label="label" option-value="id" label="Razón" class="w-full lg:w-44" />
+      <NxSelect v-model="productId" :options="productSelectOptions" option-label="label" option-value="id" label="Producto" class="w-full lg:w-48" />
       <NxSelect
         v-model="ingredientId"
         :options="ingredientSelectOptions"
         option-label="label"
         option-value="id"
         label="Insumo"
-        class="w-48"
+        class="w-full lg:w-48"
       />
-      <NxButton variant="outline" icon="pi pi-download" :loading="exporting" class="ml-auto" @click="exportCsv">Exportar CSV</NxButton>
+      <NxButton variant="outline" icon="pi pi-download" :loading="exporting" class="col-span-2 justify-self-end lg:ml-auto" @click="exportCsv">
+        Exportar CSV
+      </NxButton>
     </div>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
