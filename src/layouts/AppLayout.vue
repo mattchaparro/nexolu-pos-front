@@ -4,6 +4,7 @@
 // (impersonacion, stock bajo, turno vencido, suscripcion, anuncios) solo
 // el de impersonacion existe aca (ver ImpersonateController en la API) -
 // los demas quedan para cuando existan esos modulos.
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { homeRouteFor } from '@/router'
@@ -16,6 +17,11 @@ import { NxNavbar, NxSidebar } from '@/ui'
 const auth = useAuthStore()
 const router = useRouter()
 const navItems = useNavItems()
+// Ajustes y Mi suscripcion solo tienen sentido para quien administra el
+// negocio (mismo gate que ya tenian sus rutas via requiresAdmin, ver
+// router/index.ts) - ahora viven en el dropdown de perfil en vez del menu
+// lateral (ver NxNavbar.vue).
+const isAdmin = computed(() => auth.user?.roles?.includes('admin') === true)
 
 async function handleLogout(): Promise<void> {
   await auth.logout()
@@ -40,7 +46,14 @@ async function stopImpersonating(): Promise<void> {
     <div class="flex min-h-0 flex-1">
       <NxSidebar :items="navItems" :logo="logo" />
       <div class="flex min-w-0 flex-1 flex-col">
-        <NxNavbar :logo="logo" :user-name="auth.user?.full_name ?? ''" @logout="handleLogout">
+        <NxNavbar
+          :logo="logo"
+          :user-name="auth.user?.full_name ?? ''"
+          show-profile-link
+          :show-settings-link="isAdmin"
+          :show-subscription-link="isAdmin"
+          @logout="handleLogout"
+        >
           <template #actions>
             <RouterLink
               v-if="auth.user?.roles?.includes('superadmin')"
@@ -49,13 +62,6 @@ async function stopImpersonating(): Promise<void> {
             >
               <i class="pi pi-shield" />
               Panel Super Admin
-            </RouterLink>
-            <RouterLink
-              :to="{ name: 'profile.index' }"
-              class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/10 hover:text-white"
-            >
-              <i class="pi pi-user" />
-              Mi perfil
             </RouterLink>
           </template>
         </NxNavbar>

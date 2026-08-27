@@ -5,6 +5,12 @@ import type { NavItem } from '@/types/navigation'
 // todavia no migrado) para que el menu se vea completo y familiar sin
 // enlazar a rutas que no existen. Ir habilitando a medida que cada
 // modulo se construya.
+//
+// Dos desviaciones explicitas del orden 1:1, ambas a pedido: "Resumen" vive
+// junto a "Vender" (ver nota abajo), y "Ajustes"/"Mi suscripcion" NO estan
+// en esta lista - viven en el dropdown de perfil de la navbar en vez del
+// menu lateral (ver NxNavbar.vue / AppLayout.vue), para sacar del menu
+// principal lo que es configuracion de cuenta, no un modulo del dia a dia.
 export const adminNavItems: NavItem[] = [
   { label: 'Inicio', icon: 'pi pi-home', routeName: 'dashboard' },
   { label: 'Asistente IA', icon: 'pi pi-comments', disabled: true },
@@ -38,8 +44,6 @@ export const adminNavItems: NavItem[] = [
   // de router/index.ts.
   { label: 'Usuarios', icon: 'pi pi-users', routeName: 'employees.index' },
   { label: 'Auditoría', icon: 'pi pi-history', routeName: 'audit-logs.index', featureKey: 'audit_logs' },
-  { label: 'Ajustes', icon: 'pi pi-cog', routeName: 'business-settings.index' },
-  { label: 'Mi suscripción', icon: 'pi pi-credit-card', routeName: 'subscription.index' },
   { label: 'Mi negocio', icon: 'pi pi-building', routeName: 'business-overview.index' },
 ]
 
