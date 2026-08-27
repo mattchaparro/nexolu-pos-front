@@ -8,7 +8,7 @@ import { computed, ref, watch } from 'vue'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { NamedOption, ReasonOption, StockMovementRow } from '@/types/inventoryReport'
-import { NxButton, NxColumn, NxDataTable, NxInput, NxSelect } from '@/ui'
+import { NxButton, NxColumn, NxDataTable, NxDatePicker, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
@@ -95,18 +95,17 @@ async function exportCsv(): Promise<void> {
 <template>
   <div class="flex flex-col gap-4">
     <div class="flex flex-wrap items-end gap-3">
-      <NxInput v-model="dateFrom" type="date" label="Desde" size="sm" class="w-40" />
-      <NxInput v-model="dateTo" type="date" label="Hasta" size="sm" class="w-40" />
-      <NxSelect v-model="type" :options="typeOptions" option-label="label" option-value="id" label="Tipo" size="sm" class="w-40" />
-      <NxSelect v-model="reasonId" :options="reasonOptions" option-label="label" option-value="id" label="Razón" size="sm" class="w-44" />
-      <NxSelect v-model="productId" :options="productSelectOptions" option-label="label" option-value="id" label="Producto" size="sm" class="w-48" />
+      <NxDatePicker v-model="dateFrom" label="Desde" class="w-40" />
+      <NxDatePicker v-model="dateTo" label="Hasta" class="w-40" />
+      <NxSelect v-model="type" :options="typeOptions" option-label="label" option-value="id" label="Tipo" class="w-40" />
+      <NxSelect v-model="reasonId" :options="reasonOptions" option-label="label" option-value="id" label="Razón" class="w-44" />
+      <NxSelect v-model="productId" :options="productSelectOptions" option-label="label" option-value="id" label="Producto" class="w-48" />
       <NxSelect
         v-model="ingredientId"
         :options="ingredientSelectOptions"
         option-label="label"
         option-value="id"
         label="Insumo"
-        size="sm"
         class="w-48"
       />
       <NxButton variant="outline" icon="pi pi-download" :loading="exporting" class="ml-auto" @click="exportCsv">Exportar CSV</NxButton>

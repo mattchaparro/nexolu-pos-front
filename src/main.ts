@@ -51,6 +51,39 @@ initSentry(app, router)
 app.use(PrimeVue, {
   theme: { preset: nexoluPreset, options: { darkModeSelector: false } },
   license: import.meta.env.VITE_PRIMEVUE_LICENSE_KEY,
+  // Sin esto, componentes con texto propio (DatePicker: nombres de mes/dia,
+  // "Hoy"/"Limpiar"; Select: mensajes vacios) salen en ingles por defecto -
+  // toda la app es en espanol.
+  locale: {
+    monthNames: [
+      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+    ],
+    monthNamesShort: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
+    dayNames: ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'],
+    dayNamesShort: ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'],
+    dayNamesMin: ['D', 'L', 'M', 'X', 'J', 'V', 'S'],
+    today: 'Hoy',
+    clear: 'Limpiar',
+    weekHeader: 'Sem',
+    firstDayOfWeek: 1,
+    emptyMessage: 'Sin resultados',
+    emptyFilterMessage: 'Sin resultados',
+    // Aria-labels de navegacion del DatePicker (mes/año anterior-siguiente,
+    // selector de mes/año) - sin esto salen en ingles aunque el calendario
+    // visible ya este en espanol.
+    chooseYear: 'Elegir año',
+    chooseMonth: 'Elegir mes',
+    chooseDate: 'Elegir fecha',
+    prevDecade: 'Década anterior',
+    nextDecade: 'Década siguiente',
+    prevYear: 'Año anterior',
+    nextYear: 'Año siguiente',
+    prevMonth: 'Mes anterior',
+    nextMonth: 'Mes siguiente',
+    am: 'a. m.',
+    pm: 'p. m.',
+  },
 })
 app.use(VueQueryPlugin, { queryClient })
 // Servicio de alertas de acciones del sistema (ver src/ui/NxToast.vue +

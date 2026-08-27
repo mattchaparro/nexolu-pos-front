@@ -10,7 +10,7 @@ import { useBusiness } from '@/composables/useBusiness'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import { useIngredientOptions } from '@/modules/catalog/composables/useIngredientOptions'
 import type { PurchaseLineInput, PurchasePayload } from '@/types/purchase'
-import { NxButton, NxInput, NxPageHeader, NxSelect, NxTextarea, NxToggleButton } from '@/ui'
+import { NxButton, NxDatePicker, NxInput, NxPageHeader, NxSelect, NxTextarea, NxToggleButton } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 import { isCreditPaymentMethodId } from '@/utils/paymentMethod'
@@ -132,7 +132,7 @@ async function submit(): Promise<void> {
             filter
             @update:model-value="supplierId = $event as number | null"
           />
-          <NxInput v-model="purchasedAt" type="date" label="Fecha de compra" required :error="fieldErrors.purchased_at" />
+          <NxDatePicker v-model="purchasedAt" label="Fecha de compra" required :error="fieldErrors.purchased_at" />
           <NxInput v-model="invoiceNumber" label="Factura (opcional)" :error="fieldErrors.invoice_number" />
           <NxTextarea v-model="notes" label="Notas (opcional)" :rows="1" class="sm:col-span-2" />
         </div>
@@ -157,7 +157,7 @@ async function submit(): Promise<void> {
 
         <div v-if="isCredit" class="flex flex-col gap-3 rounded-xl border border-indigo-200 bg-indigo-50/50 p-4">
           <p class="text-sm font-medium text-slate-700">¿Quieres que te recuerde el pago? (opcional)</p>
-          <NxInput v-model="paymentReminderDate" type="date" label="Fecha del recordatorio" />
+          <NxDatePicker v-model="paymentReminderDate" label="Fecha del recordatorio" />
           <NxSelect
             v-if="paymentReminderDate"
             :model-value="paymentReminderRecurrence"
@@ -171,10 +171,9 @@ async function submit(): Promise<void> {
             label="Se repite"
             @update:model-value="paymentReminderRecurrence = $event as 'none' | 'weekly' | 'monthly'"
           />
-          <NxInput
+          <NxDatePicker
             v-if="paymentReminderDate && paymentReminderRecurrence !== 'none'"
             v-model="paymentReminderEndDate"
-            type="date"
             label="Repetir hasta (opcional)"
           />
         </div>

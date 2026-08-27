@@ -3,7 +3,7 @@ import { ref, watch } from 'vue'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { Reminder } from '@/types/reminder'
-import { NxButton, NxInput, NxModal } from '@/ui'
+import { NxButton, NxDatePicker, NxModal } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
@@ -86,7 +86,7 @@ async function submit(): Promise<void> {
         </button>
       </div>
 
-      <NxInput v-model="newDate" label="Nueva fecha" type="date" required />
+      <NxDatePicker v-model="newDate" label="Nueva fecha" required />
     </div>
 
     <template #footer>

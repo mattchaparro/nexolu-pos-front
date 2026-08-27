@@ -83,8 +83,8 @@ function formatQty(value: number): string {
       <div class="flex flex-wrap items-end justify-between gap-3">
         <h2 class="text-sm font-semibold text-slate-700">Reporte del mes</h2>
         <div class="flex gap-3">
-          <NxSelect v-model="month" :options="monthOptions" option-label="label" option-value="value" size="sm" class="w-40" />
-          <NxSelect v-model="year" :options="yearOptions" option-label="label" option-value="value" size="sm" class="w-28" />
+          <NxSelect v-model="month" :options="monthOptions" option-label="label" option-value="value" class="w-40" />
+          <NxSelect v-model="year" :options="yearOptions" option-label="label" option-value="value" class="w-28" />
         </div>
       </div>
 

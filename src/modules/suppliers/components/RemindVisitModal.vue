@@ -8,7 +8,7 @@ import { computed, ref, watch } from 'vue'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { Supplier, SupplierReminderRecurrence } from '@/types/supplier'
-import { NxButton, NxInput, NxModal, NxSelect } from '@/ui'
+import { NxButton, NxDatePicker, NxModal, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
@@ -82,7 +82,7 @@ async function submit(): Promise<void> {
     <div class="flex flex-col gap-3">
       <p v-if="formError" class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{{ formError }}</p>
 
-      <NxInput v-model="dueDate" type="date" label="Fecha" required />
+      <NxDatePicker v-model="dueDate" label="Fecha" required />
       <NxSelect
         :model-value="recurrence"
         :options="RECURRENCE_OPTIONS"
@@ -91,7 +91,7 @@ async function submit(): Promise<void> {
         label="Se repite"
         @update:model-value="recurrence = $event as SupplierReminderRecurrence"
       />
-      <NxInput v-if="showEndDate" v-model="endDate" type="date" label="Repetir hasta (opcional)" />
+      <NxDatePicker v-if="showEndDate" v-model="endDate" label="Repetir hasta (opcional)" />
     </div>
 
     <template #footer>

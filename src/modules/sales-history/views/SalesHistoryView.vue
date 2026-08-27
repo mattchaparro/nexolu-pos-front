@@ -12,7 +12,7 @@ import { useSystemAlert } from '@/composables/useSystemAlert'
 import { useOpenTabMutations } from '@/modules/open-tabs/composables/useOpenTabMutations'
 import { useSaleMutations } from '@/modules/sales/composables/useSaleMutations'
 import type { SaleHistoryRow } from '@/types/salesHistory'
-import { NxButton, NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect } from '@/ui'
+import { NxButton, NxColumn, NxDataTable, NxDatePicker, NxInput, NxPageHeader, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
@@ -152,25 +152,24 @@ async function exportCsv(): Promise<void> {
     <NxPageHeader title="Historial de ventas" icon="pi pi-receipt" compact />
 
     <div class="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <NxInput v-model="dateFrom" type="date" label="Desde" size="sm" class="w-40" />
-      <NxInput v-model="dateTo" type="date" label="Hasta" size="sm" class="w-40" />
-      <button type="button" class="h-9 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50" @click="setToday">
+      <NxDatePicker v-model="dateFrom" label="Desde" class="w-40" />
+      <NxDatePicker v-model="dateTo" label="Hasta" class="w-40" />
+      <button type="button" class="h-10 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50" @click="setToday">
         Hoy
       </button>
-      <button type="button" class="h-9 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50" @click="setLast7Days">
+      <button type="button" class="h-10 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50" @click="setLast7Days">
         Últimos 7 días
       </button>
-      <NxSelect v-model="status" :options="statusOptions" option-label="label" option-value="id" label="Estado" size="sm" class="w-40" />
+      <NxSelect v-model="status" :options="statusOptions" option-label="label" option-value="id" label="Estado" class="w-40" />
       <NxSelect
         v-model="paymentMethod"
         :options="paymentMethodOptions"
         option-label="label"
         option-value="id"
         label="Medio de pago"
-        size="sm"
         class="w-48"
       />
-      <NxInput v-model="searchInput" label="Buscar factura, cliente, teléfono o producto" class="min-w-[220px] flex-1" icon="pi pi-search" clearable size="sm" />
+      <NxInput v-model="searchInput" label="Buscar factura, cliente, teléfono o producto" class="min-w-[220px] flex-1" icon="pi pi-search" clearable />
       <NxButton variant="outline" icon="pi pi-download" :loading="exporting" @click="exportCsv">Exportar CSV</NxButton>
     </div>
 

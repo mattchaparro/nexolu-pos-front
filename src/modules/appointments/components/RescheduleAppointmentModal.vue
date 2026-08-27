@@ -6,7 +6,7 @@ import { computed, ref, watch } from 'vue'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { Appointment } from '@/types/appointment'
-import { NxButton, NxInput, NxModal, NxSelect } from '@/ui'
+import { NxButton, NxDatePicker, NxInput, NxModal, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
 import { useAppointmentMutations } from '../composables/useAppointmentMutations'
@@ -70,7 +70,7 @@ async function submit(): Promise<void> {
     <div class="flex flex-col gap-4">
       <p v-if="formError" class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{{ formError }}</p>
       <div class="grid grid-cols-3 gap-3">
-        <NxInput v-model="dateValue" type="date" label="Fecha" required />
+        <NxDatePicker v-model="dateValue" label="Fecha" required />
         <NxInput v-model="timeValue" type="time" label="Hora" required />
         <NxSelect
           :model-value="durationMinutes"

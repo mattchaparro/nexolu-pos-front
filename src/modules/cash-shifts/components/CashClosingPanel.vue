@@ -8,7 +8,7 @@
 import { computed, ref, watch } from 'vue'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
-import { NxButton, NxInputNumber } from '@/ui'
+import { NxButton, NxDatePicker, NxInputNumber } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
@@ -115,10 +115,7 @@ async function submit(): Promise<void> {
     />
 
     <div class="flex items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <label class="flex flex-col gap-1 text-sm">
-        <span class="font-medium text-slate-600">Fecha a cerrar</span>
-        <input v-model="selectedDate" type="date" :max="toLocalDateIso()" class="h-9 rounded-lg border border-slate-300 px-3 text-sm" />
-      </label>
+      <NxDatePicker v-model="selectedDate" label="Fecha a cerrar" :max-date="toLocalDateIso()" class="w-40" />
     </div>
 
     <div v-if="previewQuery.isPending.value" class="h-64 animate-pulse rounded-xl bg-slate-100" />

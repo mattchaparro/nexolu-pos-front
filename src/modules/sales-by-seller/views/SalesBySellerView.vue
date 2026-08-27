@@ -6,7 +6,7 @@ import { computed, ref } from 'vue'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { SellerSummary } from '@/types/salesBySeller'
-import { NxButton, NxColumn, NxDataTable, NxInput, NxPageHeader, NxStatCard } from '@/ui'
+import { NxButton, NxColumn, NxDataTable, NxDatePicker, NxPageHeader, NxStatCard } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
@@ -64,8 +64,8 @@ const totals = computed(() => sellerQuery.data.value?.totals)
     <NxPageHeader title="Ventas por vendedor" icon="pi pi-users" compact />
 
     <div class="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <NxInput v-model="dateFrom" type="date" label="Desde" size="sm" class="w-40" />
-      <NxInput v-model="dateTo" type="date" label="Hasta" size="sm" class="w-40" />
+      <NxDatePicker v-model="dateFrom" label="Desde" class="w-40" />
+      <NxDatePicker v-model="dateTo" label="Hasta" class="w-40" />
       <button type="button" class="h-9 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50" @click="setToday">
         Hoy
       </button>

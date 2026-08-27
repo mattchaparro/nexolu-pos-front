@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
-import { NxButton, NxInput, NxModal, NxSelect, NxSwitch, NxTextarea } from '@/ui'
+import { NxButton, NxDatePicker, NxInput, NxModal, NxSelect, NxSwitch, NxTextarea } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
@@ -106,10 +106,9 @@ async function submit(): Promise<void> {
 
       <NxInput v-model="title" label="Título" required :error="fieldErrors.title" />
 
-      <NxInput
+      <NxDatePicker
         v-model="dueDate"
         label="Fecha"
-        type="date"
         required
         :error="fieldErrors.due_date"
       />
@@ -131,11 +130,10 @@ async function submit(): Promise<void> {
         option-value="value"
       />
 
-      <NxInput
+      <NxDatePicker
         v-if="recurrence !== 'none'"
         v-model="endDate"
         label="Fecha de fin (opcional)"
-        type="date"
         :error="fieldErrors.end_date"
       />
 

@@ -9,7 +9,7 @@ import { useRouter } from 'vue-router'
 import StageBadge from '@/components/StageBadge.vue'
 import { useServiceWorkflow } from '@/composables/useServiceWorkflow'
 import type { ServiceOrder, ServiceOrderStatus } from '@/types/serviceOrder'
-import { NxButton, NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect, NxStatCard } from '@/ui'
+import { NxButton, NxColumn, NxDataTable, NxDatePicker, NxInput, NxPageHeader, NxSelect, NxStatCard } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
 import PayServiceOrderModal from '../components/PayServiceOrderModal.vue'
@@ -107,8 +107,8 @@ function statusBadgeClass(order: ServiceOrder): string {
         class="min-w-[180px]"
         @update:model-value="status = $event as ServiceOrderStatus | ''"
       />
-      <NxInput v-model="dateFrom" type="date" label="Desde" class="min-w-[160px]" />
-      <NxInput v-model="dateTo" type="date" label="Hasta" class="min-w-[160px]" />
+      <NxDatePicker v-model="dateFrom" label="Desde" class="min-w-[160px]" />
+      <NxDatePicker v-model="dateTo" label="Hasta" class="min-w-[160px]" />
     </div>
 
     <div v-if="hasWorkflow" class="flex flex-wrap gap-2">

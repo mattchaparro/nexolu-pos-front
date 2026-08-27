@@ -16,7 +16,7 @@ import { useLayawayMutations } from '@/modules/layaways/composables/useLayawayMu
 import { useServiceOrderMutations } from '@/modules/service-orders/composables/useServiceOrderMutations'
 import { useSaleMutations } from '@/modules/sales/composables/useSaleMutations'
 import type { IncomeChannel, RecentLayaway, RecentReceivable, RecentSale, RecentServiceOrder } from '@/types/dailySummary'
-import { NxButton, NxInput, NxSelect, NxStatCard, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs, NxToggleButton } from '@/ui'
+import { NxButton, NxDatePicker, NxSelect, NxStatCard, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs, NxToggleButton } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
@@ -288,15 +288,15 @@ function openReceipt(row: TransactionRow): void {
 
     <div class="flex flex-wrap items-end justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div class="flex flex-wrap items-end gap-3">
-        <NxInput v-model="dateFrom" type="date" label="Desde" size="sm" class="w-40" />
-        <NxInput v-model="dateTo" type="date" label="Hasta" size="sm" class="w-40" />
+        <NxDatePicker v-model="dateFrom" label="Desde" class="w-40" />
+        <NxDatePicker v-model="dateTo" label="Hasta" class="w-40" />
         <div class="flex gap-2">
-          <button type="button" class="h-9 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50" @click="setToday">
+          <button type="button" class="h-10 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50" @click="setToday">
             Hoy
           </button>
           <button
             type="button"
-            class="h-9 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            class="h-10 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
             @click="setLast7Days"
           >
             Últimos 7 días
@@ -309,7 +309,6 @@ function openReceipt(row: TransactionRow): void {
         option-label="label"
         option-value="id"
         label="Medio de pago"
-        size="sm"
         class="w-56"
       />
     </div>

@@ -94,8 +94,21 @@ const primeSize = computed<'small' | 'large' | undefined>(() => {
 
 // font-size fijo en 16px pase lo que pase el size: por debajo de eso Safari
 // en iOS hace zoom automatico al enfocar el input (ver nota historica en
-// git blame), y el tema de Aura si varia el font-size por tamaño.
-const fontSizeStyle = { fontSize: '16px' }
+// git blame), y el tema de Aura si varia el font-size por tamaño (sm 12px,
+// md 14px, lg 16px - ver nexoluPreset/tokens de Aura).
+//
+// Forzar solo el font-size sin tocar el line-height infla la altura del
+// campo: el line-height por defecto es 1.5x el font-size, asi que a 16px
+// (en vez del 12/14 nativos de sm/md) el campo queda 3-6px mas alto que sus
+// vecinos NxSelect/NxDatePicker de la misma fila (que no tienen este hack).
+// Fijar el line-height al valor que le correspondia al font-size nativo del
+// size (antes del override) mantiene la altura igual a la de esos vecinos
+// sin perder la proteccion contra el zoom de iOS.
+const nativeFontSizePx: Record<NxInputSize, number> = { sm: 12, md: 14, lg: 16 }
+const fontSizeStyle = computed(() => ({
+  fontSize: '16px',
+  lineHeight: `${nativeFontSizePx[props.size] * 1.5}px`,
+}))
 
 // Con label, el label flotante hace de placeholder (queda centrado hasta
 // foco/valor) - pasar los dos a la vez deja el label "flotado" fijo desde

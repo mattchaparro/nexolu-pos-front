@@ -12,7 +12,7 @@ import { useStaffOptions } from '@/composables/useStaffOptions'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { Appointment, AppointmentPayload, AppointmentServiceLineInput } from '@/types/appointment'
 import type { Business } from '@/types/business'
-import { NxButton, NxInput, NxInputNumber, NxModal, NxSelect, NxTextarea, NxToggleButton } from '@/ui'
+import { NxButton, NxDatePicker, NxInput, NxInputNumber, NxModal, NxSelect, NxTextarea, NxToggleButton } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 import { formatCop } from '@/utils/formatCop'
@@ -327,7 +327,7 @@ async function submit(): Promise<void> {
       />
 
       <div class="grid grid-cols-3 gap-3">
-        <NxInput v-model="dateValue" type="date" label="Fecha" required :error="fieldErrors.starts_at" />
+        <NxDatePicker v-model="dateValue" label="Fecha" required :error="fieldErrors.starts_at" />
         <NxInput v-model="timeValue" type="time" label="Hora" required />
         <NxSelect
           :model-value="durationMinutes"

@@ -8,10 +8,14 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+node_modules.rootowned
 dist
 dist-ssr
 *.local
 .env
+
+# Config local del harness de Claude Code (dev server), no compartido en el repo
+.claude/
 
 # Editor directories and files
 .vscode/*

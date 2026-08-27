@@ -10,7 +10,7 @@ import { useSystemAlert } from '@/composables/useSystemAlert'
 import PaymentModal from '@/modules/sales/components/PaymentModal.vue'
 import type { CloseOpenTabPayload } from '@/modules/open-tabs/types'
 import type { Receivable, ReceivableStatus } from '@/types/receivable'
-import { NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect, NxStatCard } from '@/ui'
+import { NxColumn, NxDataTable, NxDatePicker, NxInput, NxPageHeader, NxSelect, NxStatCard } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 
@@ -145,8 +145,8 @@ async function submitCollect(payload: CloseOpenTabPayload): Promise<void> {
         class="min-w-[180px]"
         @update:model-value="status = $event as ReceivableStatus | ''"
       />
-      <NxInput v-model="dateFrom" type="date" label="Desde" class="min-w-[160px]" />
-      <NxInput v-model="dateTo" type="date" label="Hasta" class="min-w-[160px]" />
+      <NxDatePicker v-model="dateFrom" label="Desde" class="min-w-[160px]" />
+      <NxDatePicker v-model="dateTo" label="Hasta" class="min-w-[160px]" />
     </div>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">

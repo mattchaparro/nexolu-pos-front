@@ -6,7 +6,7 @@ import { computed, ref } from 'vue'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { MarginRow, NamedOption } from '@/types/inventoryReport'
-import { NxButton, NxColumn, NxDataTable, NxInput, NxSelect, NxToggleButton } from '@/ui'
+import { NxButton, NxColumn, NxDataTable, NxDatePicker, NxSelect, NxToggleButton } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
@@ -62,9 +62,9 @@ function marginPctLabel(row: MarginRow): string {
 <template>
   <div class="flex flex-col gap-4">
     <div class="flex flex-wrap items-end gap-3">
-      <NxSelect v-model="categoryId" :options="categoryOptions" option-label="label" option-value="id" label="Categoría" size="sm" class="w-48" />
+      <NxSelect v-model="categoryId" :options="categoryOptions" option-label="label" option-value="id" label="Categoría" class="w-48" />
       <NxToggleButton v-model="withSales" label="Con ventas del mes" icon="pi pi-chart-line" />
-      <NxInput v-if="withSales" v-model="month" type="month" label="Mes" size="sm" class="w-40" />
+      <NxDatePicker v-if="withSales" v-model="month" view="month" date-format="mm/yy" label="Mes" class="w-40" />
       <NxButton variant="outline" icon="pi pi-download" :loading="exporting" class="ml-auto" @click="exportCsv">Exportar CSV</NxButton>
     </div>
 

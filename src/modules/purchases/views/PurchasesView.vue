@@ -5,7 +5,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import type { Purchase, PurchasePaymentStatus } from '@/types/purchase'
-import { NxButton, NxColumn, NxDataTable, NxInput, NxPageHeader } from '@/ui'
+import { NxButton, NxColumn, NxDataTable, NxDatePicker, NxPageHeader } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
 import CatalogHubTabs from '../../catalog/components/CatalogHubTabs.vue'
@@ -49,8 +49,8 @@ function formatDate(value: string): string {
     <CatalogHubTabs />
 
     <div class="flex flex-wrap gap-3">
-      <NxInput v-model="from" type="date" label="Desde" class="min-w-[160px]" />
-      <NxInput v-model="to" type="date" label="Hasta" class="min-w-[160px]" />
+      <NxDatePicker v-model="from" label="Desde" class="min-w-[160px]" />
+      <NxDatePicker v-model="to" label="Hasta" class="min-w-[160px]" />
     </div>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
