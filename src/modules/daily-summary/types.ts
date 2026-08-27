@@ -16,4 +16,5 @@ export interface TransactionRow {
   flags: { label: string; badgeClass: string }[]
   items: SaleItemLine[] | null
   receipt: { type: ReceiptEntityType; id: number; title: string; phone?: string | null } | null
+  reverse: { entityId: number; label: string; confirmText: string } | null
 }

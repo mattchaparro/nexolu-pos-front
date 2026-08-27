@@ -5,11 +5,19 @@
 // medio de pago que ya mezclaba los canales, ver SalesReportService::dailySummary()).
 // El filtro de medio de pago reduce la matriz a una sola columna sin volver
 // a pedir datos al backend: la respuesta ya trae el desglose completo.
+import { useQueryClient } from '@tanstack/vue-query'
 import { computed, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 
 import ReceiptActionsModal from '@/components/ReceiptActionsModal.vue'
+import { usePermissions } from '@/composables/usePermissions'
+import { useSystemAlert } from '@/composables/useSystemAlert'
+import { useLayawayMutations } from '@/modules/layaways/composables/useLayawayMutations'
+import { useServiceOrderMutations } from '@/modules/service-orders/composables/useServiceOrderMutations'
+import { useSaleMutations } from '@/modules/sales/composables/useSaleMutations'
 import type { IncomeChannel, RecentLayaway, RecentReceivable, RecentSale, RecentServiceOrder } from '@/types/dailySummary'
-import { NxInput, NxSelect, NxStatCard, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs, NxToggleButton } from '@/ui'
+import { NxButton, NxInput, NxSelect, NxStatCard, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs, NxToggleButton } from '@/ui'
+import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 
 import TransactionRowItem from '../components/TransactionRowItem.vue'
@@ -26,6 +34,45 @@ const paymentMethodFilter = ref('all')
 const viewMode = ref('0')
 
 const summaryQuery = useDailySummary(dateFrom, dateTo)
+
+const { hasPermission } = usePermissions()
+const canViewSalesHistory = computed(() => hasPermission('reports.sales'))
+const canReverseSales = computed(() => hasPermission('sales.reverse'))
+const canCancelServiceOrders = computed(() => hasPermission('appointments.manage'))
+const canCancelLayaways = computed(() => hasPermission('layaways.manage'))
+
+const { notify } = useSystemAlert()
+const queryClient = useQueryClient()
+const { reverseMutation: reverseSaleMutation } = useSaleMutations()
+const { cancelMutation: cancelServiceOrderMutation } = useServiceOrderMutations()
+const { cancelMutation: cancelLayawayMutation } = useLayawayMutations()
+
+const reversingKey = ref<string | null>(null)
+
+async function onReverse(row: TransactionRow): Promise<void> {
+  if (!row.reverse) {
+    return
+  }
+  if (!window.confirm(row.reverse.confirmText)) {
+    return
+  }
+  reversingKey.value = row.key
+  try {
+    if (row.channelKey === 'sales') {
+      await reverseSaleMutation.mutateAsync(row.reverse.entityId)
+    } else if (row.channelKey === 'services') {
+      await cancelServiceOrderMutation.mutateAsync(row.reverse.entityId)
+    } else if (row.channelKey === 'layaways') {
+      await cancelLayawayMutation.mutateAsync(row.reverse.entityId)
+    }
+    queryClient.invalidateQueries({ queryKey: ['daily-summary'] })
+    notify('Listo, se aplicó la reversión')
+  } catch (error) {
+    notify(extractErrorMessage(error, 'No pudimos completar la reversión.'), 'error')
+  } finally {
+    reversingKey.value = null
+  }
+}
 
 watch(summaryQuery.data, (summary) => {
   const stillValid = summary?.payment_breakdown.some((m) => m.id === paymentMethodFilter.value)
@@ -147,6 +194,9 @@ function saleRow(sale: RecentSale): TransactionRow {
     flags,
     items: sale.items,
     receipt: { type: 'sale', id: sale.id, title: `Comprobante · Venta #${sale.invoice_number ?? sale.id}`, phone: sale.customer_phone },
+    reverse: canReverseSales.value
+      ? { entityId: sale.id, label: 'Reversar', confirmText: 'Se restaurará el stock y la venta se eliminará permanentemente. ¿Continuar?' }
+      : null,
   }
 }
 
@@ -162,6 +212,10 @@ function serviceRow(order: RecentServiceOrder): TransactionRow {
     flags: [],
     items: null,
     receipt: { type: 'service-order', id: order.id, title: `Comprobante · ${order.service_name}` },
+    reverse:
+      canCancelServiceOrders.value && order.status !== 'cancelled'
+        ? { entityId: order.id, label: 'Cancelar', confirmText: '¿Cancelar esta orden de servicio?' }
+        : null,
   }
 }
 
@@ -177,6 +231,10 @@ function layawayRow(layaway: RecentLayaway): TransactionRow {
     flags: [],
     items: null,
     receipt: { type: 'layaway', id: layaway.id, title: `Comprobante · Apartado #${layaway.id}`, phone: layaway.customer_phone },
+    reverse:
+      canCancelLayaways.value && layaway.status !== 'cancelled'
+        ? { entityId: layaway.id, label: 'Cancelar', confirmText: '¿Cancelar este apartado? Se liberará el stock reservado y se reembolsarán los abonos.' }
+        : null,
   }
 }
 
@@ -193,6 +251,7 @@ function receivableRow(receivable: RecentReceivable): TransactionRow {
     items: null,
     // Sin recibo: no existe endpoint de comprobante para fiados en el backend.
     receipt: null,
+    reverse: null,
   }
 }
 
@@ -345,10 +404,23 @@ function openReceipt(row: TransactionRow): void {
 
       <template v-if="linesGrouped">
         <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 class="mb-1 text-sm font-semibold text-slate-700">Ventas <span class="font-normal text-slate-400">({{ salesRows.length }})</span></h3>
+          <div class="mb-1 flex items-center justify-between gap-2">
+            <h3 class="text-sm font-semibold text-slate-700">Ventas <span class="font-normal text-slate-400">({{ salesRows.length }})</span></h3>
+            <RouterLink v-if="canViewSalesHistory" :to="{ name: 'sales-history.index', query: { from: dateFrom, to: dateTo } }">
+              <NxButton size="sm" variant="outline" icon="pi pi-external-link">Ver historial de ventas</NxButton>
+            </RouterLink>
+          </div>
           <p v-if="salesRows.length === 0" class="py-4 text-center text-sm text-slate-400">Sin ventas cerradas en este rango.</p>
           <div v-else class="flex flex-col divide-y divide-slate-100">
-            <TransactionRowItem v-for="row in salesRows" :key="row.key" :row="row" :show-channel="false" @receipt="openReceipt(row)" />
+            <TransactionRowItem
+              v-for="row in salesRows"
+              :key="row.key"
+              :row="row"
+              :show-channel="false"
+              :reversing="reversingKey === row.key"
+              @receipt="openReceipt(row)"
+              @reverse="onReverse(row)"
+            />
           </div>
         </div>
 
@@ -356,7 +428,15 @@ function openReceipt(row: TransactionRow): void {
           <h3 class="mb-1 text-sm font-semibold text-slate-700">Servicios <span class="font-normal text-slate-400">({{ serviceRows.length }})</span></h3>
           <p v-if="serviceRows.length === 0" class="py-4 text-center text-sm text-slate-400">Sin abonos a servicios en este rango.</p>
           <div v-else class="flex flex-col divide-y divide-slate-100">
-            <TransactionRowItem v-for="row in serviceRows" :key="row.key" :row="row" :show-channel="false" @receipt="openReceipt(row)" />
+            <TransactionRowItem
+              v-for="row in serviceRows"
+              :key="row.key"
+              :row="row"
+              :show-channel="false"
+              :reversing="reversingKey === row.key"
+              @receipt="openReceipt(row)"
+              @reverse="onReverse(row)"
+            />
           </div>
         </div>
 
@@ -364,7 +444,15 @@ function openReceipt(row: TransactionRow): void {
           <h3 class="mb-1 text-sm font-semibold text-slate-700">Apartados <span class="font-normal text-slate-400">({{ layawayRows.length }})</span></h3>
           <p v-if="layawayRows.length === 0" class="py-4 text-center text-sm text-slate-400">Sin abonos a apartados en este rango.</p>
           <div v-else class="flex flex-col divide-y divide-slate-100">
-            <TransactionRowItem v-for="row in layawayRows" :key="row.key" :row="row" :show-channel="false" @receipt="openReceipt(row)" />
+            <TransactionRowItem
+              v-for="row in layawayRows"
+              :key="row.key"
+              :row="row"
+              :show-channel="false"
+              :reversing="reversingKey === row.key"
+              @receipt="openReceipt(row)"
+              @reverse="onReverse(row)"
+            />
           </div>
         </div>
 
@@ -382,7 +470,15 @@ function openReceipt(row: TransactionRow): void {
       <div v-else class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <p v-if="allRows.length === 0" class="py-4 text-center text-sm text-slate-400">Sin transacciones en este rango.</p>
         <div v-else class="flex flex-col divide-y divide-slate-100">
-          <TransactionRowItem v-for="row in allRows" :key="row.key" :row="row" :show-channel="true" @receipt="openReceipt(row)" />
+          <TransactionRowItem
+            v-for="row in allRows"
+            :key="row.key"
+            :row="row"
+            :show-channel="true"
+            :reversing="reversingKey === row.key"
+            @receipt="openReceipt(row)"
+            @reverse="onReverse(row)"
+          />
         </div>
       </div>
     </template>

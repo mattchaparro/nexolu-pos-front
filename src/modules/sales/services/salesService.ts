@@ -35,3 +35,10 @@ export async function createSale(payload: CreateSalePayload): Promise<Sale> {
   const { data } = await httpClient.post<Sale>('/sales', payload)
   return data
 }
+
+// Solo ventas cerradas - para cuentas abiertas usar deleteOpenTab (mismo
+// permiso sales.reverse en el backend, pero flujo distinto: OpenTabService,
+// no SaleService).
+export async function reverseSale(saleId: number): Promise<void> {
+  await httpClient.post(`/sales/${saleId}/reverse`)
+}

@@ -11,8 +11,8 @@ import type { TransactionRow } from '../types'
 import { NxButton } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
-defineProps<{ row: TransactionRow; showChannel: boolean }>()
-defineEmits<{ receipt: [] }>()
+defineProps<{ row: TransactionRow; showChannel: boolean; reversing?: boolean }>()
+defineEmits<{ receipt: []; reverse: [] }>()
 
 const expanded = ref(false)
 
@@ -68,6 +68,9 @@ const channelBadgeClass: Record<TransactionRow['channelKey'], string> = {
 
         <span class="text-sm font-semibold text-slate-900">{{ formatCop(row.amount) }}</span>
         <NxButton v-if="row.receipt" size="sm" variant="outline" icon="pi pi-receipt" @click="$emit('receipt')">Comprobante</NxButton>
+        <NxButton v-if="row.reverse" size="sm" variant="outline" icon="pi pi-replay" :loading="reversing" @click="$emit('reverse')">
+          {{ row.reverse.label }}
+        </NxButton>
       </div>
     </div>
 

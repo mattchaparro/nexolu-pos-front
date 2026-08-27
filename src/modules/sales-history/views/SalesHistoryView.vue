@@ -3,9 +3,14 @@
 // Admin/Reports/SalesHistory.vue del legacy (admin.reports.sales). Backend
 // ya existia (SalesReportController::history/historyExport) - solo faltaba
 // esta pantalla.
+import { useQueryClient } from '@tanstack/vue-query'
 import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
+import { usePermissions } from '@/composables/usePermissions'
 import { useSystemAlert } from '@/composables/useSystemAlert'
+import { useOpenTabMutations } from '@/modules/open-tabs/composables/useOpenTabMutations'
+import { useSaleMutations } from '@/modules/sales/composables/useSaleMutations'
 import type { SaleHistoryRow } from '@/types/salesHistory'
 import { NxButton, NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
@@ -18,8 +23,14 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-const dateFrom = ref(todayIso())
-const dateTo = ref(todayIso())
+// from/to en la query: atajo de Resumen del dia, que linkea aca con el
+// rango que el usuario tenia elegido en esa pantalla (ver DailySummaryView.vue).
+const route = useRoute()
+const queryFrom = typeof route.query.from === 'string' ? route.query.from : null
+const queryTo = typeof route.query.to === 'string' ? route.query.to : null
+
+const dateFrom = ref(queryFrom ?? todayIso())
+const dateTo = ref(queryTo ?? todayIso())
 const status = ref('')
 const paymentMethod = ref('')
 const searchInput = ref('')
@@ -87,6 +98,40 @@ function paymentLabel(row: SaleHistoryRow): string {
 const { notify } = useSystemAlert()
 const exporting = ref(false)
 
+const { hasPermission } = usePermissions()
+const canReverse = computed(() => hasPermission('sales.reverse'))
+const { reverseMutation } = useSaleMutations()
+const { deleteMutation: deleteOpenTabMutation } = useOpenTabMutations()
+const queryClient = useQueryClient()
+
+const reversingId = ref<number | null>(null)
+
+async function reverseSaleRow(row: SaleHistoryRow): Promise<void> {
+  const confirmText =
+    row.status === 'closed'
+      ? 'Se restaurará el stock y la venta se eliminará permanentemente. ¿Continuar?'
+      : '¿Cancelar esta cuenta abierta? Se restaurará el stock reservado.'
+  if (!window.confirm(confirmText)) {
+    return
+  }
+  reversingId.value = row.id
+  try {
+    if (row.status === 'closed') {
+      await reverseMutation.mutateAsync(row.id)
+    } else {
+      // deleteMutation (useOpenTabMutations) invalida tables/open-tabs/products/dashboard
+      // pero no sales-history - esta vista necesita su propia invalidacion.
+      await deleteOpenTabMutation.mutateAsync(row.id)
+      queryClient.invalidateQueries({ queryKey: ['sales-history'] })
+    }
+    notify('Venta reversada correctamente')
+  } catch (error) {
+    notify(extractErrorMessage(error, 'No pudimos reversar la venta.'), 'error')
+  } finally {
+    reversingId.value = null
+  }
+}
+
 async function exportCsv(): Promise<void> {
   exporting.value = true
   try {
@@ -128,7 +173,7 @@ async function exportCsv(): Promise<void> {
         size="sm"
         class="w-48"
       />
-      <NxInput v-model="searchInput" label="Buscar factura, cliente, teléfono" class="min-w-[220px] flex-1" icon="pi pi-search" clearable size="sm" />
+      <NxInput v-model="searchInput" label="Buscar factura, cliente, teléfono o producto" class="min-w-[220px] flex-1" icon="pi pi-search" clearable size="sm" />
       <NxButton variant="outline" icon="pi pi-download" :loading="exporting" @click="exportCsv">Exportar CSV</NxButton>
     </div>
 
@@ -195,6 +240,19 @@ async function exportCsv(): Promise<void> {
               <span v-if="data.is_non_revenue" class="rounded-full bg-fuchsia-50 px-2 py-0.5 text-xs font-medium text-fuchsia-600">Cortesía</span>
               <span v-if="data.is_credit" class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-600">Fiado</span>
             </div>
+          </template>
+        </NxColumn>
+        <NxColumn v-if="canReverse" header="Acciones">
+          <template #body="{ data }: { data: SaleHistoryRow }">
+            <NxButton
+              size="sm"
+              variant="outline"
+              icon="pi pi-replay"
+              :loading="reversingId === data.id"
+              @click="reverseSaleRow(data)"
+            >
+              Reversar
+            </NxButton>
           </template>
         </NxColumn>
       </NxDataTable>
