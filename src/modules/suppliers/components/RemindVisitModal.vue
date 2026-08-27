@@ -10,6 +10,7 @@ import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { Supplier, SupplierReminderRecurrence } from '@/types/supplier'
 import { NxButton, NxInput, NxModal, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
+import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
 import { useSupplierMutations } from '../composables/useSupplierMutations'
 
@@ -29,11 +30,7 @@ const RECURRENCE_OPTIONS: { label: string; value: SupplierReminderRecurrence }[]
   { label: 'Cada mes', value: 'monthly' },
 ]
 
-function today(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
-const dueDate = ref(today())
+const dueDate = ref(toLocalDateIso())
 const recurrence = ref<SupplierReminderRecurrence>('none')
 const endDate = ref('')
 const formError = ref<string | null>(null)
@@ -42,7 +39,7 @@ watch(
   () => props.modelValue,
   (open) => {
     if (open) {
-      dueDate.value = today()
+      dueDate.value = toLocalDateIso()
       recurrence.value = 'none'
       endDate.value = ''
       formError.value = null

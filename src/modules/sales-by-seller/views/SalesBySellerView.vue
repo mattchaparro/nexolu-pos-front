@@ -9,30 +9,27 @@ import type { SellerSummary } from '@/types/salesBySeller'
 import { NxButton, NxColumn, NxDataTable, NxInput, NxPageHeader, NxStatCard } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
+import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
 import { useSalesBySeller } from '../composables/useSalesBySeller'
 import { fetchSalesBySellerCsv } from '../services/salesBySellerService'
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
-const dateFrom = ref(todayIso())
-const dateTo = ref(todayIso())
+const dateFrom = ref(toLocalDateIso())
+const dateTo = ref(toLocalDateIso())
 
 const sellerQuery = useSalesBySeller(dateFrom, dateTo)
 
 function setToday(): void {
-  dateFrom.value = todayIso()
-  dateTo.value = todayIso()
+  dateFrom.value = toLocalDateIso()
+  dateTo.value = toLocalDateIso()
 }
 
 function setLast7Days(): void {
   const end = new Date()
   const start = new Date()
   start.setDate(start.getDate() - 6)
-  dateFrom.value = start.toISOString().slice(0, 10)
-  dateTo.value = end.toISOString().slice(0, 10)
+  dateFrom.value = toLocalDateIso(start)
+  dateTo.value = toLocalDateIso(end)
 }
 
 function methodsSummary(seller: SellerSummary): string {

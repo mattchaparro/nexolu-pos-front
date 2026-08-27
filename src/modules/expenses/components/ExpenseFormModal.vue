@@ -6,6 +6,7 @@ import type { Expense } from '@/types/expense'
 import { NxButton, NxInput, NxInputNumber, NxModal, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
+import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
 import { useExpenseMutations } from '../composables/useExpenseMutations'
 import { useExpenseTypes } from '../composables/useExpenseTypes'
@@ -42,7 +43,7 @@ const typeOptions = computed(() =>
 )
 
 function resetForm(): void {
-  const today = new Date().toISOString().slice(0, 10)
+  const today = toLocalDateIso()
   date.value = props.expense?.date ?? today
   description.value = props.expense?.description ?? ''
   value.value = props.expense ? parseFloat(props.expense.value) : null

@@ -19,17 +19,14 @@ import type { IncomeChannel, RecentLayaway, RecentReceivable, RecentSale, Recent
 import { NxButton, NxInput, NxSelect, NxStatCard, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs, NxToggleButton } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
+import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
 import TransactionRowItem from '../components/TransactionRowItem.vue'
 import { useDailySummary } from '../composables/useDailySummary'
 import type { TransactionRow } from '../types'
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
-const dateFrom = ref(todayIso())
-const dateTo = ref(todayIso())
+const dateFrom = ref(toLocalDateIso())
+const dateTo = ref(toLocalDateIso())
 const paymentMethodFilter = ref('all')
 const viewMode = ref('0')
 
@@ -82,16 +79,16 @@ watch(summaryQuery.data, (summary) => {
 })
 
 function setToday(): void {
-  dateFrom.value = todayIso()
-  dateTo.value = todayIso()
+  dateFrom.value = toLocalDateIso()
+  dateTo.value = toLocalDateIso()
 }
 
 function setLast7Days(): void {
   const end = new Date()
   const start = new Date()
   start.setDate(start.getDate() - 6)
-  dateFrom.value = start.toISOString().slice(0, 10)
-  dateTo.value = end.toISOString().slice(0, 10)
+  dateFrom.value = toLocalDateIso(start)
+  dateTo.value = toLocalDateIso(end)
 }
 
 const paymentMethodOptions = computed(() => [

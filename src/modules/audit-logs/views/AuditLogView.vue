@@ -10,6 +10,7 @@ import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { AuditLogEntry } from '@/types/auditLog'
 import { NxButton, NxColumn, NxDataTable, NxInput, NxPageHeader } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
+import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
 import { useAuditLogs } from '../composables/useAuditLogs'
 import { fetchAuditLogsCsv } from '../services/auditLogService'
@@ -48,7 +49,7 @@ async function exportCsv(): Promise<void> {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `auditoria-${new Date().toISOString().slice(0, 10)}.csv`
+    link.download = `auditoria-${toLocalDateIso()}.csv`
     link.click()
     window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
   } catch (error) {

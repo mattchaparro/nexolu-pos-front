@@ -9,6 +9,7 @@ import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { Reminder } from '@/types/reminder'
 import { NxButton, NxPageHeader } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
+import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
 import { useReminderMutations } from '../composables/useReminderMutations'
 import { useReminders } from '../composables/useReminders'
@@ -130,7 +131,7 @@ const pendingFiltered = computed(() => {
 })
 
 // ── Estado de un recordatorio ────────────────────────────────────────────────
-const today = new Date().toISOString().slice(0, 10)
+const today = toLocalDateIso()
 
 function reminderStatus(reminder: Reminder): { text: string; cls: string } {
   if (!reminder.due_date) {
@@ -321,7 +322,7 @@ async function removeReminder(reminder: Reminder): Promise<void> {
       </div>
 
       <p v-if="selectedDay" class="mt-3 flex items-center gap-2 text-xs text-slate-500">
-        Mostrando pendientes del {{ formatDate(selectedDay.toISOString().slice(0, 10)) }}.
+        Mostrando pendientes del {{ formatDate(toLocalDateIso(selectedDay)) }}.
         <button type="button" class="font-medium text-indigo-600 hover:underline" @click="selectedDay = null">
           Ver todos
         </button>

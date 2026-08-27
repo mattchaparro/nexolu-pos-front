@@ -5,6 +5,7 @@ import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { Reminder } from '@/types/reminder'
 import { NxButton, NxInput, NxModal } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
+import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
 import { addDays, toDateOnly } from '../support/reminderRecurrence'
 import { useReminderMutations } from '../composables/useReminderMutations'
@@ -33,7 +34,7 @@ watch(
     if (open) {
       // Default: mañana (mismo comportamiento que el legacy)
       const tomorrow = addDays(new Date(), 1)
-      newDate.value = tomorrow.toISOString().slice(0, 10)
+      newDate.value = toLocalDateIso(tomorrow)
       formError.value = null
     }
   },
@@ -44,7 +45,7 @@ function applyShortcut(days: number): void {
     return
   }
   const base = toDateOnly(props.reminder.due_date)
-  newDate.value = addDays(base, days).toISOString().slice(0, 10)
+  newDate.value = toLocalDateIso(addDays(base, days))
 }
 
 async function submit(): Promise<void> {

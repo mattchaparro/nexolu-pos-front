@@ -14,6 +14,7 @@ import { NxButton, NxInput, NxPageHeader, NxSelect, NxTextarea, NxToggleButton }
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 import { isCreditPaymentMethodId } from '@/utils/paymentMethod'
+import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
 import CatalogHubTabs from '../../catalog/components/CatalogHubTabs.vue'
 import PaymentMethodPicker from '@/components/PaymentMethodPicker.vue'
@@ -36,12 +37,8 @@ const nonCreditPaymentMethods = computed(
   () => business.value?.payment_methods.filter((m) => !isCreditPaymentMethodId(m.id)) ?? [],
 )
 
-function today(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
 const supplierId = ref<number | null>(null)
-const purchasedAt = ref(today())
+const purchasedAt = ref(toLocalDateIso())
 const invoiceNumber = ref('')
 const notes = ref('')
 const lines = ref<PurchaseLineRow[]>([newPurchaseLineRow('product')])

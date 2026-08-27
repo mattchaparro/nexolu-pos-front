@@ -10,6 +10,7 @@ import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { NamedOption, ReasonOption, StockMovementRow } from '@/types/inventoryReport'
 import { NxButton, NxColumn, NxDataTable, NxInput, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
+import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
 import { useStockMovementsReport } from '../composables/useStockMovementsReport'
 import { fetchStockMovementsCsv } from '../services/inventoryReportService'
@@ -27,12 +28,8 @@ const typeLabels: Record<string, { label: string; icon: string; class: string }>
   sale: { label: 'Venta', icon: 'pi pi-shopping-cart', class: 'text-indigo-500' },
 }
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
 const dateFrom = ref('')
-const dateTo = ref(todayIso())
+const dateTo = ref(toLocalDateIso())
 const type = ref('')
 const reasonId = ref<number | null>(null)
 const productId = ref<number | null>(null)
@@ -84,7 +81,7 @@ async function exportCsv(): Promise<void> {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `movimientos-inventario-${todayIso()}.csv`
+    link.download = `movimientos-inventario-${toLocalDateIso()}.csv`
     link.click()
     window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
   } catch (error) {

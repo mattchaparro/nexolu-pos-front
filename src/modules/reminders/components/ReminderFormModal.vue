@@ -5,6 +5,7 @@ import { useSystemAlert } from '@/composables/useSystemAlert'
 import { NxButton, NxInput, NxModal, NxSelect, NxSwitch, NxTextarea } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
+import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
 import { useReminderMutations } from '../composables/useReminderMutations'
 
@@ -38,7 +39,7 @@ const formError = ref<string | null>(null)
 function resetForm(): void {
   title.value = ''
   notes.value = ''
-  dueDate.value = new Date().toISOString().slice(0, 10)
+  dueDate.value = toLocalDateIso()
   notifyTime.value = ''
   notifyWhatsapp.value = false
   recurrence.value = 'none'

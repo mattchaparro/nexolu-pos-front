@@ -11,6 +11,7 @@ import { useSystemAlert } from '@/composables/useSystemAlert'
 import { NxButton, NxInputNumber } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
+import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
 import { useCashClosingPreview, usePendingClosingDates } from '../composables/useCashClosing'
 import { useCashClosingMutations } from '../composables/useCashClosingMutations'
@@ -19,13 +20,9 @@ import DailySummaryDetailModal from './DailySummaryDetailModal.vue'
 import PaymentBreakdownList from './PaymentBreakdownList.vue'
 import PendingDatesQueue from './PendingDatesQueue.vue'
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
 const pendingDatesQuery = usePendingClosingDates()
 
-const selectedDate = ref(todayIso())
+const selectedDate = ref(toLocalDateIso())
 const hasInitialized = ref(false)
 
 watch(
@@ -120,7 +117,7 @@ async function submit(): Promise<void> {
     <div class="flex items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <label class="flex flex-col gap-1 text-sm">
         <span class="font-medium text-slate-600">Fecha a cerrar</span>
-        <input v-model="selectedDate" type="date" :max="todayIso()" class="h-9 rounded-lg border border-slate-300 px-3 text-sm" />
+        <input v-model="selectedDate" type="date" :max="toLocalDateIso()" class="h-9 rounded-lg border border-slate-300 px-3 text-sm" />
       </label>
     </div>
 

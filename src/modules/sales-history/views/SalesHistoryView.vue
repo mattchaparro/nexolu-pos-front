@@ -15,13 +15,10 @@ import type { SaleHistoryRow } from '@/types/salesHistory'
 import { NxButton, NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
+import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
 import { useSalesHistory } from '../composables/useSalesHistory'
 import { fetchSalesHistoryCsv } from '../services/salesHistoryService'
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10)
-}
 
 // from/to en la query: atajo de Resumen del dia, que linkea aca con el
 // rango que el usuario tenia elegido en esa pantalla (ver DailySummaryView.vue).
@@ -29,8 +26,8 @@ const route = useRoute()
 const queryFrom = typeof route.query.from === 'string' ? route.query.from : null
 const queryTo = typeof route.query.to === 'string' ? route.query.to : null
 
-const dateFrom = ref(queryFrom ?? todayIso())
-const dateTo = ref(queryTo ?? todayIso())
+const dateFrom = ref(queryFrom ?? toLocalDateIso())
+const dateTo = ref(queryTo ?? toLocalDateIso())
 const status = ref('')
 const paymentMethod = ref('')
 const searchInput = ref('')
@@ -76,16 +73,16 @@ function onPage(event: { page: number }): void {
 }
 
 function setToday(): void {
-  dateFrom.value = todayIso()
-  dateTo.value = todayIso()
+  dateFrom.value = toLocalDateIso()
+  dateTo.value = toLocalDateIso()
 }
 
 function setLast7Days(): void {
   const end = new Date()
   const start = new Date()
   start.setDate(start.getDate() - 6)
-  dateFrom.value = start.toISOString().slice(0, 10)
-  dateTo.value = end.toISOString().slice(0, 10)
+  dateFrom.value = toLocalDateIso(start)
+  dateTo.value = toLocalDateIso(end)
 }
 
 function paymentLabel(row: SaleHistoryRow): string {

@@ -9,6 +9,7 @@ import type { MarginRow, NamedOption } from '@/types/inventoryReport'
 import { NxButton, NxColumn, NxDataTable, NxInput, NxSelect, NxToggleButton } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
+import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
 import { useMarginsReport } from '../composables/useMarginsReport'
 import { fetchMarginsCsv } from '../services/inventoryReportService'
@@ -16,7 +17,7 @@ import { fetchMarginsCsv } from '../services/inventoryReportService'
 const props = defineProps<{ categories: NamedOption[] }>()
 
 function currentMonthIso(): string {
-  return new Date().toISOString().slice(0, 7)
+  return toLocalDateIso().slice(0, 7)
 }
 
 const categoryId = ref<number | null>(null)
@@ -43,7 +44,7 @@ async function exportCsv(): Promise<void> {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `margenes-${new Date().toISOString().slice(0, 10)}.csv`
+    link.download = `margenes-${toLocalDateIso()}.csv`
     link.click()
     window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
   } catch (error) {
