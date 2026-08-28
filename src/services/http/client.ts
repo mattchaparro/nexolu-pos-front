@@ -8,6 +8,14 @@ import { tokenStorage } from './tokenStorage'
 
 export const httpClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
+  // Sin timeout, una peticion que se queda colgada (wifi que cae justo al
+  // volver de background, servidor caido) nunca resuelve ni rechaza - el
+  // boton/pantalla que la disparo se queda "cargando" para siempre, sin
+  // error visible y sin pasar por el interceptor de abajo (que solo actua
+  // sobre respuestas que SI llegan). Bug reportado: "no me deja hacer click
+  // en nada" tras volver de un rato inactivo - la app se veia trabada, no
+  // deslogueada.
+  timeout: 20_000,
   headers: {
     Accept: 'application/json',
   },

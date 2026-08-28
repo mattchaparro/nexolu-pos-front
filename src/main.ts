@@ -36,6 +36,7 @@ import App from './App.vue'
 import router from './router'
 import { queryClient } from './services/query/queryClient'
 import { initSentry } from './sentry'
+import { useAuthStore } from './stores/auth.store'
 import { nexoluPreset } from './theme/nexoluPreset'
 
 const app = createApp(App)
@@ -94,6 +95,32 @@ app.use(VueQueryPlugin, { queryClient })
 app.use(ToastService)
 
 app.mount('#app')
+
+// Revalida la sesion apenas la pestaña vuelve a estar visible (usuario
+// volvio de background, pantalla bloqueada, cambio de app en el celular).
+// TanStack Query ya reintenta las queries activas al recuperar el foco
+// (refetchOnWindowFocus, ver services/query/queryClient.ts), pero eso
+// depende de que haya una query montada en ese momento Y de que el
+// navegador dispare el evento de foco a tiempo - poco confiable en mobile
+// (iOS Safari en particular suspende pestañas en background sin avisar).
+// Sin este chequeo explicito, una sesion vencida mientras la pestaña
+// estaba oculta dejaba a la app sin ningun pedido al servidor que
+// disparara el interceptor de 401 (ver services/http/client.ts) hasta que
+// el usuario tocara algo que pidiera datos nuevos - "no me deja hacer
+// click en nada" reportado (la app se veia trabada con datos viejos, no
+// deslogueada).
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') {
+    return
+  }
+  const auth = useAuthStore()
+  if (auth.isAuthenticated) {
+    // 401 lo maneja el interceptor de axios (clearSession + redirect a
+    // login) - cualquier otro error (ej. la red todavia reconectando) no
+    // debe deslogear a nadie, se ignora aca.
+    auth.fetchCurrentUser().catch(() => {})
+  }
+})
 
 // Revela los iconos de Material Icons (ver .material-icons/.fonts-ready en
 // style.css) recien cuando la fuente termino de cargar, para no mostrar el
