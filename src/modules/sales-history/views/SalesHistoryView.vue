@@ -98,11 +98,17 @@ function setLast7Days(): void {
   dateTo.value = toLocalDateIso(end)
 }
 
+// Contra TODOS los ids configurados (habilitados o no), no solo las
+// opciones del dropdown de filtro - una fila puede ser una venta vieja con
+// un medio que el negocio ya desactivo, y aun asi debe mostrar su label
+// real, no el id crudo.
+const paymentMethodLabels = computed(() => historyQuery.data.value?.payment_method_labels ?? {})
+
 function paymentLabel(row: SaleHistoryRow): string {
   if (row.payment_splits.length > 0) {
-    return row.payment_splits.map((s) => paymentMethodOptions.value.find((m) => m.id === s.payment_method)?.label ?? s.payment_method).join(' + ')
+    return row.payment_splits.map((s) => paymentMethodLabels.value[s.payment_method] ?? s.payment_method).join(' + ')
   }
-  return paymentMethodOptions.value.find((m) => m.id === row.payment_method)?.label ?? (row.payment_method ?? '—')
+  return (row.payment_method && paymentMethodLabels.value[row.payment_method]) ?? (row.payment_method ?? '—')
 }
 
 const { notify } = useSystemAlert()

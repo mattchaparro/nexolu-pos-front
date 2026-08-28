@@ -558,7 +558,7 @@ function applyClient(client: { id: number; name: string; phone: string | null })
             <div v-if="sale?.partial_payments?.length" class="flex flex-col gap-1 text-[11px] text-slate-600">
               <p v-for="p in sale.partial_payments" :key="p.id">
                 {{ formatCop(p.amount) }} —
-                {{ business.payment_methods.find((m) => m.id === p.payment_method)?.label ?? p.payment_method }}
+                {{ business.payment_method_labels[p.payment_method] ?? p.payment_method }}
                 <span v-if="p.payer_label" class="text-slate-500">· {{ p.payer_label }}</span>
               </p>
             </div>

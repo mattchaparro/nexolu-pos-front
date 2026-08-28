@@ -52,7 +52,15 @@ export interface Business {
   ticket_footer_text: string | null
   delivery_enabled: boolean
   delivery_fee: number
+  // Solo los HABILITADOS - para selectores de una transaccion NUEVA
+  // (checkout, abono a compra/apartado). Un medio que el negocio ya
+  // desactivo no debe ofrecerse ahi.
   payment_methods: BusinessPaymentMethod[]
+  // id => label de TODOS los medios configurados (habilitados o no) - para
+  // resolver el label de un pago YA REGISTRADO que pudo usar un medio hoy
+  // desactivado (ver PaymentModal.vue, abonos parciales). No usar para
+  // poblar un selector, ver payment_methods arriba.
+  payment_method_labels: Record<string, string>
   charges: BusinessChargesConfig
   low_stock_alert_threshold: number
   low_stock_email_enabled: boolean

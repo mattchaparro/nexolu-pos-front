@@ -36,5 +36,10 @@ export interface PaymentMethodOption {
 export interface SalesHistoryResponse {
   data: SaleHistoryRow[]
   meta: { current_page: number; last_page: number; per_page: number; total: number }
+  // Solo los medios HABILITADOS del negocio - para el dropdown de filtro.
   payment_method_options: PaymentMethodOption[]
+  // TODOS los ids configurados (habilitados o no) - para resolver el label
+  // de una fila con un medio que el negocio ya desactivó. No usar para
+  // poblar el dropdown de filtro, ver payment_method_options.
+  payment_method_labels: Record<string, string>
 }
