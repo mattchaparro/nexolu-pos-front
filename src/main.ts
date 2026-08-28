@@ -4,9 +4,12 @@
 // manda a /iniciar-sesion, que NO preserva query params, asi que el flag
 // se perderia si no se guarda ahora mismo, antes de cualquier navegacion
 // (ver useWelcomeExperience.ts para donde se consume, ya autenticado).
+import { stashSsoTokenFromUrl } from '@/services/http/tokenStorage'
+
 import { stashPendingWelcomeFromUrl } from '@/composables/useWelcomeExperience'
 
 stashPendingWelcomeFromUrl()
+stashSsoTokenFromUrl()
 
 // Lato self-hosted via @fontsource - igual que el legacy (resources/js
 // no la carga por Google/Bunny Fonts, la empaqueta con @fontsource/lato).
