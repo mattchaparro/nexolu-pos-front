@@ -1,8 +1,12 @@
 // Refleja StockMovementResource/StockMovementReasonResource
 // (app/Http/Resources/Api/V1) en nexolu-pos-api. Un solo StockMovement
 // para productos e insumos (product_id XOR ingredient_id), igual que en el
-// backend - ver StockService.
-export type StockMovementType = 'entry' | 'exit' | 'adjustment'
+// backend - ver StockService. 'sale' lo genera el sistema solo (descuento
+// de stock por una venta, ver StockMovement::TYPE_SALE en el backend) -
+// nunca se crea a mano desde StockMovementModal.vue/CatalogView.vue (esos
+// dos solo usan entry/exit/adjustment), pero SI aparece en el historial de
+// movimientos de cualquier producto que ya tuvo ventas.
+export type StockMovementType = 'entry' | 'exit' | 'adjustment' | 'sale'
 
 export interface StockMovementReason {
   id: number

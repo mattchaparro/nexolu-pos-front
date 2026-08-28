@@ -40,10 +40,25 @@ const page = ref(1)
 const { movementsQuery } = useStockMovements(kind, subjectId, page)
 const meta = computed(() => movementsQuery.data.value?.meta)
 
+// Mismos labels/iconos/colores que StockMovementsTab.vue (reportes de
+// inventario) para el mismo dato - no reinventar el mapeo por pantalla.
 const TYPE_INFO: Record<StockMovementType, { label: string; icon: string; class: string }> = {
   entry: { label: 'Entrada', icon: 'pi pi-arrow-down', class: 'text-emerald-600' },
   exit: { label: 'Salida', icon: 'pi pi-arrow-up', class: 'text-red-500' },
   adjustment: { label: 'Ajuste', icon: 'pi pi-sliders-h', class: 'text-slate-500' },
+  sale: { label: 'Venta', icon: 'pi pi-shopping-cart', class: 'text-indigo-500' },
+}
+// Fallback generico para un `type` que el backend agregue despues sin que
+// esta lista se actualice - bug real reportado: un tipo no mapeado (aca
+// faltaba 'sale') hacia TYPE_INFO[movement.type] undefined, y
+// undefined.icon tiraba un TypeError que rompia el render de toda la
+// lista, dejando la pantalla trabada en el skeleton de carga para siempre
+// (el catch nunca se disparaba porque no era un error de la peticion, era
+// un error de render). Acceso opcional + este fallback evita que vuelva a
+// pasar con el proximo tipo que se sume en el backend.
+const UNKNOWN_TYPE_INFO = { label: 'Movimiento', icon: 'pi pi-circle', class: 'text-slate-400' }
+function typeInfo(type: StockMovementType): { label: string; icon: string; class: string } {
+  return TYPE_INFO[type] ?? UNKNOWN_TYPE_INFO
 }
 
 function formatDate(value: string): string {
@@ -87,10 +102,10 @@ function goBack(): void {
           :key="movement.id"
           class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4"
         >
-          <i :class="[TYPE_INFO[movement.type].icon, TYPE_INFO[movement.type].class]" class="text-xl" />
+          <i :class="[typeInfo(movement.type).icon, typeInfo(movement.type).class]" class="text-xl" />
           <div class="min-w-0 flex-1">
             <p class="text-sm font-medium text-slate-900">
-              {{ TYPE_INFO[movement.type].label }}
+              {{ typeInfo(movement.type).label }}
               <span v-if="movement.reason?.label" class="text-xs font-normal text-slate-500"> · {{ movement.reason.label }}</span>
               <span v-if="movement.reference" class="text-slate-400"> - {{ movement.reference }}</span>
             </p>
