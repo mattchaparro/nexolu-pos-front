@@ -3,10 +3,16 @@ import { computed, type Ref } from 'vue'
 
 import { fetchAuditLogs } from '../services/auditLogService'
 
-export function useAuditLogs(search: Ref<string>, page: Ref<number>) {
+export function useAuditLogs(
+  search: Ref<string>,
+  page: Ref<number>,
+  sort: Ref<string | undefined>,
+  direction: Ref<'asc' | 'desc' | undefined>,
+) {
   return useQuery({
-    queryKey: computed(() => ['audit-logs', search.value, page.value] as const),
-    queryFn: () => fetchAuditLogs({ search: search.value || undefined, page: page.value }),
+    queryKey: computed(() => ['audit-logs', search.value, page.value, sort.value, direction.value] as const),
+    queryFn: () =>
+      fetchAuditLogs({ search: search.value || undefined, page: page.value, sort: sort.value, direction: direction.value }),
     placeholderData: keepPreviousData,
   })
 }

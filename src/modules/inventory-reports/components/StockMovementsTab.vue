@@ -5,6 +5,7 @@
 // pestana de Margenes (reasons/product_options/ingredient_options) - un solo
 // fetch para toda la pantalla, ver InventoryReportsView.vue.
 import { computed, ref, watch } from 'vue'
+import type { DataTableSortEvent } from 'primevue/datatable'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { NamedOption, ReasonOption, StockMovementRow } from '@/types/inventoryReport'
@@ -35,8 +36,13 @@ const reasonId = ref<number | null>(null)
 const productId = ref<number | null>(null)
 const ingredientId = ref<number | null>(null)
 const page = ref(1)
+// Claves publicas que acepta el backend (ver InventoryReportService::movements()
+// en nexolu-pos-api) - "date"/"type"/"quantity", no los nombres de columna
+// reales de la tabla.
+const sortField = ref<string | undefined>(undefined)
+const sortOrder = ref<number | null>(null)
 
-watch([dateFrom, dateTo, type, reasonId, productId, ingredientId], () => {
+watch([dateFrom, dateTo, type, reasonId, productId, ingredientId, sortField, sortOrder], () => {
   page.value = 1
 })
 
@@ -47,7 +53,14 @@ const filters = computed(() => ({
   reason_id: reasonId.value ?? undefined,
   product_id: productId.value ?? undefined,
   ingredient_id: ingredientId.value ?? undefined,
+  sort: sortField.value,
+  direction: sortOrder.value === 1 ? ('asc' as const) : sortOrder.value === -1 ? ('desc' as const) : undefined,
 }))
+
+function onSort(event: DataTableSortEvent): void {
+  sortField.value = typeof event.sortField === 'string' ? event.sortField : undefined
+  sortOrder.value = event.sortOrder ?? null
+}
 
 const movementsQuery = useStockMovementsReport(page, filters)
 const meta = computed(() => movementsQuery.data.value?.meta)
@@ -97,15 +110,16 @@ async function exportCsv(): Promise<void> {
     <div class="grid grid-cols-2 items-end gap-3 lg:flex lg:flex-wrap">
       <NxDatePicker v-model="dateFrom" label="Desde" class="w-full lg:w-40" />
       <NxDatePicker v-model="dateTo" label="Hasta" class="w-full lg:w-40" />
-      <NxSelect v-model="type" :options="typeOptions" option-label="label" option-value="id" label="Tipo" class="w-full lg:w-40" />
-      <NxSelect v-model="reasonId" :options="reasonOptions" option-label="label" option-value="id" label="Razón" class="w-full lg:w-44" />
-      <NxSelect v-model="productId" :options="productSelectOptions" option-label="label" option-value="id" label="Producto" class="w-full lg:w-48" />
+      <NxSelect v-model="type" :options="typeOptions" option-label="label" option-value="id" label="Tipo" filter class="w-full lg:w-40" />
+      <NxSelect v-model="reasonId" :options="reasonOptions" option-label="label" option-value="id" label="Razón" filter class="w-full lg:w-44" />
+      <NxSelect v-model="productId" :options="productSelectOptions" option-label="label" option-value="id" label="Producto" filter class="w-full lg:w-48" />
       <NxSelect
         v-model="ingredientId"
         :options="ingredientSelectOptions"
         option-label="label"
         option-value="id"
         label="Insumo"
+        filter
         class="w-full lg:w-48"
       />
       <NxButton variant="outline" icon="pi pi-download" :loading="exporting" class="col-span-2 justify-self-end lg:ml-auto" @click="exportCsv">
@@ -122,17 +136,20 @@ async function exportCsv(): Promise<void> {
         :rows="40"
         :total-records="meta?.total ?? 0"
         :first="((meta?.current_page ?? 1) - 1) * 40"
+        :sort-field="sortField"
+        :sort-order="sortOrder"
         @page="onPage"
+        @sort="onSort"
       >
         <template #empty>
           <p class="py-6 text-center text-sm text-slate-400">Sin movimientos con los filtros actuales.</p>
         </template>
-        <NxColumn header="Fecha">
+        <NxColumn header="Fecha" field="date" sortable>
           <template #body="{ data }: { data: StockMovementRow }">
             <p class="text-sm text-slate-700">{{ data.created_at }}</p>
           </template>
         </NxColumn>
-        <NxColumn header="Tipo">
+        <NxColumn header="Tipo" field="type" sortable>
           <template #body="{ data }: { data: StockMovementRow }">
             <span class="inline-flex items-center gap-1 text-sm font-medium" :class="typeLabels[data.type]?.class">
               <i :class="typeLabels[data.type]?.icon" />
@@ -151,7 +168,7 @@ async function exportCsv(): Promise<void> {
             <p v-if="data.product_category" class="text-xs text-slate-400">{{ data.product_category }}</p>
           </template>
         </NxColumn>
-        <NxColumn header="Cantidad">
+        <NxColumn header="Cantidad" field="quantity" sortable>
           <template #body="{ data }: { data: StockMovementRow }">
             <p class="text-right text-sm font-semibold text-slate-900">{{ data.quantity }}</p>
           </template>

@@ -22,6 +22,8 @@ export interface FetchExpensesParams {
   type_id?: number
   search?: string
   page?: number
+  sort?: string
+  direction?: 'asc' | 'desc'
 }
 
 export async function fetchExpenses(params: FetchExpensesParams = {}): Promise<PaginatedResponse<Expense>> {

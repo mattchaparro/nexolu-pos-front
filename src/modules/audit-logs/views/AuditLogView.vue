@@ -5,6 +5,7 @@
 // de SuperAdmin) - esta pantalla siempre esta acotada al negocio del
 // usuario autenticado (ver AuditLogController::index() en el backend).
 import { computed, ref, watch } from 'vue'
+import type { DataTableSortEvent } from 'primevue/datatable'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { AuditLogEntry } from '@/types/auditLog'
@@ -28,11 +29,26 @@ watch(searchInput, (value) => {
   }, 300)
 })
 
-const logsQuery = useAuditLogs(search, page)
+// Claves publicas que acepta el backend (ver AuditLogController::index() en
+// nexolu-pos-api) - "date"/"action", no columnas reales.
+const sortField = ref<string | undefined>(undefined)
+const sortOrder = ref<number | null>(null)
+const sortDirection = computed<'asc' | 'desc' | undefined>(() => (sortOrder.value === 1 ? 'asc' : sortOrder.value === -1 ? 'desc' : undefined))
+
+watch([sortField, sortOrder], () => {
+  page.value = 1
+})
+
+const logsQuery = useAuditLogs(search, page, sortField, sortDirection)
 const meta = computed(() => logsQuery.data.value?.meta)
 
 function onPage(event: { page: number }): void {
   page.value = event.page + 1
+}
+
+function onSort(event: DataTableSortEvent): void {
+  sortField.value = typeof event.sortField === 'string' ? event.sortField : undefined
+  sortOrder.value = event.sortOrder ?? null
 }
 
 function formatDateTime(iso: string): string {
@@ -78,17 +94,20 @@ async function exportCsv(): Promise<void> {
         :rows="30"
         :total-records="meta?.total ?? 0"
         :first="((meta?.current_page ?? 1) - 1) * 30"
+        :sort-field="sortField"
+        :sort-order="sortOrder"
         @page="onPage"
+        @sort="onSort"
       >
         <template #empty>
           <p class="py-6 text-center text-sm text-slate-400">Todavía no hay acciones registradas.</p>
         </template>
-        <NxColumn header="Fecha">
+        <NxColumn header="Fecha" field="date" sortable>
           <template #body="{ data }: { data: AuditLogEntry }">
             <p class="text-sm text-slate-700">{{ formatDateTime(data.created_at) }}</p>
           </template>
         </NxColumn>
-        <NxColumn header="Acción">
+        <NxColumn header="Acción" field="action" sortable>
           <template #body="{ data }: { data: AuditLogEntry }">
             <p class="text-sm font-semibold text-slate-900">{{ data.action_label }}</p>
           </template>

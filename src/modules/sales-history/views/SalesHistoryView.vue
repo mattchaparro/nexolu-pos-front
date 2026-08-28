@@ -5,6 +5,7 @@
 // esta pantalla.
 import { useQueryClient } from '@tanstack/vue-query'
 import { computed, ref, watch } from 'vue'
+import type { DataTableSortEvent } from 'primevue/datatable'
 import { useRoute } from 'vue-router'
 
 import { usePermissions } from '@/composables/usePermissions'
@@ -43,7 +44,12 @@ watch(searchInput, (value) => {
   }, 300)
 })
 
-watch([dateFrom, dateTo, status, paymentMethod], () => {
+// Claves publicas que acepta el backend (ver SalesReportService::salesHistory()
+// en nexolu-pos-api) - "date"/"total"/"status", no columnas reales.
+const sortField = ref<string | undefined>(undefined)
+const sortOrder = ref<number | null>(null)
+
+watch([dateFrom, dateTo, status, paymentMethod, sortField, sortOrder], () => {
   page.value = 1
 })
 
@@ -51,7 +57,14 @@ const filters = computed(() => ({
   status: status.value || undefined,
   payment_method: paymentMethod.value || undefined,
   search: search.value || undefined,
+  sort: sortField.value,
+  direction: sortOrder.value === 1 ? ('asc' as const) : sortOrder.value === -1 ? ('desc' as const) : undefined,
 }))
+
+function onSort(event: DataTableSortEvent): void {
+  sortField.value = typeof event.sortField === 'string' ? event.sortField : undefined
+  sortOrder.value = event.sortOrder ?? null
+}
 
 const historyQuery = useSalesHistory(dateFrom, dateTo, page, filters)
 const meta = computed(() => historyQuery.data.value?.meta)
@@ -184,12 +197,15 @@ async function exportCsv(): Promise<void> {
         :rows="20"
         :total-records="meta?.total ?? 0"
         :first="((meta?.current_page ?? 1) - 1) * 20"
+        :sort-field="sortField"
+        :sort-order="sortOrder"
         @page="onPage"
+        @sort="onSort"
       >
         <template #empty>
           <p class="py-6 text-center text-sm text-slate-400">Sin ventas en este rango con los filtros actuales.</p>
         </template>
-        <NxColumn header="Fecha">
+        <NxColumn header="Fecha" field="date" sortable>
           <template #body="{ data }: { data: SaleHistoryRow }">
             <p class="text-sm text-slate-700">{{ data.created_at }}</p>
           </template>
@@ -221,12 +237,12 @@ async function exportCsv(): Promise<void> {
             <p class="text-sm text-slate-600">{{ paymentLabel(data) }}</p>
           </template>
         </NxColumn>
-        <NxColumn header="Total">
+        <NxColumn header="Total" field="total" sortable>
           <template #body="{ data }: { data: SaleHistoryRow }">
             <p class="text-right text-sm font-semibold text-slate-900">{{ formatCop(data.total) }}</p>
           </template>
         </NxColumn>
-        <NxColumn header="Estado">
+        <NxColumn header="Estado" field="status" sortable>
           <template #body="{ data }: { data: SaleHistoryRow }">
             <div class="flex flex-wrap gap-1">
               <span

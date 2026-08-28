@@ -124,16 +124,16 @@ const productProfit = computed(() => monthlyQuery.data.value?.product_profit_lin
                     <template #empty>
                       <p class="py-4 text-center text-sm text-slate-400">Sin ingresos este mes.</p>
                     </template>
-                    <NxColumn header="Fecha">
+                    <NxColumn header="Fecha" field="date" sortable>
                       <template #body="{ data }: { data: AccountingIncomeLine }"><p class="text-xs text-slate-600">{{ data.date }}</p></template>
                     </NxColumn>
-                    <NxColumn header="Descripción">
+                    <NxColumn header="Descripción" field="description" sortable>
                       <template #body="{ data }: { data: AccountingIncomeLine }">
                         <p class="text-sm text-slate-800">{{ data.description }}</p>
                         <p class="text-xs text-slate-400">{{ data.type_label }}</p>
                       </template>
                     </NxColumn>
-                    <NxColumn header="Monto">
+                    <NxColumn header="Monto" field="amount" sortable>
                       <template #body="{ data }: { data: AccountingIncomeLine }">
                         <p class="text-right text-sm font-semibold text-emerald-600">{{ formatCop(data.amount) }}</p>
                       </template>
@@ -149,16 +149,16 @@ const productProfit = computed(() => monthlyQuery.data.value?.product_profit_lin
                     <template #empty>
                       <p class="py-4 text-center text-sm text-slate-400">Sin gastos este mes.</p>
                     </template>
-                    <NxColumn header="Fecha">
+                    <NxColumn header="Fecha" field="date" sortable>
                       <template #body="{ data }: { data: AccountingExpenseLine }"><p class="text-xs text-slate-600">{{ data.date }}</p></template>
                     </NxColumn>
-                    <NxColumn header="Descripción">
+                    <NxColumn header="Descripción" field="description" sortable>
                       <template #body="{ data }: { data: AccountingExpenseLine }">
                         <p class="text-sm text-slate-800">{{ data.description }}</p>
                         <p class="text-xs text-slate-400">{{ data.type_name }}</p>
                       </template>
                     </NxColumn>
-                    <NxColumn header="Monto">
+                    <NxColumn header="Monto" field="amount" sortable>
                       <template #body="{ data }: { data: AccountingExpenseLine }">
                         <p class="text-right text-sm font-semibold text-red-500">{{ formatCop(data.amount) }}</p>
                       </template>
@@ -180,19 +180,19 @@ const productProfit = computed(() => monthlyQuery.data.value?.product_profit_lin
                   <template #empty>
                     <p class="py-4 text-center text-sm text-slate-400">Sin productos con costo configurado vendidos este mes.</p>
                   </template>
-                  <NxColumn header="Producto">
+                  <NxColumn header="Producto" field="name" sortable>
                     <template #body="{ data }: { data: ProductProfitLine }"><p class="text-sm font-medium text-slate-900">{{ data.name }}</p></template>
                   </NxColumn>
-                  <NxColumn header="Unidades">
+                  <NxColumn header="Unidades" field="qty_sold" sortable>
                     <template #body="{ data }: { data: ProductProfitLine }"><p class="text-sm text-slate-700">{{ data.qty_sold }}</p></template>
                   </NxColumn>
-                  <NxColumn header="Ingreso">
+                  <NxColumn header="Ingreso" field="revenue" sortable>
                     <template #body="{ data }: { data: ProductProfitLine }"><p class="text-sm text-slate-700">{{ formatCop(data.revenue) }}</p></template>
                   </NxColumn>
-                  <NxColumn header="Costo">
+                  <NxColumn header="Costo" field="cost_total" sortable>
                     <template #body="{ data }: { data: ProductProfitLine }"><p class="text-sm text-slate-700">{{ formatCop(data.cost_total) }}</p></template>
                   </NxColumn>
-                  <NxColumn header="Utilidad">
+                  <NxColumn header="Utilidad" field="profit" sortable>
                     <template #body="{ data }: { data: ProductProfitLine }">
                       <p class="text-right text-sm font-semibold text-emerald-600">{{ formatCop(data.profit) }}</p>
                     </template>
@@ -226,19 +226,19 @@ const productProfit = computed(() => monthlyQuery.data.value?.product_profit_lin
                   <NxStatCard label="Utilidad neta del año" :value="formatCop(annualQuery.data.value.net_total)" icon="pi pi-wallet" />
                 </div>
                 <NxDataTable :value="annualQuery.data.value?.months ?? []" :loading="annualQuery.isPending.value">
-                  <NxColumn header="Mes">
+                  <NxColumn header="Mes" field="month" sortable>
                     <template #body="{ data }: { data: AccountingAnnualMonth }"><p class="text-sm font-medium capitalize text-slate-900">{{ data.label }}</p></template>
                   </NxColumn>
-                  <NxColumn header="Ventas">
+                  <NxColumn header="Ventas" field="sales_count" sortable>
                     <template #body="{ data }: { data: AccountingAnnualMonth }"><p class="text-sm text-slate-700">{{ data.sales_count }}</p></template>
                   </NxColumn>
-                  <NxColumn header="Ingresos">
+                  <NxColumn header="Ingresos" field="income" sortable>
                     <template #body="{ data }: { data: AccountingAnnualMonth }"><p class="text-sm text-slate-700">{{ formatCop(data.income) }}</p></template>
                   </NxColumn>
-                  <NxColumn header="Gastos">
+                  <NxColumn header="Gastos" field="expenses" sortable>
                     <template #body="{ data }: { data: AccountingAnnualMonth }"><p class="text-sm text-slate-700">{{ formatCop(data.expenses) }}</p></template>
                   </NxColumn>
-                  <NxColumn header="Utilidad neta">
+                  <NxColumn header="Utilidad neta" field="net_result" sortable>
                     <template #body="{ data }: { data: AccountingAnnualMonth }">
                       <p class="text-right text-sm font-semibold" :class="data.net_result >= 0 ? 'text-emerald-600' : 'text-red-500'">
                         {{ formatCop(data.net_result) }}

@@ -8,6 +8,8 @@ export interface MovementsFilters {
   ingredient_id?: number
   from?: string
   to?: string
+  sort?: string
+  direction?: 'asc' | 'desc'
 }
 
 export async function fetchStockMovements(page: number, filters: MovementsFilters): Promise<StockMovementsResponse> {

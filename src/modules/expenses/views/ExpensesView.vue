@@ -3,6 +3,7 @@
 // Puerto de Admin/Expenses/Index.vue del legacy, con tabs para separar
 // el registro de gastos puntuales de la configuración de gastos recurrentes.
 import { computed, ref, watch } from 'vue'
+import type { DataTableSortEvent } from 'primevue/datatable'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import { useAuthStore } from '@/stores/auth.store'
@@ -56,11 +57,22 @@ watch(searchInput, (value) => {
   }, 300)
 })
 
-watch([month, year, typeIdFilter], () => {
+// Claves publicas que acepta el backend (ver ExpenseController::index() en
+// nexolu-pos-api) - "date"/"description"/"value", no columnas reales.
+const sortField = ref<string | undefined>(undefined)
+const sortOrder = ref<number | null>(null)
+const sortDirection = computed<'asc' | 'desc' | undefined>(() => (sortOrder.value === 1 ? 'asc' : sortOrder.value === -1 ? 'desc' : undefined))
+
+watch([month, year, typeIdFilter, sortField, sortOrder], () => {
   page.value = 1
 })
 
-const expensesQuery = useExpenses(month, year, typeIdFilter, search, page)
+function onExpensesSort(event: DataTableSortEvent): void {
+  sortField.value = typeof event.sortField === 'string' ? event.sortField : undefined
+  sortOrder.value = event.sortOrder ?? null
+}
+
+const expensesQuery = useExpenses(month, year, typeIdFilter, search, page, sortField, sortDirection)
 const typesQuery = useExpenseTypes()
 const { deleteMutation } = useExpenseMutations()
 
@@ -120,6 +132,18 @@ function formatDate(dateStr: string): string {
 }
 
 // ---------- Gastos fijos ---------------------------------------------
+// `amount` es un string (decimal de Laravel) - ordenarlo como texto rompe
+// con montos de distinta cantidad de digitos ("9000" > "50000"). Convertir
+// a numero para que el sort de PrimeVue compare valores reales.
+// PrimeVue tipa sortField como (item) => string, pero en runtime solo llama
+// la funcion y usa lo que devuelva tal cual para comparar (ver
+// resolveFieldData en @primeuix/utils/object) - el cast es a proposito,
+// coincide con el resto del ecosistema PrimeVue tratando sortField como "un
+// valor comparable", no literalmente un string.
+const fixedExpenseAmountSortField = ((row: FixedExpenseTemplate) => (row.amount ? Number(row.amount) : 0)) as unknown as (
+  row: FixedExpenseTemplate,
+) => string
+
 const templatesQuery = useFixedExpenseTemplates()
 const { deleteMutation: deleteTemplateMutation, toggleReminderMutation } = useFixedExpenseTemplateMutations()
 
@@ -243,7 +267,10 @@ async function removeTemplate(template: FixedExpenseTemplate): Promise<void> {
                 :rows="20"
                 :total-records="meta?.total ?? 0"
                 :first="((meta?.current_page ?? 1) - 1) * 20"
+                :sort-field="sortField"
+                :sort-order="sortOrder"
                 @page="onPage"
+                @sort="onExpensesSort"
               >
                 <template #empty>
                   <p class="py-6 text-center text-sm text-slate-400">
@@ -251,13 +278,13 @@ async function removeTemplate(template: FixedExpenseTemplate): Promise<void> {
                   </p>
                 </template>
 
-                <NxColumn header="Fecha" style="width: 80px">
+                <NxColumn header="Fecha" field="date" sortable style="width: 80px">
                   <template #body="{ data }: { data: Expense }">
                     <span class="text-xs text-slate-500">{{ formatDate(data.date) }}</span>
                   </template>
                 </NxColumn>
 
-                <NxColumn header="Descripción">
+                <NxColumn header="Descripción" field="description" sortable>
                   <template #body="{ data }: { data: Expense }">
                     <div>
                       <p class="text-sm font-medium text-slate-900">{{ data.description }}</p>
@@ -266,7 +293,7 @@ async function removeTemplate(template: FixedExpenseTemplate): Promise<void> {
                   </template>
                 </NxColumn>
 
-                <NxColumn header="Valor" style="width: 110px">
+                <NxColumn header="Valor" field="value" sortable style="width: 110px">
                   <template #body="{ data }: { data: Expense }">
                     <span class="font-semibold text-slate-900">{{ formatCop(data.value) }}</span>
                   </template>
@@ -327,7 +354,7 @@ async function removeTemplate(template: FixedExpenseTemplate): Promise<void> {
                   <p class="py-6 text-center text-sm text-slate-400">Sin gastos fijos configurados.</p>
                 </template>
 
-                <NxColumn header="Nombre">
+                <NxColumn header="Nombre" field="name" sortable>
                   <template #body="{ data }: { data: FixedExpenseTemplate }">
                     <div>
                       <p class="text-sm font-medium text-slate-900">{{ data.name }}</p>
@@ -336,7 +363,7 @@ async function removeTemplate(template: FixedExpenseTemplate): Promise<void> {
                   </template>
                 </NxColumn>
 
-                <NxColumn header="Monto" style="width: 110px">
+                <NxColumn header="Monto" :sort-field="fixedExpenseAmountSortField" sortable style="width: 110px">
                   <template #body="{ data }: { data: FixedExpenseTemplate }">
                     <span class="text-sm text-slate-700">
                       {{ data.amount ? formatCop(data.amount) : '—' }}
@@ -344,13 +371,13 @@ async function removeTemplate(template: FixedExpenseTemplate): Promise<void> {
                   </template>
                 </NxColumn>
 
-                <NxColumn header="Día" style="width: 60px">
+                <NxColumn header="Día" field="day_of_month" sortable style="width: 60px">
                   <template #body="{ data }: { data: FixedExpenseTemplate }">
                     <span class="text-xs text-slate-500">{{ data.day_of_month ?? '—' }}</span>
                   </template>
                 </NxColumn>
 
-                <NxColumn header="Activo" style="width: 80px">
+                <NxColumn header="Activo" field="active" sortable style="width: 80px">
                   <template #body="{ data }: { data: FixedExpenseTemplate }">
                     <span
                       :class="data.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'"

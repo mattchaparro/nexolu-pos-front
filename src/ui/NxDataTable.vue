@@ -4,7 +4,7 @@
 // Compone con NxColumn (slot default = columnas, igual que el DataTable
 // real). `lazy` + `@page` para paginacion server-side (misma pagina/params
 // que ya maneja TanStack Query en el composable de la lista).
-import PrimeDataTable, { type DataTablePageEvent } from 'primevue/datatable'
+import PrimeDataTable, { type DataTablePageEvent, type DataTableSortEvent } from 'primevue/datatable'
 
 withDefaults(
   defineProps<{
@@ -15,6 +15,16 @@ withDefaults(
     totalRecords?: number
     lazy?: boolean
     first?: number
+    // Sin sortField/sortOrder: cada NxColumn con `sortable` ordena `value`
+    // en el navegador solo (PrimeVue lo maneja internamente) - alcanza para
+    // tablas que ya traen todo de una (ej. Margenes). Pasar estas dos como
+    // prop controlada + escuchar @sort es para el caso server-side (misma
+    // idea que ya usa `lazy` + `@page` para paginacion - ver
+    // StockMovementsTab.vue).
+    sortField?: string
+    sortOrder?: number | null
+    /** Tercer click en el header quita el orden en vez de ciclar para siempre entre asc/desc. */
+    removableSort?: boolean
   }>(),
   {
     loading: false,
@@ -23,10 +33,13 @@ withDefaults(
     totalRecords: 0,
     lazy: false,
     first: 0,
+    sortField: undefined,
+    sortOrder: undefined,
+    removableSort: true,
   },
 )
 
-const emit = defineEmits<{ page: [event: DataTablePageEvent] }>()
+const emit = defineEmits<{ page: [event: DataTablePageEvent]; sort: [event: DataTableSortEvent] }>()
 </script>
 
 <template>
@@ -38,10 +51,14 @@ const emit = defineEmits<{ page: [event: DataTablePageEvent] }>()
     :total-records="totalRecords"
     :lazy="lazy"
     :first="first"
+    :sort-field="sortField"
+    :sort-order="sortOrder ?? undefined"
+    :removable-sort="removableSort"
     striped-rows
     responsive-layout="scroll"
     class="text-sm"
     @page="emit('page', $event)"
+    @sort="emit('sort', $event)"
   >
     <template #empty>
       <slot name="empty" />

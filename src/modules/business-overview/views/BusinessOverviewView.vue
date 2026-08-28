@@ -88,7 +88,7 @@ function formatQty(value: number): string {
         </div>
       </div>
 
-      <section class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section class="grid grid-cols-2 gap-3" :class="overview.channels_enabled.expenses ? 'lg:grid-cols-5' : 'lg:grid-cols-3'">
         <StatTile
           label="Ingresos del mes"
           :value="formatCop(overview.period.summary.revenue)"
@@ -97,6 +97,11 @@ function formatQty(value: number): string {
         />
         <StatTile label="Ticket promedio" :value="formatCop(overview.period.summary.avg_ticket)" />
         <StatTile label="Unidades vendidas" :value="formatQty(overview.period.summary.units_sold)" />
+        <StatTile
+          v-if="overview.channels_enabled.expenses"
+          label="Gastos del mes"
+          :value="formatCop(overview.period.summary.expenses_total)"
+        />
         <StatTile
           v-if="overview.channels_enabled.expenses"
           label="Neto estimado"

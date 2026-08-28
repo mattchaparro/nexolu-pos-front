@@ -5,6 +5,8 @@ import type { PaginatedResponse } from '@/types/pagination'
 export interface FetchAuditLogsParams {
   search?: string
   page?: number
+  sort?: string
+  direction?: 'asc' | 'desc'
 }
 
 export async function fetchAuditLogs(params: FetchAuditLogsParams = {}): Promise<PaginatedResponse<AuditLogEntry>> {

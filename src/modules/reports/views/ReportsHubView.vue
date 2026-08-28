@@ -1,12 +1,12 @@
 <script setup lang="ts">
 // Hub "Reportes": puerto de admin.reports.index del legacy (tarjetas que
-// enlazan a cada reporte). A diferencia del legacy, Resumen del dia y Mi
-// negocio ya tienen su propio item de menu de primer nivel (se construyeron
-// antes que este hub) - se listan aca tambien porque conceptualmente son
-// reportes, no para duplicar navegacion sino para que esta pantalla sea el
-// punto de entrada completo a "todo lo que el negocio puede reportar".
-// Cada tarjeta se gatea con el mismo criterio que su propia ruta (ver
-// router/index.ts) - reports.inventory usa un OR de features que el
+// enlazan a cada reporte). Resumen del dia y Mi negocio NO estan en esta
+// lista a proposito (desviacion pedida explicitamente por el usuario,
+// 2026-08-28): ya tienen su propio item de menu de primer nivel
+// ("Resumen"/"Mi negocio" en router/navigation.ts), listarlos tambien aca
+// era navegacion duplicada. Inventario va primero en el orden (mismo
+// pedido). Cada tarjeta se gatea con el mismo criterio que su propia ruta
+// (ver router/index.ts) - reports.inventory usa un OR de features que el
 // backend resuelve solo, asi que aca no se filtra por feature, solo por
 // permiso.
 import { computed } from 'vue'
@@ -29,18 +29,11 @@ interface ReportCard {
 
 const cards = computed<ReportCard[]>(() => [
   {
-    routeName: 'daily-summary.index',
-    label: 'Resumen del día',
-    description: 'Ingreso del negocio de hoy o un rango, por canal y medio de pago.',
-    icon: 'pi pi-chart-bar',
-    visible: hasPermission('reports.daily_summary'),
-  },
-  {
-    routeName: 'business-overview.index',
-    label: 'Mi negocio',
-    description: 'Crecimiento, horas pico, descuentos, fiado y rotación de productos.',
-    icon: 'pi pi-chart-line',
-    visible: hasPermission('reports.business_overview'),
+    routeName: 'inventory-reports.index',
+    label: 'Inventario',
+    description: 'Movimientos de stock y márgenes por producto, con y sin ventas.',
+    icon: 'pi pi-box',
+    visible: hasPermission('reports.inventory') && (hasFeature(business.value, 'inventory_advanced') || hasFeature(business.value, 'ingredients')),
   },
   {
     routeName: 'sales-history.index',
@@ -55,13 +48,6 @@ const cards = computed<ReportCard[]>(() => [
     description: 'Totales, ticket promedio y unidades vendidas por cada cajero.',
     icon: 'pi pi-users',
     visible: hasPermission('reports.sales_by_seller'),
-  },
-  {
-    routeName: 'inventory-reports.index',
-    label: 'Inventario',
-    description: 'Movimientos de stock y márgenes por producto, con y sin ventas.',
-    icon: 'pi pi-box',
-    visible: hasPermission('reports.inventory') && (hasFeature(business.value, 'inventory_advanced') || hasFeature(business.value, 'ingredients')),
   },
   {
     routeName: 'accounting.index',

@@ -5,6 +5,8 @@ export interface SalesHistoryFilters {
   status?: string
   payment_method?: string
   search?: string
+  sort?: string
+  direction?: 'asc' | 'desc'
 }
 
 export async function fetchSalesHistory(

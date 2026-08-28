@@ -6,7 +6,7 @@ import { computed, ref } from 'vue'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { MarginRow, NamedOption } from '@/types/inventoryReport'
-import { NxButton, NxColumn, NxDataTable, NxDatePicker, NxSelect, NxToggleButton } from '@/ui'
+import { NxButton, NxColumn, NxDataTable, NxDatePicker, NxInput, NxSelect, NxToggleButton } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
@@ -21,8 +21,11 @@ function currentMonthIso(): string {
 }
 
 const categoryId = ref<number | null>(null)
-const withSales = ref(false)
+// Arranca activo a pedido explicito: la ganancia real de ventas es el dato
+// que mas importa de este reporte, no el potencial sobre stock nada mas.
+const withSales = ref(true)
 const month = ref(currentMonthIso())
+const searchInput = ref('')
 
 const filters = computed(() => ({
   category_id: categoryId.value ?? undefined,
@@ -33,6 +36,18 @@ const filters = computed(() => ({
 const marginsQuery = useMarginsReport(filters)
 
 const categoryOptions = computed(() => [{ id: null, label: 'Toda categoría' }, ...props.categories.map((c) => ({ id: c.id, label: c.name }))])
+
+// Buscador por nombre - client-side porque el endpoint ya trae todos los
+// productos con costo de una sola vez (sin paginar, ver InventoryReportService::margins()
+// en nexolu-pos-api), no hace falta ida y vuelta al servidor para filtrar.
+const filteredRows = computed(() => {
+  const rows = marginsQuery.data.value?.margin_rows ?? []
+  const query = searchInput.value.trim().toLowerCase()
+  if (!query) {
+    return rows
+  }
+  return rows.filter((row) => row.name.toLowerCase().includes(query))
+})
 
 const { notify } = useSystemAlert()
 const exporting = ref(false)
@@ -62,56 +77,57 @@ function marginPctLabel(row: MarginRow): string {
 <template>
   <div class="flex flex-col gap-4">
     <div class="grid grid-cols-2 items-end gap-3 lg:flex lg:flex-wrap">
-      <NxSelect v-model="categoryId" :options="categoryOptions" option-label="label" option-value="id" label="Categoría" class="col-span-2 lg:w-48" />
+      <NxSelect v-model="categoryId" :options="categoryOptions" option-label="label" option-value="id" label="Categoría" filter class="col-span-2 lg:w-48" />
       <NxToggleButton v-model="withSales" label="Con ventas del mes" icon="pi pi-chart-line" class="col-span-2 justify-self-start lg:w-auto" />
       <NxDatePicker v-if="withSales" v-model="month" view="month" date-format="mm/yy" label="Mes" class="col-span-2 lg:w-40" />
+      <NxInput v-model="searchInput" label="Buscar producto" icon="pi pi-search" clearable class="col-span-2 lg:min-w-[220px] lg:flex-1" />
       <NxButton variant="outline" icon="pi pi-download" :loading="exporting" class="col-span-2 justify-self-end lg:ml-auto" @click="exportCsv">
         Exportar CSV
       </NxButton>
     </div>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-      <NxDataTable :value="marginsQuery.data.value?.margin_rows ?? []" :loading="marginsQuery.isPending.value">
+      <NxDataTable :value="filteredRows" :loading="marginsQuery.isPending.value">
         <template #empty>
           <p class="py-6 text-center text-sm text-slate-400">Sin productos con costo configurado.</p>
         </template>
-        <NxColumn header="Producto">
+        <NxColumn header="Producto" field="name" sortable>
           <template #body="{ data }: { data: MarginRow }">
             <p class="text-sm font-medium text-slate-900">{{ data.name }}</p>
             <p v-if="data.category" class="text-xs text-slate-400">{{ data.category }}</p>
           </template>
         </NxColumn>
-        <NxColumn header="Stock">
+        <NxColumn header="Stock" field="stock" sortable>
           <template #body="{ data }: { data: MarginRow }">
             <p class="text-sm text-slate-700">{{ data.stock }}<span v-if="data.is_recipe" class="ml-1 text-xs text-slate-400">(lotes)</span></p>
           </template>
         </NxColumn>
-        <NxColumn header="Precio">
+        <NxColumn header="Precio" field="price" sortable>
           <template #body="{ data }: { data: MarginRow }">
             <p class="text-sm text-slate-700">{{ formatCop(data.price) }}</p>
           </template>
         </NxColumn>
-        <NxColumn header="Costo">
+        <NxColumn header="Costo" field="cost_price" sortable>
           <template #body="{ data }: { data: MarginRow }">
             <p class="text-sm text-slate-700">{{ formatCop(data.cost_price) }}</p>
           </template>
         </NxColumn>
-        <NxColumn header="Margen">
+        <NxColumn header="Margen" field="margin_pct" sortable>
           <template #body="{ data }: { data: MarginRow }">
             <p class="text-sm font-semibold text-slate-900">{{ formatCop(data.margin_cop) }} <span class="font-normal text-slate-400">({{ marginPctLabel(data) }})</span></p>
           </template>
         </NxColumn>
-        <NxColumn header="Ganancia potencial (stock)">
+        <NxColumn header="Ganancia potencial (stock)" field="profit_total" sortable>
           <template #body="{ data }: { data: MarginRow }">
             <p class="text-sm text-slate-700">{{ formatCop(data.profit_total) }}</p>
           </template>
         </NxColumn>
-        <NxColumn v-if="withSales" header="Vendidos">
+        <NxColumn v-if="withSales" header="Vendidos" field="qty_sold" sortable>
           <template #body="{ data }: { data: MarginRow }">
             <p class="text-sm text-slate-700">{{ data.qty_sold ?? 0 }}</p>
           </template>
         </NxColumn>
-        <NxColumn v-if="withSales" header="Ganancia real (ventas)">
+        <NxColumn v-if="withSales" header="Ganancia real (ventas)" field="profit_from_sales" sortable>
           <template #body="{ data }: { data: MarginRow }">
             <p class="text-right text-sm font-semibold text-emerald-600">{{ formatCop(data.profit_from_sales ?? 0) }}</p>
           </template>

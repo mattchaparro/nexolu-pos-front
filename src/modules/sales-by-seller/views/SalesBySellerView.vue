@@ -85,22 +85,22 @@ const totals = computed(() => sellerQuery.data.value?.totals)
         <template #empty>
           <p class="py-6 text-center text-sm text-slate-400">Sin ventas cerradas en este rango.</p>
         </template>
-        <NxColumn header="Vendedor">
+        <NxColumn header="Vendedor" field="user_name" sortable>
           <template #body="{ data }: { data: SellerSummary }">
             <p class="text-sm font-medium text-slate-900">{{ data.user_name }}</p>
           </template>
         </NxColumn>
-        <NxColumn header="Ventas">
+        <NxColumn header="Ventas" field="sales_count" sortable>
           <template #body="{ data }: { data: SellerSummary }">
             <p class="text-sm text-slate-700">{{ data.sales_count }}</p>
           </template>
         </NxColumn>
-        <NxColumn header="Unidades vendidas">
+        <NxColumn header="Unidades vendidas" field="items_sold" sortable>
           <template #body="{ data }: { data: SellerSummary }">
             <p class="text-sm text-slate-700">{{ data.items_sold }}</p>
           </template>
         </NxColumn>
-        <NxColumn header="Ticket promedio">
+        <NxColumn header="Ticket promedio" field="avg_ticket" sortable>
           <template #body="{ data }: { data: SellerSummary }">
             <p class="text-sm text-slate-700">{{ formatCop(data.avg_ticket) }}</p>
           </template>
@@ -110,12 +110,12 @@ const totals = computed(() => sellerQuery.data.value?.totals)
             <p class="max-w-sm truncate text-xs text-slate-500">{{ methodsSummary(data) || '—' }}</p>
           </template>
         </NxColumn>
-        <NxColumn header="Última venta">
+        <NxColumn header="Última venta" field="last_sale_at" sortable>
           <template #body="{ data }: { data: SellerSummary }">
             <p class="text-sm text-slate-600">{{ data.last_sale_at ?? '—' }}</p>
           </template>
         </NxColumn>
-        <NxColumn header="Total bruto">
+        <NxColumn header="Total bruto" field="gross_total" sortable>
           <template #body="{ data }: { data: SellerSummary }">
             <p class="text-right text-sm font-semibold text-slate-900">{{ formatCop(data.gross_total) }}</p>
           </template>
