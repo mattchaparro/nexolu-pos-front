@@ -22,7 +22,7 @@ const props = defineProps<{
 }>()
 
 type Width = 'mobile' | 'desktop'
-const width = ref<Width>('desktop')
+const width = defineModel<Width>('width', { default: 'desktop' })
 const frame = ref<HTMLIFrameElement | null>(null)
 const ready = ref(false)
 
@@ -113,7 +113,9 @@ watch(() => [props.blocks, props.settings], send, { deep: true })
 <template>
   <div class="flex flex-col gap-2">
     <div class="flex items-center justify-between">
-      <p class="text-sm font-semibold text-slate-700">Vista previa</p>
+      <p class="text-sm font-semibold text-slate-700">
+        {{ width === 'mobile' ? 'Como se ve en celular' : 'Como se ve en computador' }}
+      </p>
       <div class="flex gap-1">
         <button
           v-for="option in [
@@ -141,7 +143,7 @@ watch(() => [props.blocks, props.settings], send, { deep: true })
         v-if="previewUrl"
         ref="frame"
         :src="previewUrl"
-        class="h-[70vh] rounded-lg border border-slate-200 bg-white transition-all"
+        class="h-[72vh] rounded-lg border border-slate-200 bg-white transition-all"
         :class="width === 'mobile' ? 'w-[375px]' : 'w-full'"
         title="Vista previa de la tienda"
         @load="send"
