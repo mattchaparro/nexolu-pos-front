@@ -27,6 +27,32 @@ export async function createProductStockMovement(
   return data
 }
 
+// Movimientos de UNA variante. El backend necesita ademas el producto padre
+// (product_id apunta siempre a el) y aprovecha para verificar que la
+// variante sea suya - ver StockMovementController::storeForVariant.
+export async function fetchVariantStockMovements(
+  variantId: number,
+  page = 1,
+): Promise<PaginatedResponse<StockMovement>> {
+  const { data } = await httpClient.get<PaginatedResponse<StockMovement>>('/stock-movements', {
+    params: { product_variant_id: variantId, page },
+  })
+  return data
+}
+
+export async function createVariantStockMovement(
+  productId: number,
+  variantId: number,
+  payload: StockMovementPayload,
+): Promise<StockMovement> {
+  const { data } = await httpClient.post<StockMovement>('/stock-movements', {
+    product_id: productId,
+    product_variant_id: variantId,
+    ...payload,
+  })
+  return data
+}
+
 export async function fetchIngredientStockMovements(
   ingredientId: number,
   page = 1,

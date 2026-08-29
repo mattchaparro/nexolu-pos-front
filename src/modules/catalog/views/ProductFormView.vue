@@ -9,12 +9,20 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useBusiness } from '@/composables/useBusiness'
 import { useSystemAlert } from '@/composables/useSystemAlert'
-import type { ProductRecipeLineInput, ProductVariantInput } from '@/types/product'
+import type {
+  PendingProductImage,
+  Product,
+  ProductRecipeLineInput,
+  ProductVariantInput,
+  VariantPhotoTarget,
+} from '@/types/product'
 import { NxButton, NxInput, NxInputNumber, NxPageHeader, NxSelect, NxTextarea, NxToggleButton } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 import { hasFeature } from '@/utils/hasFeature'
 
+import ProductImagesEditor from '../components/ProductImagesEditor.vue'
+import ProductQuickViewModal from '../components/ProductQuickViewModal.vue'
 import ProductIngredientsEditor from '../components/ProductIngredientsEditor.vue'
 import ProductVariantsEditor from '../components/ProductVariantsEditor.vue'
 import { useCategories } from '../composables/useCategories'
@@ -22,6 +30,8 @@ import { useIngredientOptions } from '../composables/useIngredientOptions'
 import { useProduct } from '../composables/useProduct'
 import { useProductAttributes } from '../composables/useProductAttributes'
 import { useProductMutations } from '../composables/useProductMutations'
+import { uploadProductImage } from '../services/productImageService'
+import { variantComboKey, variantComboLabel } from '../support/variantCombo'
 
 const route = useRoute()
 const router = useRouter()
@@ -45,8 +55,13 @@ const ingredientOptionsQuery = useIngredientOptions(ingredientsEnabled)
 // leyendo el JSON crudo, la seccion de Variaciones quedaba invisible justo
 // para los negocios que ya existian, que son los que van a activarla.
 const variantsEnabled = computed(() => hasFeature(business.value, 'variants'))
+// Las fotos del catalogo existen para publicarlas en la tienda online, asi
+// que la seccion entera vive detras de ese modulo (las rutas de imagenes
+// tambien estan gateadas por `feature:online_store` en el backend).
+const onlineStoreEnabled = computed(() => hasFeature(business.value, 'online_store'))
 const productAttributesQuery = useProductAttributes(variantsEnabled)
 const { createMutation, updateMutation } = useProductMutations()
+
 
 const categoryOptions = computed(() => {
   const all = categoriesQuery.data.value ?? []
@@ -77,6 +92,98 @@ const ingredients = ref<ProductRecipeLineInput[]>([])
 const variants = ref<ProductVariantInput[]>([])
 const fieldErrors = ref<Record<string, string>>({})
 const formError = ref<string | null>(null)
+
+// Fotos elegidas antes de que el producto exista: se quedan en el navegador
+// y se suben despues de crearlo, porque el endpoint cuelga de
+// /products/{id}/images y necesita un id real.
+const pendingImages = ref<PendingProductImage[]>([])
+
+/**
+ * Opciones del selector "a que variante pertenece esta foto". Al editar son
+ * ids reales; al crear, la combinacion de valores de atributo, que es lo
+ * unico que identifica a una variante que todavia no existe.
+ */
+const variantPhotoTargets = computed<VariantPhotoTarget[]>(() => {
+  if (!variantsEnabled.value) {
+    return []
+  }
+
+  if (isEdit.value) {
+    return (productQuery.data.value?.variants ?? []).map((variant) => ({
+      key: String(variant.id),
+      label: variant.attribute_values.map((value) => value.value).join(' / '),
+    }))
+  }
+
+  const attributes = productAttributesQuery.data.value ?? []
+  return variants.value.map((variant) => ({
+    key: variantComboKey(variant.attribute_value_ids),
+    label: variantComboLabel(variant.attribute_value_ids, attributes),
+  }))
+})
+
+// --- Vista previa ---
+// Mismo modal que usa el listado del Catalogo. Las fotos salen de las
+// pendientes (previews locales, producto sin guardar) o de las ya subidas.
+const previewOpen = ref(false)
+
+const previewPhotos = computed(() => {
+  if (pendingImages.value.length > 0) {
+    return pendingImages.value.map((image) => image.previewUrl)
+  }
+  const uploaded = productQuery.data.value?.images ?? []
+  return uploaded.length > 0 ? uploaded.map((image) => image.url) : []
+})
+
+const previewVariants = computed(() =>
+  variants.value.map((variant) => ({
+    label: variantComboLabel(variant.attribute_value_ids, productAttributesQuery.data.value ?? []),
+    sku: variant.sku || null,
+    price: variant.price,
+    stock: variant.stock ?? 0,
+    isActive: variant.is_active !== false,
+  })),
+)
+
+/**
+ * Sube las fotos que estaban esperando a que el producto existiera.
+ *
+ * Un fallo aca no invalida el producto, que ya quedo creado: se avisa y se
+ * sigue, en vez de dejar al comerciante creyendo que no se guardo nada.
+ */
+async function uploadPendingImages(created: Product): Promise<void> {
+  if (pendingImages.value.length === 0) {
+    return
+  }
+
+  // La respuesta de creacion trae las variantes ya con id: se mapean por su
+  // combinacion de valores, no por posicion, que no es ninguna garantia.
+  const variantIdByCombo = new Map<string, number>(
+    (created.variants ?? []).map((variant) => [
+      variantComboKey(variant.attribute_values.map((value) => value.product_attribute_value_id)),
+      variant.id,
+    ]),
+  )
+
+  let failed = 0
+  // Secuencial: el orden de las fotos es el orden en que llegan.
+  for (const image of pendingImages.value) {
+    try {
+      await uploadProductImage(created.id, image.file, {
+        variantId: image.variantKey === null ? null : (variantIdByCombo.get(image.variantKey) ?? null),
+      })
+    } catch {
+      failed += 1
+    }
+  }
+
+  pendingImages.value.forEach((image) => URL.revokeObjectURL(image.previewUrl))
+  pendingImages.value = []
+
+  if (failed > 0) {
+    notify(`El producto se creó, pero ${failed} foto(s) no se pudieron subir.`)
+  }
+}
 
 watch(
   () => productQuery.data.value,
@@ -195,6 +302,23 @@ const pageTitle = computed(() => {
   return isService.value ? 'Nuevo servicio' : 'Nuevo producto'
 })
 
+/**
+ * Campos que tienen un input propio capaz de mostrar su error debajo. Todo
+ * lo que el backend rechace fuera de esta lista se muestra en el banner.
+ */
+const INLINE_ERROR_FIELDS = [
+  'name',
+  'category_id',
+  'price',
+  'cost_price',
+  'stock',
+  'sku',
+  'low_stock_alert_threshold',
+  'duration_minutes',
+  'description',
+  'how_to_use',
+]
+
 async function submit(): Promise<void> {
   fieldErrors.value = {}
   formError.value = null
@@ -207,7 +331,16 @@ async function submit(): Promise<void> {
     fieldErrors.value.category_id = 'Elige una categoría.'
     return
   }
-  if (price.value === null) {
+  // Con variantes, el precio del producto NO se escribe a mano: sale de la
+  // variante mas barata y su campo esta deshabilitado (ver el template), asi
+  // que `price` se queda en null aunque la pantalla muestre un valor.
+  // Validar `price` a secas rechazaba con "El precio es obligatorio" sobre un
+  // campo deshabilitado que ya mostraba el precio - y hacia imposible crear
+  // un producto con variantes salvo que se escribiera el precio ANTES de
+  // agregarlas. El payload de abajo ya usaba el precio efectivo; era solo
+  // esta guarda la que se habia quedado atras.
+  const effectivePrice = cheapestVariantPrice.value ?? price.value
+  if (effectivePrice === null) {
     fieldErrors.value.price = 'El precio es obligatorio.'
     return
   }
@@ -216,7 +349,7 @@ async function submit(): Promise<void> {
     name: name.value.trim(),
     description: showDescription.value ? description.value.trim() || null : null,
     how_to_use: showHowToUse.value ? howToUse.value.trim() || null : null,
-    price: cheapestVariantPrice.value ?? price.value,
+    price: effectivePrice,
     ...(recipeCost.value === null && cheapestVariantPrice.value === null ? { cost_price: costPrice.value ?? 0 } : {}),
     ...(isEdit.value ? {} : { stock: stock.value ?? 0 }),
     low_stock_alert_threshold: isService.value ? null : lowStockAlertThreshold.value,
@@ -237,15 +370,22 @@ async function submit(): Promise<void> {
       await updateMutation.mutateAsync({ id: productId.value, payload })
       notify('Producto actualizado')
     } else {
-      await createMutation.mutateAsync(payload)
+      const created = await createMutation.mutateAsync(payload)
       notify('Producto creado')
+      await uploadPendingImages(created)
     }
     router.push(returnRoute.value)
   } catch (error) {
     const fields = extractFieldErrors(error)
-    if (Object.keys(fields).length > 0) {
-      fieldErrors.value = fields
-    } else {
+    fieldErrors.value = fields
+
+    // Un 422 sobre un campo anidado (variants.0.sku, ingredients.2.quantity)
+    // no tiene input propio al que colgarle el mensaje, asi que antes se
+    // guardaba en fieldErrors y no lo veia nadie: el formulario se quedaba
+    // mudo tras pulsar Guardar. Si ninguno de los campos devueltos se
+    // renderiza, el error sube al banner.
+    const surfacedInline = Object.keys(fields).some((field) => INLINE_ERROR_FIELDS.includes(field))
+    if (!surfacedInline) {
       formError.value = extractErrorMessage(error, 'No pudimos guardar el producto.')
     }
   }
@@ -289,6 +429,15 @@ async function submit(): Promise<void> {
             <NxTextarea v-if="showHowToUse" v-model="howToUse" label="Cómo usarlo" :rows="2" />
             <NxInput v-if="isEdit" v-model="sku" label="SKU" disabled />
           </div>
+        </div>
+
+        <div v-if="onlineStoreEnabled" class="rounded-xl border border-slate-200 bg-white p-4">
+          <p class="mb-3 text-sm font-semibold text-slate-700">Fotos</p>
+          <ProductImagesEditor
+            v-model:pending="pendingImages"
+            :product-id="productId"
+            :variant-targets="variantPhotoTargets"
+          />
         </div>
 
         <div class="rounded-xl border border-slate-200 bg-white p-4">
@@ -392,7 +541,23 @@ async function submit(): Promise<void> {
 
     <div class="flex gap-2">
       <NxButton variant="outline" class="flex-1" @click="router.push({ name: 'catalog.index' })">Cancelar</NxButton>
+      <NxButton variant="outline" icon="pi pi-eye" @click="previewOpen = true">Vista previa</NxButton>
       <NxButton class="flex-1" :loading="isSaving" @click="submit">Guardar</NxButton>
     </div>
+
+    <ProductQuickViewModal
+      v-model="previewOpen"
+      :name="name"
+      :category-name="categoryOptions.find((option) => option.id === categoryId)?.label"
+      :description="description"
+      :price="cheapestVariantPrice ?? price"
+      :price-varies-at-sale="priceVariesAtSale"
+      :photos="previewPhotos"
+      :variants="previewVariants"
+      :stock="stock"
+      :track-stock="trackStock"
+      :is-active="isActive"
+      :is-service="isService"
+    />
   </div>
 </template>

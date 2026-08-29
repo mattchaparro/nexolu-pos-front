@@ -16,6 +16,7 @@ import type {
   ProductCategory,
   ProductCategoryPayload,
   ProductPayload,
+  ProductVariant,
 } from '@/types/product'
 
 // Sin paginar (ProductCategoryController::index no pagina) - fuente unica
@@ -98,6 +99,15 @@ export async function updateProduct(id: number, payload: Partial<ProductPayload>
 
 export async function deleteProduct(id: number): Promise<void> {
   await httpClient.delete(`/products/${id}`)
+}
+
+// Pausa/activa UNA variante. Endpoint acotado a proposito: hacerlo por
+// PUT /products obligaria a reenviar todas las variantes del producto, y
+// omitir una la borraria (ProductService::syncVariants soft-deletea las que
+// no vienen en el payload).
+export async function toggleProductVariant(productId: number, variantId: number): Promise<ProductVariant> {
+  const { data } = await httpClient.patch<ProductVariant>(`/products/${productId}/variants/${variantId}/toggle`)
+  return data
 }
 
 export async function duplicateProduct(id: number): Promise<Product> {

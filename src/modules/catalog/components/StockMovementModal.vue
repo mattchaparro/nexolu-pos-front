@@ -22,6 +22,8 @@ export interface StockSubject {
   name: string
   stock: number
   unit?: string
+  /** Solo para kind 'variant': el producto al que pertenece. */
+  productId?: number
 }
 
 const props = withDefaults(
@@ -41,7 +43,8 @@ const reasonsQuery = useStockMovementReasons()
 
 const kind = computed<StockSubjectKind>(() => props.subject?.kind ?? 'product')
 const subjectId = computed(() => props.subject?.id ?? null)
-const { movementsQuery, createMutation } = useStockMovements(kind, subjectId)
+const parentId = computed(() => props.subject?.productId ?? null)
+const { movementsQuery, createMutation } = useStockMovements(kind, subjectId, undefined, parentId)
 
 const type = ref<StockMovementType>('entry')
 const quantity = ref<number | null>(null)
@@ -57,6 +60,7 @@ function resetForm(): void {
   unitCost.value = null
   notes.value = ''
   formError.value = null
+  appliedDelta.value = 0
 }
 
 watch(
@@ -83,6 +87,17 @@ watch(type, (value) => {
 
 const unitLabel = computed(() => props.subject?.unit ?? 'unidades')
 
+/**
+ * `subject.stock` es la foto del momento en que se abrio el modal, asi que
+ * tras registrar un movimiento seguia mostrando el stock viejo - confuso al
+ * encadenar dos movimientos seguidos sin cerrar. Se acumula el delta que
+ * devuelve el backend, que ya viene con signo (entrada +, salida -, y en un
+ * ajuste la diferencia contra el stock anterior), asi que sirve para los
+ * tres tipos sin distinguirlos.
+ */
+const appliedDelta = ref(0)
+const currentStock = computed(() => Number(props.subject?.stock ?? 0) + appliedDelta.value)
+
 const quantityLabel = computed(() => {
   if (type.value === 'adjustment') {
     return 'Nuevo stock'
@@ -99,13 +114,14 @@ async function submit(): Promise<void> {
   }
 
   try {
-    await createMutation.mutateAsync({
+    const movement = await createMutation.mutateAsync({
       type: type.value,
       quantity: quantity.value,
       unit_cost_cop: type.value === 'entry' ? (unitCost.value ?? undefined) : undefined,
       stock_movement_reason_id: reasonId.value ?? undefined,
       notes: notes.value.trim() || undefined,
     })
+    appliedDelta.value += Number(movement.quantity) || 0
     notify('Movimiento de stock registrado')
     quantity.value = null
     notes.value = ''
@@ -134,7 +150,7 @@ function movementIcon(movementType: StockMovementType): string {
   >
     <div v-if="subject" class="flex flex-col gap-4">
       <p class="text-sm text-slate-500">
-        Stock actual: <strong class="text-slate-900">{{ subject.stock }} {{ unitLabel }}</strong>
+        Stock actual: <strong class="text-slate-900">{{ currentStock }} {{ unitLabel }}</strong>
       </p>
 
       <p v-if="formError" class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{{ formError }}</p>

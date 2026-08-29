@@ -81,6 +81,42 @@ export interface ProductVariantInput {
   attribute_value_ids: number[]
 }
 
+// Una foto del catalogo, ya procesada por el backend (reescalada a WebP y
+// sin metadatos EXIF) - ver ProductImageService en nexolu-pos-api.
+export interface ProductImage {
+  id: number
+  product_id: number
+  product_variant_id: number | null
+  url: string
+  thumbnail_url: string
+  alt: string | null
+  sort_order: number
+}
+
+/**
+ * Foto elegida en el formulario de un producto que TODAVIA no existe. Se
+ * queda en el navegador (con una preview local) hasta que el producto se
+ * guarda, y recien ahi se sube: el endpoint de fotos cuelga de
+ * /products/{id}/images y necesita un id real.
+ *
+ * `variantKey` apunta a la variante destino. Al crear no puede ser un id
+ * (las variantes tampoco existen aun), asi que es la combinacion ordenada de
+ * attribute_value_ids; al editar es el id de la variante. Quien resuelve esa
+ * clave a un id real es ProductFormView, con las variantes que devuelve la
+ * respuesta de creacion.
+ */
+export interface PendingProductImage {
+  file: File
+  previewUrl: string
+  variantKey: string | null
+}
+
+/** Opcion del selector "a que variante pertenece esta foto". */
+export interface VariantPhotoTarget {
+  key: string
+  label: string
+}
+
 export interface Product {
   id: number
   business_id: number
@@ -98,8 +134,15 @@ export interface Product {
   price_varies_at_sale: boolean
   duration_minutes: number | null
   sku: string | null
+  // URL desnormalizada de la foto principal, suficiente para los listados.
+  // La galeria completa (`images`) solo viene en el detalle del producto.
   image: string | null
+  images?: ProductImage[]
   is_active: boolean
+  // Publicar en la tienda online es una decision aparte de estar activo en
+  // el POS: hacen falta las dos para que un producto se vea en internet.
+  is_published: boolean
+  online_description: string | null
   // Solo presentes cuando el negocio tiene la feature "ingredients" -
   // ProductResource los carga condicionalmente (whenLoaded).
   ingredients?: ProductIngredient[]
@@ -177,6 +220,8 @@ export interface ProductPayload {
   duration_minutes?: number | null
   sku?: string | null
   is_active?: boolean
+  is_published?: boolean
+  online_description?: string | null
   variants?: ProductVariantInput[]
   category_id: number
   ingredients?: ProductRecipeLineInput[]

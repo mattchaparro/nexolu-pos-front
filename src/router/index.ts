@@ -285,6 +285,14 @@ const router = createRouter({
           meta: { requiresFeature: 'expenses', requiresPermission: ['expenses.create', 'expenses.manage'] },
         },
         {
+          // Solo el dueño/admin: abrir la tienda al publico no es una accion
+          // de caja. El backend lo exige igual (middleware business-admin).
+          path: 'tienda-online',
+          name: 'online-store.index',
+          component: () => import('@/modules/online-store/views/OnlineStoreView.vue'),
+          meta: { requiresFeature: 'online_store', requiresAdmin: true },
+        },
+        {
           path: 'descuentos',
           name: 'discounts.index',
           component: () => import('@/modules/discounts/views/DiscountsView.vue'),

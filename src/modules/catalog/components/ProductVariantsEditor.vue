@@ -12,6 +12,8 @@ import { computed, ref, watch } from 'vue'
 import type { ProductAttribute, ProductVariantInput } from '@/types/product'
 import { NxInput, NxInputNumber, NxToggleButton } from '@/ui'
 
+import { variantComboKey } from '../support/variantCombo'
+
 const props = defineProps<{
   modelValue: ProductVariantInput[]
   attributes: ProductAttribute[]
@@ -24,9 +26,9 @@ const rows = computed({
   set: (value) => emit('update:modelValue', value),
 })
 
-function comboKey(ids: number[]): string {
-  return [...ids].sort((a, b) => a - b).join(',')
-}
+// Compartida con ProductFormView, que la usa para mapear las fotos pendientes
+// a la variante que les toco al crearse - ver support/variantCombo.ts.
+const comboKey = variantComboKey
 
 function attributeIdForValue(valueId: number): number | null {
   for (const attribute of props.attributes) {

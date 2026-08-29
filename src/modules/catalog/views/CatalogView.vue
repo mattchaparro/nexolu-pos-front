@@ -10,7 +10,7 @@ import { useBusiness } from '@/composables/useBusiness'
 import { usePermissions } from '@/composables/usePermissions'
 import type { IngredientStockFilter, ProductStockFilter } from '@/types/catalogSummary'
 import type { StockMovementType } from '@/types/inventory'
-import type { Ingredient, Product } from '@/types/product'
+import type { Ingredient, Product, ProductVariant } from '@/types/product'
 import {
   NxButton,
   NxColumn,
@@ -28,9 +28,11 @@ import {
 } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
+import { hasFeature } from '@/utils/hasFeature'
 
 import CatalogHubTabs from '../components/CatalogHubTabs.vue'
 import IngredientFormModal from '../components/IngredientFormModal.vue'
+import ProductQuickViewModal from '../components/ProductQuickViewModal.vue'
 import StockMovementModal, { type StockSubject } from '../components/StockMovementModal.vue'
 import { useCategories } from '../composables/useCategories'
 import { useIngredientsSummary, useProductsSummary } from '../composables/useCatalogSummary'
@@ -119,7 +121,16 @@ const productFilterOptions = computed(() => {
 })
 
 const productsQuery = useProducts(productSearch, productPage, productCategoryId, productFilter)
-const { deleteMutation: deleteProductMutation, duplicateMutation: duplicateProductMutation } = useProductMutations()
+const {
+  deleteMutation: deleteProductMutation,
+  duplicateMutation: duplicateProductMutation,
+  toggleActiveMutation: toggleProductActiveMutation,
+  togglePublishedMutation,
+  toggleVariantMutation,
+} = useProductMutations()
+
+// La columna de publicar solo tiene sentido si el negocio tiene tienda.
+const onlineStoreEnabled = computed(() => hasFeature(business.value, 'online_store'))
 const productMeta = computed(() => productsQuery.data.value?.meta)
 const productsSummaryQuery = useProductsSummary()
 
@@ -132,6 +143,59 @@ async function removeProduct(product: Product): Promise<void> {
   } catch (error) {
     window.alert(extractErrorMessage(error, 'No pudimos eliminar el producto.'))
   }
+}
+
+// --- Variantes desplegables dentro de la fila del producto ---
+// El listado ya trae `variants` cargadas (ProductController::index las
+// incluye cuando el negocio tiene la feature), asi que desplegar no cuesta
+// una consulta extra.
+const expandedProductIds = ref<Set<number>>(new Set())
+
+function toggleVariants(productId: number): void {
+  const next = new Set(expandedProductIds.value)
+  if (next.has(productId)) {
+    next.delete(productId)
+  } else {
+    next.add(productId)
+  }
+  expandedProductIds.value = next
+}
+
+function variantLabel(variant: ProductVariant): string {
+  return variant.attribute_values.map((value) => value.value).join(' / ') || variant.sku
+}
+
+async function togglePublished(product: Product): Promise<void> {
+  try {
+    await togglePublishedMutation.mutateAsync({ id: product.id, isPublished: product.is_published })
+  } catch (error) {
+    window.alert(extractErrorMessage(error, 'No pudimos cambiar la publicación del producto.'))
+  }
+}
+
+async function toggleProductActive(product: Product): Promise<void> {
+  try {
+    await toggleProductActiveMutation.mutateAsync({ id: product.id, isActive: product.is_active })
+  } catch (error) {
+    window.alert(extractErrorMessage(error, 'No pudimos cambiar el estado del producto.'))
+  }
+}
+
+async function toggleVariantActive(product: Product, variant: ProductVariant): Promise<void> {
+  try {
+    await toggleVariantMutation.mutateAsync({ productId: product.id, variantId: variant.id })
+  } catch (error) {
+    window.alert(extractErrorMessage(error, 'No pudimos cambiar el estado de la variación.'))
+  }
+}
+
+// --- Vista rapida ---
+const quickViewProduct = ref<Product | null>(null)
+const quickViewOpen = ref(false)
+
+function openQuickView(product: Product): void {
+  quickViewProduct.value = product
+  quickViewOpen.value = true
 }
 
 async function duplicateProductRow(product: Product): Promise<void> {
@@ -517,6 +581,39 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                           <span class="text-[11px] font-medium">Duplicar</span>
                         </button>
                         <button
+                          type="button"
+                          class="flex flex-col items-center gap-0.5 px-1 text-slate-400 hover:text-indigo-600"
+                          @click="openQuickView(data)"
+                        >
+                          <i class="pi pi-eye" style="font-size: 1.125rem" />
+                          <span class="text-[11px] font-medium">Ver</span>
+                        </button>
+                        <!-- Publicar es independiente de estar activo: hacen
+                             falta los dos para verse en internet. -->
+                        <button
+                          v-if="canAdd && onlineStoreEnabled && !data.is_service"
+                          type="button"
+                          class="flex flex-col items-center gap-0.5 px-1"
+                          :class="data.is_published ? 'text-emerald-600 hover:text-emerald-700' : 'text-slate-400 hover:text-indigo-600'"
+                          :disabled="togglePublishedMutation.isPending.value"
+                          :title="data.is_published ? 'Quitar de la tienda online' : 'Publicar en la tienda online'"
+                          @click="togglePublished(data)"
+                        >
+                          <i :class="data.is_published ? 'pi pi-globe' : 'pi pi-eye-slash'" style="font-size: 1.125rem" />
+                          <span class="text-[11px] font-medium">{{ data.is_published ? 'En tienda' : 'Publicar' }}</span>
+                        </button>
+                        <button
+                          v-if="canAdd"
+                          type="button"
+                          class="flex flex-col items-center gap-0.5 px-1"
+                          :class="data.is_active ? 'text-slate-400 hover:text-amber-600' : 'text-emerald-600 hover:text-emerald-700'"
+                          :disabled="toggleProductActiveMutation.isPending.value"
+                          @click="toggleProductActive(data)"
+                        >
+                          <i :class="data.is_active ? 'pi pi-pause-circle' : 'pi pi-play-circle'" style="font-size: 1.125rem" />
+                          <span class="text-[11px] font-medium">{{ data.is_active ? 'Pausar' : 'Activar' }}</span>
+                        </button>
+                        <button
                           v-if="canAdd"
                           type="button"
                           class="flex flex-col items-center gap-0.5 px-1 text-red-500 hover:text-red-700"
@@ -527,6 +624,94 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                           <span class="text-[11px] font-medium">Eliminar</span>
                         </button>
                       </div>
+
+                      <!-- Variaciones: el stock de un producto con variantes se
+                           administra por variante, no en el padre (sus botones
+                           de stock estan deshabilitados arriba). -->
+                      <template v-if="data.has_variants && data.variants?.length">
+                        <button
+                          type="button"
+                          class="flex items-center gap-1.5 self-start rounded px-1 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800"
+                          @click="toggleVariants(data.id)"
+                        >
+                          <i
+                            :class="expandedProductIds.has(data.id) ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+                            style="font-size: 0.7rem"
+                          />
+                          {{ data.variants.length }} variaciones
+                        </button>
+
+                        <ul v-if="expandedProductIds.has(data.id)" class="flex flex-col gap-1.5 border-t border-slate-100 pt-2">
+                          <li
+                            v-for="variant in data.variants"
+                            :key="variant.id"
+                            class="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2"
+                            :class="variant.is_active ? '' : 'opacity-60'"
+                          >
+                            <div class="min-w-0">
+                              <p class="flex items-center gap-1.5 text-sm font-medium text-slate-800">
+                                <span class="truncate">{{ variantLabel(variant) }}</span>
+                                <span
+                                  v-if="!variant.is_active"
+                                  class="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600"
+                                >
+                                  Pausada
+                                </span>
+                              </p>
+                              <p class="truncate text-[11px] text-slate-400">
+                                {{ variant.sku }} · {{ formatCop(variant.price) }}
+                              </p>
+                            </div>
+
+                            <div class="flex items-center gap-3">
+                              <span
+                                class="rounded-md px-2 py-1 text-xs font-semibold"
+                                :class="variant.stock > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'"
+                              >
+                                {{ variant.stock }}
+                              </span>
+                              <button
+                                v-if="canAdjust"
+                                type="button"
+                                class="text-slate-400 hover:text-emerald-600"
+                                title="Agregar stock"
+                                @click="
+                                  openStockModal(
+                                    { kind: 'variant', id: variant.id, productId: data.id, name: `${data.name} · ${variantLabel(variant)}`, stock: variant.stock },
+                                    'entry',
+                                  )
+                                "
+                              >
+                                <i class="pi pi-plus-circle" />
+                              </button>
+                              <button
+                                v-if="canAdjust"
+                                type="button"
+                                class="text-slate-400 hover:text-indigo-600"
+                                title="Ajustar stock"
+                                @click="
+                                  openStockModal(
+                                    { kind: 'variant', id: variant.id, productId: data.id, name: `${data.name} · ${variantLabel(variant)}`, stock: variant.stock },
+                                    'adjustment',
+                                  )
+                                "
+                              >
+                                <i class="pi pi-sliders-h" />
+                              </button>
+                              <button
+                                v-if="canAdd"
+                                type="button"
+                                :title="variant.is_active ? 'Pausar variación' : 'Activar variación'"
+                                :class="variant.is_active ? 'text-slate-400 hover:text-amber-600' : 'text-emerald-600'"
+                                :disabled="toggleVariantMutation.isPending.value"
+                                @click="toggleVariantActive(data, variant)"
+                              >
+                                <i :class="variant.is_active ? 'pi pi-pause-circle' : 'pi pi-play-circle'" />
+                              </button>
+                            </div>
+                          </li>
+                        </ul>
+                      </template>
                     </div>
                   </template>
                 </NxColumn>
@@ -772,6 +957,30 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
       v-model="stockModalOpen"
       :subject="stockSubject"
       :initial-type="stockInitialType"
+    />
+
+    <ProductQuickViewModal
+      v-if="quickViewProduct"
+      v-model="quickViewOpen"
+      :name="quickViewProduct.name"
+      :category-name="quickViewProduct.category?.name"
+      :description="quickViewProduct.description"
+      :price="quickViewProduct.price"
+      :price-varies-at-sale="quickViewProduct.price_varies_at_sale"
+      :photos="quickViewProduct.image ? [quickViewProduct.image] : []"
+      :variants="
+        (quickViewProduct.variants ?? []).map((variant) => ({
+          label: variantLabel(variant),
+          sku: variant.sku,
+          price: variant.price,
+          stock: variant.stock,
+          isActive: variant.is_active,
+        }))
+      "
+      :stock="quickViewProduct.stock"
+      :track-stock="quickViewProduct.track_stock"
+      :is-active="quickViewProduct.is_active"
+      :is-service="quickViewProduct.is_service"
     />
 
     <NxModal

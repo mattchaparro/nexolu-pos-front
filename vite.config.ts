@@ -14,5 +14,8 @@ export default defineConfig({
   },
   server: {
     allowedHosts: true,
+    // Vite no lee PORT por su cuenta. Respetarlo permite levantar una segunda
+    // instancia (otra sesion, otra rama) sin chocar con la que ya ocupa 5173.
+    port: process.env.PORT ? Number(process.env.PORT) : 5173,
   },
 })
