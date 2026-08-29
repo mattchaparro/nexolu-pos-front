@@ -12,12 +12,11 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
-import type { StoreSettings, StoreSettingsPayload, StoryStat, TrustItem } from '@/types/store'
+import type { StoreSettingsPayload, StoryStat, TrustItem } from '@/types/store'
 import {
   NxButton,
   NxInput,
   NxInputNumber,
-  NxModal,
   NxPageHeader,
   NxTab,
   NxTabList,
@@ -30,17 +29,7 @@ import {
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 
-import StoreImageField from '../components/StoreImageField.vue'
-import HomePresetPicker from '../components/HomePresetPicker.vue'
-import StoreHomePreview from '../components/StoreHomePreview.vue'
-import StoreFontPicker from '../components/StoreFontPicker.vue'
-import StoreImagePicker from '../components/StoreImagePicker.vue'
-import StoreProductPicker from '../components/StoreProductPicker.vue'
-import { useStoreImageLibrary } from '../composables/useStoreImageLibrary'
-import { HOME_BLOCK_CATALOG } from '../homeBlockCatalog'
-import type { HomePreset } from '../homePresets'
 import { useStoreSettings } from '../composables/useStoreSettings'
-import { BlockEditor, type Block } from '@/packages/block-editor'
 
 const router = useRouter()
 const { notify } = useSystemAlert()
@@ -111,9 +100,6 @@ watch(
     minOrderAmount.value = value.min_order_amount
     pickupEnabled.value = value.pickup_enabled
     orderEmailEnabled.value = value.order_email_enabled
-    // Copia, no referencia: el editor muta la lista y no debe tocar la
-    // caché de la consulta.
-    homeBlocks.value = (value.home_blocks ?? []).map((block) => ({ ...block }))
     orderEmail.value = value.order_email ?? ''
     terms.value = value.terms ?? ''
     seoTitle.value = value.seo_title ?? ''
@@ -209,71 +195,8 @@ async function copyPublicUrl(): Promise<void> {
 // La página de inicio: una lista de bloques que el comerciante ordena.
 // Reemplaza a las tres ranuras fijas (portada/confianza/historia) que hacían
 // que todas las tiendas Nexolú se vieran iguales.
-const { imagesQuery } = useStoreImageLibrary()
-const homeBlocks = ref<Block[]>([])
 
-/**
- * Las secciones del editor. Antes esto eran DOS pestañas ("Apariencia" e
- * "Inicio") y solo una tenía vista previa, cuando en realidad es un mismo
- * trabajo: elegir colores sin ver la página es adivinar.
- */
-const EDITOR_SECTIONS = [
-  { value: 'bloques', label: 'Bloques', icon: 'pi-th-large' },
-  { value: 'plantillas', label: 'Plantillas', icon: 'pi-clone' },
-  { value: 'colores', label: 'Colores', icon: 'pi-palette' },
-  { value: 'tipografia', label: 'Letra', icon: 'pi-pencil' },
-  { value: 'marca', label: 'Marca', icon: 'pi-image' },
-] as const
 
-const editorSection = ref<(typeof EDITOR_SECTIONS)[number]['value']>('bloques')
-const previewOpen = ref(false)
-const previewWidth = ref<'mobile' | 'desktop'>('desktop')
-
-/**
- * Los ajustes con los colores y la letra que se están editando AHORA, no
- * los guardados: la vista previa tiene que mostrar el borrador completo,
- * no la mitad.
- */
-const previewSettings = computed(() => ({
-  ...(settings.value as StoreSettings),
-  primary_color: primaryColor.value,
-  surface_color: surfaceColor.value,
-  accent_color: accentColor.value,
-  font_preset: fontPreset.value,
-}))
-
-/**
- * Aplica una plantilla. No guarda: el comerciante la ve primero en la vista
- * previa y decide. Guardar sin que haya mirado seria reemplazarle la pagina
- * a ciegas.
- */
-function applyPreset(payload: { blocks: Block[]; theme: HomePreset['theme'] | null }): void {
-  homeBlocks.value = payload.blocks
-
-  if (payload.theme) {
-    primaryColor.value = payload.theme.primary
-    surfaceColor.value = payload.theme.surface
-    accentColor.value = payload.theme.accent
-    fontPreset.value = payload.theme.font
-  }
-}
-const homeError = ref<string | null>(null)
-
-/** Un solo guardado para todo el editor: bloques, colores y tipografía. */
-async function saveEditor(): Promise<void> {
-  homeError.value = null
-  try {
-    await updateMutation.mutateAsync({
-      home_blocks: homeBlocks.value,
-      primary_color: primaryColor.value,
-      surface_color: surfaceColor.value,
-      accent_color: accentColor.value,
-      font_preset: fontPreset.value,
-    })
-  } catch (error) {
-    homeError.value = extractErrorMessage(error, 'No pudimos guardar los cambios.')
-  }
-}
 </script>
 
 <template>
@@ -394,150 +317,22 @@ async function saveEditor(): Promise<void> {
           </NxTabPanel>
           <!-- ------------------------------ APARIENCIA -->
           <NxTabPanel value="editor">
-            <!-- Un editor visual en un telefono es pelear con el espacio: se
-                 avisa en vez de dejar que lo descubra a los tres bloques. -->
-            <div class="mb-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 xl:hidden">
-              <i class="pi pi-desktop mt-0.5 text-amber-600" />
-              <p class="text-xs text-amber-800">
-                Esta seccion se trabaja mucho mejor desde un computador o una tablet. Puedes seguir
-                aqui, pero tendras poco espacio para ver lo que armas.
+            <div class="mt-3 rounded-xl border border-slate-200 bg-white p-6 text-center">
+              <p class="text-3xl">🎨</p>
+              <p class="mt-2 text-sm font-semibold text-slate-800">El editor de tu tienda</p>
+              <p class="mx-auto mt-1 max-w-md text-xs text-slate-500">
+                Arma tu pagina de inicio viendo la tienda en vivo mientras la editas: bloques,
+                plantillas, colores, tipografia y tu marca.
+              </p>
+
+              <NxButton class="mt-4" icon="pi pi-pencil" @click="router.push({ name: 'online-store.editor' })">
+                Abrir el editor
+              </NxButton>
+
+              <p class="mt-3 text-[11px] text-slate-400">
+                Se abre a pantalla completa. Funciona mejor en computador o tablet.
               </p>
             </div>
-
-            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p class="text-sm font-semibold text-slate-800">Editor de la tienda</p>
-                <p class="text-[11px] text-slate-400">
-                  Lo que armes aqui es tu pagina de inicio. Tus productos van siempre al final.
-                </p>
-              </div>
-              <div class="flex gap-2">
-                <NxButton variant="outline" icon="pi pi-eye" @click="previewOpen = true">
-                  Vista previa
-                </NxButton>
-                <NxButton :loading="updateMutation.isPending.value" @click="saveEditor">
-                  Guardar
-                </NxButton>
-              </div>
-            </div>
-
-            <p v-if="homeError" class="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-              {{ homeError }}
-            </p>
-
-            <div class="flex gap-3">
-              <div class="min-w-0 flex-1">
-                <HomePresetPicker
-                  v-if="editorSection === 'plantillas'"
-                  :has-blocks="homeBlocks.length > 0"
-                  @apply="applyPreset"
-                  @close="editorSection = 'bloques'"
-                />
-
-                <BlockEditor
-                  v-else-if="editorSection === 'bloques'"
-                  v-model="homeBlocks"
-                  :catalog="HOME_BLOCK_CATALOG"
-                >
-                  <template #image-picker="{ value, onSelect }">
-                    <StoreImagePicker :value="value" @select="onSelect" />
-                  </template>
-                  <template #images-picker="{ value, max, onSelect }">
-                    <StoreImagePicker :value="value" :max="max" multiple @select="onSelect" />
-                  </template>
-                  <template #entity-picker="{ value, max, onSelect }">
-                    <StoreProductPicker :value="value" :max="max" @select="onSelect" />
-                  </template>
-                </BlockEditor>
-
-                <div v-else-if="editorSection === 'colores'" class="rounded-xl border border-slate-200 bg-white p-4">
-                                <p class="mb-1 text-sm font-semibold text-slate-700">Colores</p>
-                                <p class="mb-3 text-[11px] text-slate-400">
-                                  Con estos tres armamos toda la tienda. El color del texto lo calculamos solos para que siempre se lea.
-                                </p>
-
-                                <div class="flex flex-col gap-3">
-                                  <div class="flex items-end gap-3">
-                                    <NxInput v-model="primaryColor" label="Marca — botones y precios" class="flex-1" :error="fieldErrors.primary_color" />
-                                    <span class="mb-1 h-8 w-8 shrink-0 rounded-lg border border-slate-200" :style="{ backgroundColor: primaryColor }" />
-                                  </div>
-                                  <div class="flex items-end gap-3">
-                                    <NxInput v-model="surfaceColor" label="Fondo de la tienda" class="flex-1" :error="fieldErrors.surface_color" />
-                                    <span class="mb-1 h-8 w-8 shrink-0 rounded-lg border border-slate-200" :style="{ backgroundColor: surfaceColor }" />
-                                  </div>
-                                  <div class="flex items-end gap-3">
-                                    <NxInput v-model="accentColor" label="Acento — etiquetas y destacados" class="flex-1" :error="fieldErrors.accent_color" />
-                                    <span class="mb-1 h-8 w-8 shrink-0 rounded-lg border border-slate-200" :style="{ backgroundColor: accentColor }" />
-                                  </div>
-                                </div>
-
-                                <!-- Muestra rápida con los tres colores juntos -->
-                                <div class="mt-4 rounded-lg border border-slate-200 p-3" :style="{ backgroundColor: surfaceColor }">
-                                  <p class="text-xs font-semibold" :style="{ color: primaryColor }">Así se ve tu marca</p>
-                                  <span
-                                    class="mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                                    :style="{ backgroundColor: accentColor, color: '#fff' }"
-                                  >
-                                    Etiqueta destacada
-                                  </span>
-                                </div>
-                              </div>
-
-                <div
-                  v-else-if="editorSection === 'tipografia'"
-                  class="rounded-xl border border-slate-200 bg-white p-4"
-                >
-                  <p class="mb-1 text-sm font-semibold text-slate-700">Tipografia</p>
-                  <p class="mb-3 text-[11px] text-slate-400">Asi se va a ver el texto de tu tienda.</p>
-                  <StoreFontPicker v-model="fontPreset" />
-                </div>
-
-                <div v-else-if="editorSection === 'marca'" class="rounded-xl border border-slate-200 bg-white p-4">
-                                <p class="mb-3 text-sm font-semibold text-slate-700">Logo y portada</p>
-                                <div class="flex flex-col gap-4">
-                                  <StoreImageField image-slot="logo" label="Logo" :url="settings.logo_url" aspect="square" hint="Cuadrado, se ve pequeño." />
-                                  <StoreImageField
-                                    image-slot="banner"
-                                    label="Portada"
-                                    :url="settings.banner_url"
-                                    aspect="wide"
-                                    hint="Banda ancha arriba de la tienda."
-                                  />
-                                </div>
-                              </div>
-              </div>
-
-              <!-- Barra de herramientas propia del editor. Iconos CON
-                   etiqueta: el comerciante entra una vez cada tanto y no va a
-                   recordar que significa cada simbolo. -->
-              <nav class="flex w-16 shrink-0 flex-col gap-1 sm:w-20">
-                <button
-                  v-for="section in EDITOR_SECTIONS"
-                  :key="section.value"
-                  type="button"
-                  class="flex flex-col items-center gap-1 rounded-xl border px-1 py-2.5 transition"
-                  :class="
-                    editorSection === section.value
-                      ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                      : 'border-transparent text-slate-400 hover:bg-slate-50'
-                  "
-                  @click="editorSection = section.value"
-                >
-                  <i class="pi text-base" :class="section.icon" />
-                  <span class="text-[10px] font-semibold leading-tight">{{ section.label }}</span>
-                </button>
-              </nav>
-            </div>
-
-            <NxModal v-model="previewOpen" title="Vista previa" size="lg">
-              <StoreHomePreview
-                v-if="settings"
-                v-model:width="previewWidth"
-                :blocks="homeBlocks"
-                :settings="previewSettings"
-                :images="imagesQuery.data.value ?? []"
-              />
-            </NxModal>
           </NxTabPanel>
         </NxTabPanels>
       </NxTabs>

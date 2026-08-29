@@ -435,6 +435,16 @@ const router = createRouter({
       ],
     },
     {
+      // El editor de la tienda vive FUERA del layout del POS: ocupa la
+      // pantalla entera. Es una pantalla de trabajo continuo (se entra, se
+      // arma la pagina, se sale), no una seccion que se consulta - el menu
+      // lateral y la navbar solo le quitarian espacio a la vista previa.
+      path: '/tienda-online/editor',
+      name: 'online-store.editor',
+      component: () => import('@/modules/online-store/views/StoreEditorView.vue'),
+      meta: { requiresAuth: true, requiresFeature: 'online_store', requiresAdmin: true },
+    },
+    {
       // Panel aparte, no una seccion del menu de negocio: mismo enfoque que
       // el legacy (Sidebar.vue cambia todo el menu segun el rol en vez de
       // mezclar items de super admin en el de negocio, ver menu/superadmin.json).

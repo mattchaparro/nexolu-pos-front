@@ -111,7 +111,7 @@ watch(() => [props.blocks, props.settings], send, { deep: true })
 </script>
 
 <template>
-  <div class="flex flex-col gap-2">
+  <div class="flex min-h-0 flex-col gap-2">
     <div class="flex items-center justify-between">
       <p class="text-sm font-semibold text-slate-700">
         {{ width === 'mobile' ? 'Como se ve en celular' : 'Como se ve en computador' }}
@@ -138,12 +138,12 @@ watch(() => [props.blocks, props.settings], send, { deep: true })
       </div>
     </div>
 
-    <div class="flex justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100 p-3">
+    <div class="flex min-h-0 flex-1 justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100 p-3">
       <iframe
         v-if="previewUrl"
         ref="frame"
         :src="previewUrl"
-        class="h-[72vh] rounded-lg border border-slate-200 bg-white transition-all"
+        class="h-full min-h-[60vh] rounded-lg border border-slate-200 bg-white transition-all"
         :class="width === 'mobile' ? 'w-[375px]' : 'w-full'"
         title="Vista previa de la tienda"
         @load="send"
