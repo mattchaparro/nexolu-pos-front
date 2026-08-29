@@ -31,8 +31,10 @@ import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 
 import StoreImageField from '../components/StoreImageField.vue'
+import StoreHomePreview from '../components/StoreHomePreview.vue'
 import StoreImagePicker from '../components/StoreImagePicker.vue'
 import StoreProductPicker from '../components/StoreProductPicker.vue'
+import { useStoreImageLibrary } from '../composables/useStoreImageLibrary'
 import { HOME_BLOCK_CATALOG } from '../homeBlockCatalog'
 import { useStoreSettings } from '../composables/useStoreSettings'
 import { BlockEditor, type Block } from '@/packages/block-editor'
@@ -221,6 +223,7 @@ async function copyPublicUrl(): Promise<void> {
 // La página de inicio: una lista de bloques que el comerciante ordena.
 // Reemplaza a las tres ranuras fijas (portada/confianza/historia) que hacían
 // que todas las tiendas Nexolú se vieran iguales.
+const { imagesQuery } = useStoreImageLibrary()
 const homeBlocks = ref<Block[]>([])
 const homeError = ref<string | null>(null)
 
@@ -428,23 +431,37 @@ async function saveHomeBlocks(): Promise<void> {
                 </p>
               </div>
 
-              <BlockEditor v-model="homeBlocks" :catalog="HOME_BLOCK_CATALOG">
-                <template #image-picker="{ value, onSelect }">
-                  <StoreImagePicker :value="value" @select="onSelect" />
-                </template>
-                <template #images-picker="{ value, max, onSelect }">
-                  <StoreImagePicker :value="value" :max="max" multiple @select="onSelect" />
-                </template>
-                <template #entity-picker="{ value, max, onSelect }">
-                  <StoreProductPicker :value="value" :max="max" @select="onSelect" />
-                </template>
-              </BlockEditor>
+              <div class="grid gap-4 xl:grid-cols-[minmax(0,420px)_1fr]">
+                <div class="flex flex-col gap-4">
+                  <BlockEditor v-model="homeBlocks" :catalog="HOME_BLOCK_CATALOG">
+                    <template #image-picker="{ value, onSelect }">
+                      <StoreImagePicker :value="value" @select="onSelect" />
+                    </template>
+                    <template #images-picker="{ value, max, onSelect }">
+                      <StoreImagePicker :value="value" :max="max" multiple @select="onSelect" />
+                    </template>
+                    <template #entity-picker="{ value, max, onSelect }">
+                      <StoreProductPicker :value="value" :max="max" @select="onSelect" />
+                    </template>
+                  </BlockEditor>
 
-              <div class="flex items-center gap-3">
-                <NxButton :loading="updateMutation.isPending.value" @click="saveHomeBlocks">
-                  Guardar página
-                </NxButton>
-                <p v-if="homeError" class="text-sm text-red-600">{{ homeError }}</p>
+                  <div class="flex items-center gap-3">
+                    <NxButton :loading="updateMutation.isPending.value" @click="saveHomeBlocks">
+                      Guardar página
+                    </NxButton>
+                    <p v-if="homeError" class="text-sm text-red-600">{{ homeError }}</p>
+                  </div>
+                </div>
+
+                <!-- La vista previa es la tienda de verdad incrustada, no un
+                     redibujo: lo que ve aquí es lo que se publica. -->
+                <StoreHomePreview
+                  v-if="settings"
+                  class="xl:sticky xl:top-4 xl:self-start"
+                  :blocks="homeBlocks"
+                  :settings="settings"
+                  :images="imagesQuery.data.value ?? []"
+                />
               </div>
             </div>
           </NxTabPanel>
