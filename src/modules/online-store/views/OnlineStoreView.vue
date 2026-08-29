@@ -17,6 +17,7 @@ import {
   NxButton,
   NxInput,
   NxInputNumber,
+  NxModal,
   NxPageHeader,
   NxTab,
   NxTabList,
@@ -45,7 +46,7 @@ const router = useRouter()
 const { notify } = useSystemAlert()
 const { settingsQuery, updateMutation } = useStoreSettings()
 
-const activeTab = ref<'tienda' | 'apariencia' | 'home'>('tienda')
+const activeTab = ref<'tienda' | 'editor'>('tienda')
 
 // Los mismos presets que traduce el storefront a familias concretas
 // (useTheme.ts). Catálogo cerrado: fuente libre = tiendas ilegibles.
@@ -331,8 +332,7 @@ async function saveEditor(): Promise<void> {
       <NxTabs v-model:value="activeTab">
         <NxTabList>
           <NxTab value="tienda" icon="pi pi-shop">Tienda</NxTab>
-          <NxTab value="apariencia" icon="pi pi-palette">Apariencia</NxTab>
-          <NxTab value="home" icon="pi pi-home">Inicio</NxTab>
+          <NxTab value="editor" icon="pi pi-palette">Editor</NxTab>
         </NxTabList>
 
         <NxTabPanels>
