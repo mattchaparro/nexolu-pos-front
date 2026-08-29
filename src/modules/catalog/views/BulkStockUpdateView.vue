@@ -34,10 +34,14 @@ interface ProductRow {
   current_stock: number
   current_cost: number
   current_price: number
-  // Falso para venta-unica y productos con receta: su stock no se puede
-  // editar a mano (ver ProductResource/StockService en nexolu-pos-api) -
-  // editar esta celda igual dejaria el guardado entero rechazado con 422.
+  // Falso para venta-unica, productos con receta y productos con variantes:
+  // su stock no se puede editar a mano (ver ProductResource/StockService en
+  // nexolu-pos-api) - editar esta celda igual dejaria el guardado entero
+  // rechazado con 422, porque el ajuste masivo corre en una sola
+  // transaccion y una fila invalida tumba el lote completo.
   can_manage_stock: boolean
+  has_variants: boolean
+  has_recipe: boolean
   is_active: boolean
   low_stock_alert_threshold: number | null
   new_name: string | null
@@ -68,6 +72,8 @@ function toProductRow(product: Product): ProductRow {
     current_cost: Number(product.cost_price),
     current_price: Number(product.price),
     can_manage_stock: product.can_manage_stock !== false,
+    has_variants: product.has_variants === true,
+    has_recipe: (product.ingredients?.length ?? 0) > 0,
     is_active: product.is_active,
     low_stock_alert_threshold: product.low_stock_alert_threshold,
     new_name: null,
@@ -205,6 +211,22 @@ function focusEditInput(): void {
     editInputRef.value?.focus()
     editInputRef.value?.select()
   })
+}
+
+// El motivo real por el que la celda esta bloqueada: antes el tooltip decia
+// siempre "se calcula desde sus ingredientes", que es falso (y desorienta)
+// para un producto de venta unica o con variantes.
+function stockLockedReason(row: ProductRow): string | undefined {
+  if (row.can_manage_stock) {
+    return undefined
+  }
+  if (row.has_variants) {
+    return 'Este producto tiene variantes: el stock se ajusta en cada variación, desde la ficha del producto.'
+  }
+  if (row.has_recipe) {
+    return 'El stock de este producto se calcula desde sus ingredientes y no se puede editar aquí.'
+  }
+  return 'Este producto es de venta única: su stock solo puede ser 1 o 0.'
 }
 
 function startEdit(row: ProductRow | IngredientRow, field: string): void {
@@ -514,7 +536,7 @@ function goBack(): void {
             <td
               class="select-none px-4 py-2.5 text-center"
               :class="row.can_manage_stock ? 'cursor-default' : 'cursor-not-allowed'"
-              :title="row.can_manage_stock ? undefined : 'El stock de este producto se calcula desde sus ingredientes y no se puede editar aquí.'"
+              :title="stockLockedReason(row)"
               @dblclick="startEdit(row, 'stock')"
             >
               <input

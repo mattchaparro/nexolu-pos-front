@@ -11,6 +11,8 @@ import type {
   Ingredient,
   IngredientPayload,
   Product,
+  ProductAttribute,
+  ProductAttributePayload,
   ProductCategory,
   ProductCategoryPayload,
   ProductPayload,
@@ -150,4 +152,32 @@ export async function updateIngredient(id: number, payload: Partial<IngredientPa
 
 export async function deleteIngredient(id: number): Promise<void> {
   await httpClient.delete(`/ingredients/${id}`)
+}
+
+// Sin paginar (ProductAttributeController::index no pagina, mismo criterio
+// que /product-categories) - catalogo chico por negocio, reutilizado tanto
+// por la pantalla de gestion (ProductAttributesView) como por el editor de
+// variantes del formulario de producto (ProductVariantsEditor). Solo se
+// llama cuando business.feature_flags.variants esta activo (la ruta esta
+// detras de middleware('feature:variants')).
+export async function fetchProductAttributes(): Promise<ProductAttribute[]> {
+  const { data } = await httpClient.get<ProductAttribute[]>('/product-attributes')
+  return data
+}
+
+export async function createProductAttribute(payload: ProductAttributePayload): Promise<ProductAttribute> {
+  const { data } = await httpClient.post<ProductAttribute>('/product-attributes', payload)
+  return data
+}
+
+export async function updateProductAttribute(
+  id: number,
+  payload: Partial<ProductAttributePayload>,
+): Promise<ProductAttribute> {
+  const { data } = await httpClient.put<ProductAttribute>(`/product-attributes/${id}`, payload)
+  return data
+}
+
+export async function deleteProductAttribute(id: number): Promise<void> {
+  await httpClient.delete(`/product-attributes/${id}`)
 }

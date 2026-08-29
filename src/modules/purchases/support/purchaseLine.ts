@@ -6,6 +6,8 @@ export interface PurchaseLineRow {
   uid: string
   kind: 'product' | 'ingredient'
   product_id: number | null
+  /** Obligatorio cuando el producto elegido tiene variantes. */
+  product_variant_id: number | null
   ingredient_id: number | null
   quantity: number | null
   line_total_cop: number | null
@@ -17,6 +19,7 @@ export function newPurchaseLineRow(kind: 'product' | 'ingredient'): PurchaseLine
     uid: crypto.randomUUID(),
     kind,
     product_id: null,
+    product_variant_id: null,
     ingredient_id: null,
     quantity: 1,
     line_total_cop: null,

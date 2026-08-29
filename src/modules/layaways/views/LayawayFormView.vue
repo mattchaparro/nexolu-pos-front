@@ -77,6 +77,7 @@ async function submit(): Promise<void> {
 
   const items: LayawayItemInput[] = lines.value.map((row) => ({
     product_id: row.product_id as number,
+    product_variant_id: row.product_variant_id,
     quantity: row.quantity,
     unit_price: row.unit_price,
   }))

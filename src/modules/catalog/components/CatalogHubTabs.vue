@@ -10,6 +10,7 @@ import { useRoute } from 'vue-router'
 
 import { useBusiness } from '@/composables/useBusiness'
 import { usePermissions } from '@/composables/usePermissions'
+import { hasFeature } from '@/utils/hasFeature'
 
 const route = useRoute()
 const { data: business } = useBusiness()
@@ -22,12 +23,20 @@ const showPurchasesTabs = computed(() => business.value?.can_access_purchases ==
 // Idem para Servicios (feature 'services'), administrado con los mismos
 // permisos inventory.* que Productos - ver BusinessResource.
 const showServicesTab = computed(() => business.value?.can_access_services === true && hasPermission('inventory.view'))
+// Idem para Atributos (feature 'variants'): hasFeature() lee
+// resolved_features (el mapa que YA resolvio el backend), no el JSON crudo
+// de feature_flags - un negocio del plan Full creado antes de que existiera
+// la bandera no tiene la clave en el JSON, pero SI tiene la funcion
+// habilitada por el default de su plan. Leyendo el JSON crudo, la ruta
+// catalog.attributes.index (gateada con requiresFeature -> hasFeature) lo
+// dejaba entrar mientras esta pestaña se quedaba oculta.
+const showAttributesTab = computed(() => hasFeature(business.value, 'variants') && hasPermission('inventory.view'))
 
 // El formulario de "Nuevo servicio" (catalog.services.create) vive bajo el
 // prefijo de rutas 'catalog.' pero pertenece visualmente a la seccion
 // Servicios, no a Articulos - se resuelve la seccion activa explicito en
 // vez de un simple startsWith(prefijo) para no marcar las dos tabs a la vez.
-const activeSection = computed<'catalog' | 'purchases' | 'suppliers' | 'services' | 'categories' | null>(() => {
+const activeSection = computed<'catalog' | 'purchases' | 'suppliers' | 'services' | 'categories' | 'attributes' | null>(() => {
   const name = route.name
   if (typeof name !== 'string') {
     return null
@@ -37,6 +46,9 @@ const activeSection = computed<'catalog' | 'purchases' | 'suppliers' | 'services
   }
   if (name === 'catalog.categories.index') {
     return 'categories'
+  }
+  if (name === 'catalog.attributes.index') {
+    return 'attributes'
   }
   if (name.startsWith('catalog.')) {
     return 'catalog'
@@ -95,6 +107,15 @@ const activeSection = computed<'catalog' | 'purchases' | 'suppliers' | 'services
     >
       <i class="pi pi-tags text-sm" />
       Categorías
+    </RouterLink>
+    <RouterLink
+      v-if="showAttributesTab"
+      :to="{ name: 'catalog.attributes.index' }"
+      class="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors sm:px-4"
+      :class="activeSection === 'attributes' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:bg-white/60'"
+    >
+      <i class="pi pi-sliders-h text-sm" />
+      Atributos
     </RouterLink>
   </nav>
 </template>

@@ -5,6 +5,8 @@
 export interface LayawayLineRow {
   uid: string
   product_id: number | null
+  /** Obligatorio cuando el producto elegido tiene variantes. */
+  product_variant_id: number | null
   quantity: number
   unit_price: number | null
 }
@@ -13,6 +15,7 @@ export function newLayawayLineRow(): LayawayLineRow {
   return {
     uid: crypto.randomUUID(),
     product_id: null,
+    product_variant_id: null,
     quantity: 1,
     unit_price: null,
   }

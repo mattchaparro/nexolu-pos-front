@@ -89,7 +89,8 @@ const isDisabled = computed(() => props.product.track_stock && props.product.sto
 
     <div class="mt-2 flex items-end justify-between gap-1">
       <span class="text-base font-bold text-indigo-700">
-        {{ product.price_varies_at_sale ? 'Variable' : formatCop(product.price) }}
+        <template v-if="product.has_variants">Desde {{ formatCop(product.price) }}</template>
+        <template v-else>{{ product.price_varies_at_sale ? 'Variable' : formatCop(product.price) }}</template>
       </span>
       <span :class="stockBadge.class" class="rounded-md px-1.5 py-0.5 text-xs font-semibold">
         {{ stockBadge.label }}

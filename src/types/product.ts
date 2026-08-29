@@ -26,6 +26,61 @@ export interface ProductIngredient {
   quantity: number
 }
 
+// Feature "variants" - ver ProductAttribute/ProductAttributeValue/
+// ProductVariant en el backend. Un atributo (ej. "Talla") es reutilizable
+// por todo el negocio; sus valores (S/M/L) se combinan manualmente por
+// producto para armar variantes con precio/stock/sku propios.
+export interface ProductAttributeValue {
+  id: number
+  value: string
+  sort_order: number
+}
+
+export interface ProductAttribute {
+  id: number
+  business_id: number
+  name: string
+  values: ProductAttributeValue[]
+}
+
+export interface ProductAttributePayload {
+  name: string
+  values: { id?: number; value: string; sort_order?: number }[]
+}
+
+// Etiqueta de un valor de atributo YA elegido en una variante concreta -
+// distinto de ProductAttributeValue (que es del catalogo reutilizable):
+// aca vienen embebidos el nombre del atributo y el valor, listos para
+// armar un label como "Talla: M" sin tener que cruzar con el catalogo.
+export interface ProductVariantAttributeValue {
+  product_attribute_id: number
+  product_attribute_name: string
+  product_attribute_value_id: number
+  value: string
+}
+
+export interface ProductVariant {
+  id: number
+  sku: string
+  price: number
+  cost_price: number | null
+  stock: number
+  low_stock_alert_threshold: number | null
+  is_active: boolean
+  attribute_values: ProductVariantAttributeValue[]
+}
+
+export interface ProductVariantInput {
+  id?: number
+  sku: string
+  price: number
+  cost_price?: number
+  stock?: number
+  low_stock_alert_threshold?: number | null
+  is_active?: boolean
+  attribute_value_ids: number[]
+}
+
 export interface Product {
   id: number
   business_id: number
@@ -49,9 +104,17 @@ export interface Product {
   // ProductResource los carga condicionalmente (whenLoaded).
   ingredients?: ProductIngredient[]
   has_recipe?: boolean
-  // Falso para venta-unica y para productos con receta: en ambos casos el
-  // stock no se puede escribir a mano (venta-unica es siempre 1/0, receta
-  // se calcula desde los ingredientes - ver ProductResource/StockService).
+  // Solo presentes cuando el negocio tiene la feature "variants". Con
+  // variantes, "stock" arriba ya viene como la suma agregada de las
+  // variantes activas (ver ProductAvailability::effectiveStock en el
+  // backend) - no hace falta sumarlo a mano en el front.
+  variants?: ProductVariant[]
+  has_variants?: boolean
+  // Falso para venta-unica, para productos con receta, y para productos
+  // con variantes: en los tres casos el stock no se puede escribir a mano
+  // sobre el producto (venta-unica es siempre 1/0, receta se calcula desde
+  // los ingredientes, variantes se administra por variante - ver
+  // ProductResource/StockService).
   can_manage_stock?: boolean
 }
 
@@ -114,6 +177,7 @@ export interface ProductPayload {
   duration_minutes?: number | null
   sku?: string | null
   is_active?: boolean
+  variants?: ProductVariantInput[]
   category_id: number
   ingredients?: ProductRecipeLineInput[]
 }

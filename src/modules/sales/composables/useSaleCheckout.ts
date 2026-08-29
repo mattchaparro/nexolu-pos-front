@@ -10,7 +10,7 @@ import { computed, ref, watch, type Ref } from 'vue'
 import type { ClientSearchResult } from '@/types/client'
 import type { Business } from '@/types/business'
 import type { Discount } from '@/types/discount'
-import type { Product } from '@/types/product'
+import type { Product, ProductVariant } from '@/types/product'
 import type { CreateSalePayload } from '@/types/sale'
 import { hasFeature } from '@/utils/hasFeature'
 
@@ -90,12 +90,18 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     return lines.value.find((l) => l.cartKey === cartKey)
   }
 
-  function availableStock(product: Product): number {
+  function availableStock(product: Product, variant?: ProductVariant | null): number {
+    if (variant) {
+      const reserved = lines.value
+        .filter((l) => l.variant?.id === variant.id)
+        .reduce((sum, l) => sum + l.quantity, 0)
+      return variant.stock - reserved
+    }
     if (!product.track_stock) {
       return Number.POSITIVE_INFINITY
     }
     const reserved = lines.value
-      .filter((l) => l.product.id === product.id)
+      .filter((l) => l.product.id === product.id && !l.variant)
       .reduce((sum, l) => sum + l.quantity, 0)
     return product.stock - reserved
   }
@@ -107,7 +113,7 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     }
 
     if (!product.price_varies_at_sale) {
-      const existing = lines.value.find((l) => l.product.id === product.id)
+      const existing = lines.value.find((l) => l.product.id === product.id && !l.variant)
       if (existing) {
         existing.quantity += 1
         return
@@ -123,6 +129,34 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     })
   }
 
+  /**
+   * Contraparte de addProduct() para un producto con variantes
+   * (product.has_variants) - siempre precio fijo (variant.price, nunca
+   * price_varies_at_sale), y el "ya esta en el carrito" compara tambien la
+   * variante: dos variantes distintas del mismo producto (ej. Talla S y
+   * Talla M) son lineas independientes, nunca se fusionan entre si.
+   */
+  function addVariant(product: Product, variant: ProductVariant): void {
+    if (availableStock(product, variant) <= 0) {
+      return
+    }
+
+    const existing = lines.value.find((l) => l.product.id === product.id && l.variant?.id === variant.id)
+    if (existing) {
+      existing.quantity += 1
+      return
+    }
+
+    lines.value.push({
+      cartKey: crypto.randomUUID(),
+      product,
+      variant,
+      quantity: 1,
+      unitPrice: variant.price,
+      discountId: null,
+    })
+  }
+
   function removeLine(cartKey: string): void {
     lines.value = lines.value.filter((l) => l.cartKey !== cartKey)
   }
@@ -132,7 +166,11 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     if (!line || quantity < 1) {
       return
     }
-    if (line.product.track_stock && quantity > line.product.stock) {
+    if (line.variant) {
+      if (quantity > line.variant.stock) {
+        return
+      }
+    } else if (line.product.track_stock && quantity > line.product.stock) {
       return
     }
     line.quantity = quantity
@@ -163,6 +201,7 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     return {
       items: lines.value.map((l) => ({
         product_id: l.product.id,
+        product_variant_id: l.variant?.id ?? null,
         quantity: l.quantity,
         unit_price: l.product.price_varies_at_sale ? l.unitPrice : undefined,
         discount_id: l.discountId,
@@ -205,6 +244,7 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
       const draft = {
         lines: lines.value.map((l) => ({
           productId: l.product.id,
+          productVariantId: l.variant?.id ?? null,
           quantity: l.quantity,
           unitPrice: l.unitPrice,
           discountId: l.discountId,
@@ -251,9 +291,23 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
           if (!product) {
             return null
           }
+          // Un producto con variantes SIEMPRE resuelve contra el catalogo
+          // actual, nunca contra un snapshot viejo (mismo criterio que el
+          // producto mismo, arriba) - si la variante ya no existe o se
+          // desactivo desde que se guardo el borrador, se descarta esa
+          // linea en vez de restaurarla rota.
+          let variant: ProductVariant | null = null
+          if (l.productVariantId) {
+            const found = product.variants?.find((v) => v.id === l.productVariantId && v.is_active)
+            if (!found) {
+              return null
+            }
+            variant = found
+          }
           return {
             cartKey: crypto.randomUUID(),
             product,
+            variant,
             quantity: l.quantity,
             unitPrice: l.unitPrice,
             discountId: l.discountId,
@@ -298,6 +352,7 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     canSubmit,
     availableStock,
     addProduct,
+    addVariant,
     removeLine,
     setQuantity,
     setLineDiscount,

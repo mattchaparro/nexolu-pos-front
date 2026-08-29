@@ -143,6 +143,12 @@ const router = createRouter({
           meta: { requiresPermission: 'inventory.view' },
         },
         {
+          path: 'catalogo/atributos',
+          name: 'catalog.attributes.index',
+          component: () => import('@/modules/catalog/views/ProductAttributesView.vue'),
+          meta: { requiresFeature: 'variants', requiresPermission: 'inventory.view' },
+        },
+        {
           path: 'catalogo/edicion-masiva',
           name: 'catalog.bulk-update',
           component: () => import('@/modules/catalog/views/BulkStockUpdateView.vue'),

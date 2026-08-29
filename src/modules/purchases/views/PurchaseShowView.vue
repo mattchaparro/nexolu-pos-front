@@ -30,7 +30,8 @@ function formatDateTime(value: string): string {
 
 function lineItemName(line: Purchase['lines'][number]): string {
   if (line.product?.id != null) {
-    return line.product.name ?? ''
+    const variantLabel = line.product_variant?.attribute_values?.map((av) => av.value).join(' / ')
+    return variantLabel ? `${line.product.name} (${variantLabel})` : (line.product.name ?? '')
   }
   return line.ingredient?.name ?? ''
 }

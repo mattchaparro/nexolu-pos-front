@@ -3,10 +3,12 @@
 // nexolu-pos-api. Sale cubre tanto venta directa (status='closed' siempre)
 // como cuenta abierta (status='open'|'closed', con payment_splits/
 // partial_payments) - un solo modelo en el back, un solo tipo aca.
-import type { Product } from './product'
+import type { Product, ProductVariant } from './product'
 
 export interface SaleItemInput {
   product_id: number
+  /** Obligatorio si el producto tiene variantes (product.has_variants). */
+  product_variant_id?: number | null
   quantity: number
   /** Solo obligatorio si el producto es price_varies_at_sale. */
   unit_price?: number
@@ -38,6 +40,7 @@ export interface CreateSalePayload {
 export interface SaleItem {
   id: number
   product: Product
+  product_variant: ProductVariant | null
   quantity: number
   unit_price: number
   subtotal: number

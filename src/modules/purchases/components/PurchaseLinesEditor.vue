@@ -68,7 +68,22 @@ function errorFor(index: number, field: string): string | undefined {
 function onKindChange(row: PurchaseLineRow, value: 'product' | 'ingredient'): void {
   row.kind = value
   row.product_id = null
+  row.product_variant_id = null
   row.ingredient_id = null
+}
+
+function onProductChange(row: PurchaseLineRow, productId: number | null): void {
+  row.product_id = productId
+  row.product_variant_id = null
+}
+
+function variantOptionsFor(row: PurchaseLineRow): { id: number; label: string }[] {
+  const variants = props.products.find((p) => p.id === row.product_id)?.variants ?? []
+  return variants.map((v) => ({ id: v.id, label: v.attribute_values.map((av) => av.value).join(' / ') }))
+}
+
+function hasVariants(row: PurchaseLineRow): boolean {
+  return row.kind === 'product' && props.products.find((p) => p.id === row.product_id)?.has_variants === true
 }
 </script>
 
@@ -101,10 +116,22 @@ function onKindChange(row: PurchaseLineRow, value: 'product' | 'ingredient'): vo
               filter
               class="min-w-0 flex-1"
               :error="errorFor(index, 'product_id')"
-              @update:model-value="row.product_id = $event as number | null"
+              @update:model-value="onProductChange(row, $event as number | null)"
             />
             <NxSelect
-              v-else
+              v-if="hasVariants(row)"
+              :model-value="row.product_variant_id"
+              :options="variantOptionsFor(row)"
+              option-label="label"
+              option-value="id"
+              label="Variante"
+              size="sm"
+              class="min-w-0 flex-1"
+              :error="errorFor(index, 'product_variant_id')"
+              @update:model-value="row.product_variant_id = $event as number | null"
+            />
+            <NxSelect
+              v-if="row.kind === 'ingredient'"
               :model-value="row.ingredient_id"
               :options="ingredients"
               option-label="name"

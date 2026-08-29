@@ -1,6 +1,6 @@
 // Refleja PurchaseResource/PurchaseLineResource/PurchasePaymentResource
 // (app/Http/Resources/Api/V1) en nexolu-pos-api.
-import type { Ingredient, Product } from './product'
+import type { Ingredient, Product, ProductVariant } from './product'
 import type { Supplier } from './supplier'
 
 export type PurchasePaymentStatus = 'pending' | 'paid'
@@ -15,6 +15,8 @@ export type PurchasePaymentStatus = 'pending' | 'paid'
 export interface PurchaseLine {
   id: number
   product: Partial<Product> | null
+  /** Presente cuando el producto de la linea tiene variantes. */
+  product_variant: Partial<ProductVariant> | null
   ingredient: Partial<Ingredient> | null
   quantity: number
   unit_cost_cop: number
@@ -52,6 +54,8 @@ export interface Purchase {
 
 export interface PurchaseLineInput {
   product_id?: number | null
+  /** Obligatorio si el producto tiene variantes (product.has_variants). */
+  product_variant_id?: number | null
   ingredient_id?: number | null
   quantity: number
   line_total_cop: number

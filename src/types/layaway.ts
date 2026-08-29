@@ -3,13 +3,15 @@
 // un apartado no tiene proveedor - solo nombre/telefono libres del
 // cliente (customer_name/customer_phone), mas un client_id opcional
 // (ver CUTOVER_TODO.md #4) cuando esos datos se asociaron a un Client real.
-import type { Product } from './product'
+import type { Product, ProductVariant } from './product'
 
 export type LayawayStatus = 'open' | 'completed' | 'cancelled'
 
 export interface LayawayItem {
   id: number
   product: Partial<Product> | null
+  /** Presente cuando el producto del item tiene variantes. */
+  product_variant: Partial<ProductVariant> | null
   quantity: number
   unit_price: number
   subtotal: number
@@ -45,6 +47,8 @@ export interface Layaway {
 
 export interface LayawayItemInput {
   product_id: number
+  /** Obligatorio si el producto tiene variantes (product.has_variants). */
+  product_variant_id?: number | null
   quantity: number
   unit_price?: number | null
 }

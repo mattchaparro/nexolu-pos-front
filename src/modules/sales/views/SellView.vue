@@ -15,7 +15,7 @@ import { usePermissions } from '@/composables/usePermissions'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import { useCurrentShift } from '@/modules/cash-shifts/composables/useCurrentShift'
 import { useAuthStore } from '@/stores/auth.store'
-import type { Product } from '@/types/product'
+import type { Product, ProductVariant } from '@/types/product'
 import type { Sale } from '@/types/sale'
 import type { BusinessTable } from '@/types/table'
 import { NxPageHeader } from '@/ui'
@@ -39,6 +39,7 @@ import ProductGrid from '../components/ProductGrid.vue'
 import SaleSuccessDialog from '../components/SaleSuccessDialog.vue'
 import TabInProgressPanel from '../components/TabInProgressPanel.vue'
 import TabSwitcherStrip from '../components/TabSwitcherStrip.vue'
+import VariantSelectorModal from '../components/VariantSelectorModal.vue'
 import { useActiveDiscounts } from '../composables/useActiveDiscounts'
 import { useCreateSale } from '../composables/useCreateSale'
 import { useProductCatalog } from '../composables/useProductCatalog'
@@ -266,6 +267,7 @@ function mobileTabLabel(): string {
 
 // --- Venta directa ---
 const priceVariesProduct = ref<Product | null>(null)
+const variantSelectProduct = ref<Product | null>(null)
 const successOpen = ref(false)
 const submitError = ref<string | null>(null)
 const mobileCartOpen = ref(false)
@@ -282,6 +284,10 @@ function cartDestinationLabel(): string {
 }
 
 function handleSelectProduct(product: Product): void {
+  if (product.has_variants) {
+    variantSelectProduct.value = product
+    return
+  }
   if (product.price_varies_at_sale) {
     priceVariesProduct.value = product
     return
@@ -304,6 +310,19 @@ function handlePriceConfirmed(price: number): void {
     notify(`Producto agregado a ${cartDestinationLabel()}`)
   }
   priceVariesProduct.value = null
+}
+
+function handleVariantSelected(variant: ProductVariant): void {
+  if (!variantSelectProduct.value) {
+    return
+  }
+  if (mode.value === 'quick') {
+    checkout.addVariant(variantSelectProduct.value, variant)
+  } else {
+    tabCart.addVariant(variantSelectProduct.value, variant)
+  }
+  notify(`Producto agregado a ${cartDestinationLabel()}`)
+  variantSelectProduct.value = null
 }
 
 // Boton "Cobrar" (venta directa o cuenta abierta): abre el mismo
@@ -496,6 +515,13 @@ function handleNewSale(): void {
       :product="priceVariesProduct"
       @update:model-value="priceVariesProduct = null"
       @confirm="handlePriceConfirmed"
+    />
+
+    <VariantSelectorModal
+      :model-value="variantSelectProduct !== null"
+      :product="variantSelectProduct"
+      @update:model-value="variantSelectProduct = null"
+      @select="handleVariantSelected"
     />
 
     <SaleSuccessDialog

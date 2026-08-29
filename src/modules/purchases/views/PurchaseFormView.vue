@@ -62,6 +62,7 @@ async function submit(): Promise<void> {
 
   const lineInputs: PurchaseLineInput[] = lines.value.map((row) => ({
     product_id: row.kind === 'product' ? row.product_id : null,
+    product_variant_id: row.kind === 'product' ? row.product_variant_id : null,
     ingredient_id: row.kind === 'ingredient' ? row.ingredient_id : null,
     quantity: row.kind === 'product' ? Math.round(Number(row.quantity) || 0) : Number(row.quantity) || 0,
     line_total_cop: Number(row.line_total_cop) || 0,

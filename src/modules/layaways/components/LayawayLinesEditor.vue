@@ -40,8 +40,24 @@ function subtotalLabel(row: LayawayLineRow): string {
 
 function onProductChange(row: LayawayLineRow, productId: number | null): void {
   row.product_id = productId
+  row.product_variant_id = null
   const product = props.products.find((p) => p.id === productId)
-  row.unit_price = product && !product.price_varies_at_sale ? Number(product.price) : null
+  row.unit_price = product && !product.has_variants && !product.price_varies_at_sale ? Number(product.price) : null
+}
+
+function hasVariants(row: LayawayLineRow): boolean {
+  return productFor(row)?.has_variants === true
+}
+
+function variantOptionsFor(row: LayawayLineRow): { id: number; label: string }[] {
+  const variants = productFor(row)?.variants ?? []
+  return variants.map((v) => ({ id: v.id, label: v.attribute_values.map((av) => av.value).join(' / ') }))
+}
+
+function onVariantChange(row: LayawayLineRow, variantId: number | null): void {
+  row.product_variant_id = variantId
+  const variant = productFor(row)?.variants?.find((v) => v.id === variantId)
+  row.unit_price = variant ? Number(variant.price) : null
 }
 
 function addRow(): void {
@@ -76,6 +92,18 @@ function errorFor(index: number, field: string): string | undefined {
             filter
             :error="errorFor(index, 'product_id')"
             @update:model-value="onProductChange(row, $event as number | null)"
+          />
+
+          <NxSelect
+            v-if="hasVariants(row)"
+            :model-value="row.product_variant_id"
+            :options="variantOptionsFor(row)"
+            option-label="label"
+            option-value="id"
+            label="Variante"
+            size="sm"
+            :error="errorFor(index, 'product_variant_id')"
+            @update:model-value="onVariantChange(row, $event as number | null)"
           />
 
           <div class="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:items-end">

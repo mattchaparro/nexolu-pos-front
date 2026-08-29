@@ -15,10 +15,10 @@ defineProps<{
   <div v-else class="divide-y divide-slate-100">
     <NewItemsCartLineRow
       v-for="line in cart.lines.value"
-      :key="line.product.id"
+      :key="`${line.product.id}-${line.variant?.id ?? 0}`"
       :line="line"
-      @update:quantity="cart.setQuantity(line.product.id, $event)"
-      @remove="cart.removeLine(line.product.id)"
+      @update:quantity="cart.setQuantity(line.product.id, $event, line.variant?.id ?? null)"
+      @remove="cart.removeLine(line.product.id, line.variant?.id ?? null)"
     />
   </div>
 </template>

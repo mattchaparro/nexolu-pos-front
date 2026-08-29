@@ -20,6 +20,8 @@ const MAX_AGE_MS = 12 * 60 * 60 * 1000
 
 export interface SaleDraftLine {
   productId: number
+  /** Presente cuando el producto tiene variantes - la variante elegida. */
+  productVariantId?: number | null
   quantity: number
   unitPrice: number
   discountId: number | null

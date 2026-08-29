@@ -9,15 +9,18 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useBusiness } from '@/composables/useBusiness'
 import { useSystemAlert } from '@/composables/useSystemAlert'
-import type { ProductRecipeLineInput } from '@/types/product'
+import type { ProductRecipeLineInput, ProductVariantInput } from '@/types/product'
 import { NxButton, NxInput, NxInputNumber, NxPageHeader, NxSelect, NxTextarea, NxToggleButton } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
+import { hasFeature } from '@/utils/hasFeature'
 
 import ProductIngredientsEditor from '../components/ProductIngredientsEditor.vue'
+import ProductVariantsEditor from '../components/ProductVariantsEditor.vue'
 import { useCategories } from '../composables/useCategories'
 import { useIngredientOptions } from '../composables/useIngredientOptions'
 import { useProduct } from '../composables/useProduct'
+import { useProductAttributes } from '../composables/useProductAttributes'
 import { useProductMutations } from '../composables/useProductMutations'
 
 const route = useRoute()
@@ -36,6 +39,13 @@ const categoriesQuery = useCategories()
 const productQuery = useProduct(productId)
 const ingredientsEnabled = computed(() => business.value?.feature_flags?.ingredients === true)
 const ingredientOptionsQuery = useIngredientOptions(ingredientsEnabled)
+// hasFeature() (resolved_features, ya resuelto por el backend) y no el JSON
+// crudo: un negocio Full anterior a esta bandera no tiene la clave en
+// feature_flags pero si la funcion habilitada por el default de su plan -
+// leyendo el JSON crudo, la seccion de Variaciones quedaba invisible justo
+// para los negocios que ya existian, que son los que van a activarla.
+const variantsEnabled = computed(() => hasFeature(business.value, 'variants'))
+const productAttributesQuery = useProductAttributes(variantsEnabled)
 const { createMutation, updateMutation } = useProductMutations()
 
 const categoryOptions = computed(() => {
@@ -64,6 +74,7 @@ const sku = ref('')
 const isActive = ref(true)
 const categoryId = ref<number | null>(null)
 const ingredients = ref<ProductRecipeLineInput[]>([])
+const variants = ref<ProductVariantInput[]>([])
 const fieldErrors = ref<Record<string, string>>({})
 const formError = ref<string | null>(null)
 
@@ -91,6 +102,16 @@ watch(
     isActive.value = product.is_active
     categoryId.value = product.category?.id ?? null
     ingredients.value = (product.ingredients ?? []).map((i) => ({ ingredient_id: i.id, quantity: i.quantity }))
+    variants.value = (product.variants ?? []).map((v) => ({
+      id: v.id,
+      sku: v.sku,
+      price: Number(v.price),
+      cost_price: v.cost_price !== null ? Number(v.cost_price) : undefined,
+      stock: v.stock,
+      low_stock_alert_threshold: v.low_stock_alert_threshold,
+      is_active: v.is_active,
+      attribute_value_ids: v.attribute_values.map((av) => av.product_attribute_value_id),
+    }))
   },
   { immediate: true },
 )
@@ -103,6 +124,7 @@ watch(isService, (value) => {
     isSingleSale.value = false
     trackStock.value = false
     ingredients.value = []
+    variants.value = []
   }
 })
 watch(isSingleSale, (value) => {
@@ -110,6 +132,7 @@ watch(isSingleSale, (value) => {
     isService.value = false
     trackStock.value = true
     ingredients.value = []
+    variants.value = []
   }
 })
 watch(
@@ -117,6 +140,18 @@ watch(
   (value) => {
     if (value.length > 0) {
       trackStock.value = true
+      variants.value = []
+    }
+  },
+  { deep: true },
+)
+watch(
+  variants,
+  (value) => {
+    if (value.length > 0) {
+      trackStock.value = true
+      ingredients.value = []
+      priceVariesAtSale.value = false
     }
   },
   { deep: true },
@@ -125,6 +160,19 @@ watch(
 // Con receta, el costo se calcula solo (Σ insumo.cost_price × cantidad) -
 // mismo criterio que Product::syncRecipeCost() en el backend, que
 // sobreescribe cualquier cost_price manual apenas hay ingredientes.
+// Con variantes, el precio/costo del producto padre deja de ser editable a
+// mano (cada variante tiene el suyo) - se muestra el mas barato como
+// referencia, mismo criterio visual que "Precio de referencia" para
+// price_varies_at_sale. 'price' sigue siendo requerido por el backend
+// (StoreProductRequest), asi que submit() manda este valor en vez del
+// campo deshabilitado.
+const cheapestVariantPrice = computed(() => {
+  if (variants.value.length === 0) {
+    return null
+  }
+  return Math.min(...variants.value.map((v) => Number(v.price) || 0))
+})
+
 const recipeCost = computed(() => {
   if (ingredients.value.length === 0) {
     return null
@@ -168,8 +216,8 @@ async function submit(): Promise<void> {
     name: name.value.trim(),
     description: showDescription.value ? description.value.trim() || null : null,
     how_to_use: showHowToUse.value ? howToUse.value.trim() || null : null,
-    price: price.value,
-    ...(recipeCost.value === null ? { cost_price: costPrice.value ?? 0 } : {}),
+    price: cheapestVariantPrice.value ?? price.value,
+    ...(recipeCost.value === null && cheapestVariantPrice.value === null ? { cost_price: costPrice.value ?? 0 } : {}),
     ...(isEdit.value ? {} : { stock: stock.value ?? 0 }),
     low_stock_alert_threshold: isService.value ? null : lowStockAlertThreshold.value,
     track_stock: trackStock.value,
@@ -181,6 +229,7 @@ async function submit(): Promise<void> {
     is_active: isActive.value,
     category_id: categoryId.value,
     ...(ingredientsEnabled.value ? { ingredients: ingredients.value } : {}),
+    ...(variantsEnabled.value ? { variants: variants.value } : {}),
   }
 
   try {
@@ -246,25 +295,35 @@ async function submit(): Promise<void> {
           <p class="mb-3 text-sm font-semibold text-slate-700">Precio y costo</p>
           <div class="flex flex-col gap-3">
             <NxInputNumber
-              v-model="price"
-              :label="priceVariesAtSale ? 'Precio de referencia' : 'Precio de venta'"
+              :model-value="cheapestVariantPrice ?? price"
+              :label="variants.length > 0 ? 'Precio (desde)' : priceVariesAtSale ? 'Precio de referencia' : 'Precio de venta'"
               :min="0"
               required
+              :disabled="variants.length > 0"
               :error="fieldErrors.price"
+              @update:model-value="price = $event ?? 0"
             />
+            <p v-if="variants.length > 0" class="-mt-2 text-[11px] text-slate-400">
+              Cada variante tiene su propio precio, más abajo.
+            </p>
             <template v-if="!isService">
               <NxInputNumber
                 :model-value="recipeCost ?? costPrice"
                 label="Costo"
                 :min="0"
-                :disabled="recipeCost !== null"
+                :disabled="recipeCost !== null || variants.length > 0"
                 @update:model-value="costPrice = $event"
               />
               <p v-if="recipeCost !== null" class="-mt-2 text-[11px] text-slate-400">
                 Se calcula automático según la receta de insumos.
               </p>
             </template>
-            <NxToggleButton v-model="priceVariesAtSale" label="Precio varía al vender" icon="pi pi-sliders-h" />
+            <NxToggleButton
+              v-model="priceVariesAtSale"
+              label="Precio varía al vender"
+              icon="pi pi-sliders-h"
+              :disabled="variants.length > 0"
+            />
           </div>
         </div>
       </div>
@@ -281,7 +340,7 @@ async function submit(): Promise<void> {
                   v-model="trackStock"
                   label="Controla inventario"
                   icon="pi pi-box"
-                  :disabled="isSingleSale || ingredients.length > 0"
+                  :disabled="isSingleSale || ingredients.length > 0 || variants.length > 0"
                 />
               </template>
               <NxToggleButton v-model="isActive" :label="isService ? 'Servicio activo' : 'Producto activo'" icon="pi pi-check-circle" />
@@ -296,7 +355,7 @@ async function submit(): Promise<void> {
           </div>
         </div>
 
-        <div v-if="!isService && trackStock" class="rounded-xl border border-slate-200 bg-white p-4">
+        <div v-if="!isService && trackStock && variants.length === 0" class="rounded-xl border border-slate-200 bg-white p-4">
           <p class="mb-3 text-sm font-semibold text-slate-700">Inventario</p>
           <div class="flex flex-col gap-3">
             <NxInputNumber
@@ -322,6 +381,11 @@ async function submit(): Promise<void> {
         <div v-if="ingredientsEnabled && !isService && !isSingleSale" class="rounded-xl border border-slate-200 bg-white p-4">
           <p class="mb-3 text-sm font-semibold text-slate-700">Receta de insumos (opcional)</p>
           <ProductIngredientsEditor v-model="ingredients" :ingredients="ingredientOptionsQuery.data.value ?? []" />
+        </div>
+
+        <div v-if="variantsEnabled && !isService && !isSingleSale" class="rounded-xl border border-slate-200 bg-white p-4">
+          <p class="mb-3 text-sm font-semibold text-slate-700">Variaciones (opcional)</p>
+          <ProductVariantsEditor v-model="variants" :attributes="productAttributesQuery.data.value ?? []" />
         </div>
       </div>
     </div>

@@ -25,7 +25,15 @@ function applicableDiscounts(): Discount[] {
 <template>
   <div class="flex flex-col gap-1.5 border-b border-slate-100 py-3 last:border-0">
     <div class="flex items-start justify-between gap-2">
-      <p class="text-sm font-medium leading-tight text-slate-900">{{ line.product.name }}</p>
+      <div class="min-w-0">
+        <p class="text-sm font-medium leading-tight text-slate-900">{{ line.product.name }}</p>
+        <span
+          v-if="line.variant"
+          class="mt-0.5 inline-block rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600"
+        >
+          {{ line.variant.attribute_values.map((av) => av.value).join(' / ') }}
+        </span>
+      </div>
       <button
         type="button"
         class="shrink-0 rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
@@ -51,7 +59,7 @@ function applicableDiscounts(): Discount[] {
         <button
           type="button"
           class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-40"
-          :disabled="line.product.track_stock && line.quantity >= line.product.stock"
+          :disabled="line.variant ? line.quantity >= line.variant.stock : line.product.track_stock && line.quantity >= line.product.stock"
           @click="emit('update:quantity', line.quantity + 1)"
         >
           <i class="pi pi-plus text-xs" />

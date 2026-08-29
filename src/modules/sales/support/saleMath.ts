@@ -6,13 +6,15 @@
 // useSaleCheckout.ts sobre por que el carrito no duplica esa cuenta.
 import type { Business } from '@/types/business'
 import type { Discount } from '@/types/discount'
-import type { Product } from '@/types/product'
+import type { Product, ProductVariant } from '@/types/product'
 
 export interface CartLine {
   cartKey: string
   product: Product
+  /** Presente cuando product.has_variants - la variante concreta elegida. */
+  variant?: ProductVariant | null
   quantity: number
-  /** Precio unitario efectivo: fijo = product.price, variable = editable. */
+  /** Precio unitario efectivo: fijo = product.price, variable = editable, variante = variant.price. */
   unitPrice: number
   discountId: number | null
 }

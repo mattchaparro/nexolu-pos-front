@@ -151,7 +151,12 @@ function formatDateTime(value: string): string {
           </thead>
           <tbody class="divide-y divide-slate-100">
             <tr v-for="item in layaway.items" :key="item.id">
-              <td class="px-4 py-3">{{ item.product?.name ?? 'Producto' }}</td>
+              <td class="px-4 py-3">
+                {{ item.product?.name ?? 'Producto' }}
+                <span v-if="item.product_variant?.attribute_values" class="text-slate-400">
+                  ({{ item.product_variant.attribute_values.map((av) => av.value).join(' / ') }})
+                </span>
+              </td>
               <td class="px-4 py-3 text-right font-medium">{{ item.quantity }}</td>
               <td class="px-4 py-3 text-right text-slate-500">{{ formatCop(item.unit_price) }}</td>
               <td class="px-4 py-3 text-right font-medium">{{ formatCop(item.subtotal) }}</td>

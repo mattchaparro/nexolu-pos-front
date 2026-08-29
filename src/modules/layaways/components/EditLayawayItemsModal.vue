@@ -43,6 +43,7 @@ watch(
       ? props.layaway.items.map((item) => ({
           uid: crypto.randomUUID(),
           product_id: item.product?.id ?? null,
+          product_variant_id: item.product_variant?.id ?? null,
           quantity: item.quantity,
           // LayawayItem.unit_price es decimal:2 en el backend (llega como
           // string "3000.00") - Number() para que NxInputNumber reciba un
@@ -69,6 +70,7 @@ async function submit(): Promise<void> {
 
   const items: LayawayItemInput[] = rows.value.map((row) => ({
     product_id: row.product_id as number,
+    product_variant_id: row.product_variant_id,
     quantity: row.quantity,
     unit_price: row.unit_price,
   }))
