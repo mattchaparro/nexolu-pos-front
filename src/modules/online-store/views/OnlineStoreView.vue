@@ -30,15 +30,12 @@ import {
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 
-import PaymentGatewayCard from '../components/PaymentGatewayCard.vue'
 import StoreImageField from '../components/StoreImageField.vue'
-import { usePaymentGateways } from '../composables/usePaymentGateways'
 import { useStoreSettings } from '../composables/useStoreSettings'
 
 const router = useRouter()
 const { notify } = useSystemAlert()
 const { settingsQuery, updateMutation } = useStoreSettings()
-const { gatewaysQuery } = usePaymentGateways()
 
 const activeTab = ref<'tienda' | 'apariencia' | 'home'>('tienda')
 
@@ -309,7 +306,6 @@ function addStat(): void {
           <NxTab value="tienda" icon="pi pi-shop">Tienda</NxTab>
           <NxTab value="apariencia" icon="pi pi-palette">Apariencia</NxTab>
           <NxTab value="home" icon="pi pi-home">Inicio</NxTab>
-          <NxTab value="pagos" icon="pi pi-credit-card">Pagos</NxTab>
         </NxTabList>
 
         <NxTabPanels>
@@ -369,25 +365,6 @@ function addStat(): void {
               <NxButton :loading="updateMutation.isPending.value" @click="saveStore">Guardar</NxButton>
             </div>
           </NxTabPanel>
-
-          <NxTabPanel value="pagos">
-            <div class="flex flex-col gap-4">
-              <div class="rounded-xl border border-slate-200 bg-white p-4">
-                <p class="mb-1 text-sm font-semibold text-slate-700">Cobrar en línea</p>
-                <p class="text-[11px] text-slate-400">
-                  La plata entra directo a tu cuenta del proveedor: Nexolú nunca la retiene. Sin una pasarela
-                  conectada, la tienda igual funciona — el pedido te llega y coordinas el pago por fuera.
-                </p>
-              </div>
-
-              <PaymentGatewayCard
-                v-for="provider in gatewaysQuery.data.value ?? []"
-                :key="provider.provider_slug"
-                :provider="provider"
-              />
-            </div>
-          </NxTabPanel>
-
           <!-- ------------------------------ APARIENCIA -->
           <NxTabPanel value="apariencia">
             <div class="flex flex-col gap-4">

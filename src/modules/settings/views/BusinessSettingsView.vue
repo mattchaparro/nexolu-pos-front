@@ -41,6 +41,9 @@ import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 import { formatCop } from '@/utils/formatCop'
 
+import PaymentGatewayCard from '../components/PaymentGatewayCard.vue'
+import { usePaymentGateways } from '../composables/usePaymentGateways'
+
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
@@ -427,6 +430,8 @@ async function submitServicios(): Promise<void> {
     notify(extractErrorMessage(error, 'No pudimos guardar los ajustes.'))
   }
 }
+
+const { gatewaysQuery } = usePaymentGateways()
 </script>
 
 <template>
@@ -441,6 +446,7 @@ async function submitServicios(): Promise<void> {
           <NxTab value="0">Negocio</NxTab>
           <NxTab value="1">Facturacion</NxTab>
           <NxTab value="2">Ventas</NxTab>
+          <NxTab value="8">Medios de pago</NxTab>
           <NxTab value="3">Inventario</NxTab>
           <NxTab v-if="business?.can_access_layaways" value="4">Apartados</NxTab>
           <NxTab v-if="business?.can_access_services" value="5">Ordenes de servicio</NxTab>
@@ -508,6 +514,43 @@ async function submitServicios(): Promise<void> {
             <NxCard class="mt-3">
               <p v-if="ventasFormError" class="mb-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ ventasFormError }}</p>
 
+              <p class="mb-2 text-sm font-semibold text-slate-700">Domicilios</p>
+              <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end">
+                <NxToggleButton v-model="ventas.delivery_enabled" label="Cobrar domicilio" icon="pi pi-truck" :disabled="!canEdit" />
+                <NxInputNumber v-model="ventas.delivery_fee" label="Valor del domicilio" :disabled="!canEdit || !ventas.delivery_enabled" :error="ventasErrors.delivery_fee" />
+              </div>
+
+              <p class="mb-2 text-sm font-semibold text-slate-700">Cargos adicionales</p>
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="flex items-end gap-3">
+                  <NxToggleButton v-model="ventas.service_charge_enabled" label="Propina sugerida" icon="pi pi-percentage" :disabled="!canEdit" />
+                  <NxInputNumber
+                    v-model="ventas.service_charge_rate"
+                    label="% propina"
+                    :currency="false"
+                    :disabled="!canEdit || !ventas.service_charge_enabled"
+                    :error="ventasErrors.service_charge_rate"
+                  />
+                </div>
+                <div class="flex items-end gap-3">
+                  <NxToggleButton v-model="ventas.ipoconsumo_enabled" label="Impoconsumo" icon="pi pi-percentage" :disabled="!canEdit" />
+                  <NxInputNumber
+                    v-model="ventas.ipoconsumo_rate"
+                    label="% impoconsumo"
+                    :currency="false"
+                    :disabled="!canEdit || !ventas.ipoconsumo_enabled"
+                    :error="ventasErrors.ipoconsumo_rate"
+                  />
+                </div>
+              </div>
+
+              <NxButton v-if="canEdit" class="mt-4" :loading="isSaving" @click="submitVentas">Guardar cambios</NxButton>
+            </NxCard>
+          </NxTabPanel>
+
+          <!-- ================= Medios de pago ================= -->
+          <NxTabPanel value="8">
+            <NxCard class="mt-3">
               <p class="mb-1 text-sm font-semibold text-slate-700">Metodos de pago</p>
               <p class="mb-3 text-xs text-slate-500">
                 Selecciona del catalogo los que acepta tu negocio. Un medio nunca se elimina, solo se deshabilita, para no romper el historial
@@ -548,38 +591,22 @@ async function submitServicios(): Promise<void> {
                   </button>
                 </div>
               </template>
+            </NxCard>
 
-              <p class="mb-2 text-sm font-semibold text-slate-700">Domicilios</p>
-              <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end">
-                <NxToggleButton v-model="ventas.delivery_enabled" label="Cobrar domicilio" icon="pi pi-truck" :disabled="!canEdit" />
-                <NxInputNumber v-model="ventas.delivery_fee" label="Valor del domicilio" :disabled="!canEdit || !ventas.delivery_enabled" :error="ventasErrors.delivery_fee" />
+            <NxCard class="mt-3">
+              <p class="mb-1 text-sm font-semibold text-slate-700">Cobrar con pasarela</p>
+              <p class="mb-3 text-xs text-slate-500">
+                Conecta tu propia cuenta de Bold o Wompi. La plata entra directo a tu cuenta del proveedor: Nexolú nunca la
+                retiene. Con Bold, la misma llave te sirve después para cobrar con el datáfono.
+              </p>
+
+              <div class="flex flex-col gap-3">
+                <PaymentGatewayCard
+                  v-for="provider in gatewaysQuery.data.value ?? []"
+                  :key="provider.provider_slug"
+                  :provider="provider"
+                />
               </div>
-
-              <p class="mb-2 text-sm font-semibold text-slate-700">Cargos adicionales</p>
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div class="flex items-end gap-3">
-                  <NxToggleButton v-model="ventas.service_charge_enabled" label="Propina sugerida" icon="pi pi-percentage" :disabled="!canEdit" />
-                  <NxInputNumber
-                    v-model="ventas.service_charge_rate"
-                    label="% propina"
-                    :currency="false"
-                    :disabled="!canEdit || !ventas.service_charge_enabled"
-                    :error="ventasErrors.service_charge_rate"
-                  />
-                </div>
-                <div class="flex items-end gap-3">
-                  <NxToggleButton v-model="ventas.ipoconsumo_enabled" label="Impoconsumo" icon="pi pi-percentage" :disabled="!canEdit" />
-                  <NxInputNumber
-                    v-model="ventas.ipoconsumo_rate"
-                    label="% impoconsumo"
-                    :currency="false"
-                    :disabled="!canEdit || !ventas.ipoconsumo_enabled"
-                    :error="ventasErrors.ipoconsumo_rate"
-                  />
-                </div>
-              </div>
-
-              <NxButton v-if="canEdit" class="mt-4" :loading="isSaving" @click="submitVentas">Guardar cambios</NxButton>
             </NxCard>
           </NxTabPanel>
 
