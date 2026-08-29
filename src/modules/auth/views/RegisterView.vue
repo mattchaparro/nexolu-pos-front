@@ -10,6 +10,12 @@
 // desde SuperAdmin). El backend (BusinessRegistrationService::register())
 // clampa esto igual, asi que esta pantalla no es la unica barrera.
 //
+// El paso 2 arranca con dos preguntas (variaciones y tienda online) antes de
+// mostrar las tarjetas de plan: son las dos funciones exclusivas de Full que
+// mas seguido hacen que un negocio elija Básico y se de cuenta tarde. No
+// cambian el payload - solo recomiendan plan y avisan si lo elegido no cubre
+// lo que el propio usuario dijo necesitar.
+//
 // El paso 3 (verificar WhatsApp por OTP) es obligatorio a proposito - misma
 // decision via AskUserQuestion: pedir el WhatsApp del negocio y confirmarlo
 // con un codigo antes de dejar entrar al dashboard ahorra el paso de
@@ -118,6 +124,45 @@ const goToStep2 = handleSubmit((values) => {
 // --- Paso 2: plan primero, despues personalizar dentro de ese plan ---
 const selectedPlan = ref<'basic' | 'full' | null>(null)
 
+// Dos preguntas antes de mostrar los planes. No cambian nada del payload:
+// solo deciden que plan se recomienda y que aviso se muestra si el usuario
+// elige uno que no incluye lo que acaba de decir que necesita. Son las dos
+// funciones que mas seguido hacen que un negocio elija mal el plan y se de
+// cuenta despues de estar cargando el inventario - `variants` y
+// `online_store` son exclusivas de Full (ver BusinessFeaturePresets en
+// nexolu-pos-api).
+const needs = reactive<Record<'variants' | 'online_store', boolean>>({
+  variants: false,
+  online_store: false,
+})
+
+const needsQuestions: Array<{ key: 'variants' | 'online_store'; label: string; hint: string }> = [
+  {
+    key: 'variants',
+    label: 'Vendo el mismo producto en varias tallas, colores o presentaciones',
+    hint: 'Por ejemplo una camiseta en S, M y L, cada una con su propio precio y existencias.',
+  },
+  {
+    key: 'online_store',
+    label: 'Quiero vender también por internet',
+    hint: 'Tu catálogo publicado en una tienda web con el mismo inventario del POS, y pagos en línea.',
+  },
+]
+
+const recommendedPlan = computed<'basic' | 'full' | null>(() => (needs.variants || needs.online_store ? 'full' : null))
+
+// Lo que el usuario dijo que necesita y el plan que esta viendo NO incluye.
+// Se calcula contra el catalogo del backend, no contra una lista local, para
+// que mover una funcion de plan no deje este aviso mintiendo.
+function featuresMissingIn(plan: 'basic' | 'full'): string[] {
+  const catalog = catalogQuery.data.value?.features ?? []
+  return needsQuestions
+    .filter((question) => needs[question.key])
+    .map((question) => catalog.find((feature) => feature.key === question.key))
+    .filter((feature) => feature && !feature[plan])
+    .map((feature) => feature!.label)
+}
+
 // Solo las funciones que el plan elegido trae ENCENDIDAS por defecto se
 // pueden personalizar (apagar) - las que el plan no incluye ni siquiera se
 // muestran como opcion, para que quede claro que subir de plan es la unica
@@ -138,6 +183,21 @@ function selectPlan(plan: 'basic' | 'full'): void {
     editableFlags[feature.key] = true
   })
 }
+
+// Lo pedido que NO va a quedar encendido en la cuenta: porque el plan no lo
+// trae, o porque el usuario lo apago en la lista de abajo sin darse cuenta
+// de que era justo lo que dijo necesitar.
+const missingInSelectedPlan = computed(() => {
+  if (!selectedPlan.value) {
+    return []
+  }
+  const catalog = catalogQuery.data.value?.features ?? []
+  return needsQuestions
+    .filter((question) => needs[question.key])
+    .map((question) => catalog.find((feature) => feature.key === question.key))
+    .filter((feature) => feature && !editableFlags[feature.key])
+    .map((feature) => feature!.label)
+})
 
 // Panel "lo que se activará" - refleja el estado actual de los toggles,
 // agrupado igual que la pantalla de SuperAdmin para que se sienta la misma
@@ -375,26 +435,57 @@ async function submitRegistration(): Promise<void> {
 
         <template v-else-if="catalogQuery.data.value">
           <!-- Seleccion de plan -->
-          <div v-if="!selectedPlan" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <button
-              v-for="plan in (['basic', 'full'] as const)"
-              :key="plan"
-              type="button"
-              class="cursor-pointer rounded-xl border-2 border-slate-200 bg-white p-6 text-left transition hover:border-indigo-400"
-              @click="selectPlan(plan)"
-            >
-              <p class="text-lg font-bold text-slate-900">{{ plan === 'basic' ? 'Básico' : 'Full' }}</p>
-              <p class="mt-1 text-2xl font-bold text-indigo-600">
-                {{ formatCop(catalogQuery.data.value.plans[plan].price_cop) }}<span class="text-sm font-normal text-slate-400">/mes</span>
-              </p>
-              <ul class="mt-4 space-y-1.5 text-sm text-slate-600">
-                <li v-for="feature in catalogQuery.data.value.features.filter((f) => f[plan])" :key="feature.key" class="flex gap-2">
-                  <i class="pi pi-check-circle mt-0.5 text-emerald-500" />
-                  <span>{{ feature.label }}</span>
+          <template v-if="!selectedPlan">
+            <!-- Dos preguntas que deciden el plan. Van antes de las tarjetas
+                 a proposito: son la forma corta de saber si Básico alcanza. -->
+            <div class="rounded-xl border border-slate-200 bg-white p-4">
+              <p class="text-sm font-semibold text-slate-700">Antes de elegir, cuéntanos dos cosas</p>
+              <ul class="mt-3 divide-y divide-slate-100">
+                <li v-for="question in needsQuestions" :key="question.key" class="flex items-center justify-between gap-3 py-2.5">
+                  <div class="min-w-0">
+                    <p class="text-sm text-slate-700">{{ question.label }}</p>
+                    <p class="text-xs text-slate-400">{{ question.hint }}</p>
+                  </div>
+                  <NxSwitch v-model="needs[question.key]" />
                 </li>
               </ul>
-            </button>
-          </div>
+              <p v-if="recommendedPlan" class="mt-3 rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-700">
+                Para eso necesitas el plan <strong>Full</strong>: {{ featuresMissingIn('basic').join(' y ') }}
+                {{ featuresMissingIn('basic').length > 1 ? 'no vienen' : 'no viene' }} en el plan Básico.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <button
+                v-for="plan in (['basic', 'full'] as const)"
+                :key="plan"
+                type="button"
+                class="relative cursor-pointer rounded-xl border-2 bg-white p-6 text-left transition hover:border-indigo-400"
+                :class="recommendedPlan === plan ? 'border-indigo-500' : 'border-slate-200'"
+                @click="selectPlan(plan)"
+              >
+                <span
+                  v-if="recommendedPlan === plan"
+                  class="absolute -top-2.5 right-4 rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-semibold text-white"
+                >
+                  Recomendado para ti
+                </span>
+                <p class="text-lg font-bold text-slate-900">{{ plan === 'basic' ? 'Básico' : 'Full' }}</p>
+                <p class="mt-1 text-2xl font-bold text-indigo-600">
+                  {{ formatCop(catalogQuery.data.value.plans[plan].price_cop) }}<span class="text-sm font-normal text-slate-400">/mes</span>
+                </p>
+                <ul class="mt-4 space-y-1.5 text-sm text-slate-600">
+                  <li v-for="feature in catalogQuery.data.value.features.filter((f) => f[plan])" :key="feature.key" class="flex gap-2">
+                    <i class="pi pi-check-circle mt-0.5 text-emerald-500" />
+                    <span>{{ feature.label }}</span>
+                  </li>
+                </ul>
+                <p v-if="featuresMissingIn(plan).length" class="mt-4 text-xs text-amber-600">
+                  No incluye: {{ featuresMissingIn(plan).join(', ') }}.
+                </p>
+              </button>
+            </div>
+          </template>
 
           <!-- Personalizar dentro del plan elegido + resumen en vivo -->
           <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
@@ -406,6 +497,17 @@ async function submitRegistration(): Promise<void> {
                 Plan <strong>{{ selectedPlan === 'basic' ? 'Básico' : 'Full' }}</strong> - apaga lo que no necesites, puedes activarlo después
                 subiendo de plan.
               </p>
+              <div v-if="missingInSelectedPlan.length" class="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                <template v-if="selectedPlan === 'basic'">
+                  Este plan no incluye <strong>{{ missingInSelectedPlan.join(' ni ') }}</strong
+                  >, que es lo que nos dijiste que necesitas.
+                  <button type="button" class="ml-1 font-semibold underline" @click="selectPlan('full')">Cambiar al plan Full</button>
+                </template>
+                <template v-else>
+                  Apagaste <strong>{{ missingInSelectedPlan.join(' y ') }}</strong
+                  >, que es lo que nos dijiste que necesitas. Tu cuenta se creará sin eso.
+                </template>
+              </div>
               <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
                 <ul class="divide-y divide-slate-100">
                   <li v-for="feature in customizableFeatures" :key="feature.key" class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">

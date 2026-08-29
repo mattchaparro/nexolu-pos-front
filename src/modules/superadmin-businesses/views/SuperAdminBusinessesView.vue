@@ -7,9 +7,10 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import type { SuperAdminBusiness } from '@/types/superadmin/business'
-import { NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect } from '@/ui'
+import { NxButton, NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
+import BusinessFormModal from '../components/BusinessFormModal.vue'
 import { useBusinesses } from '../composables/useBusinesses'
 
 const router = useRouter()
@@ -51,6 +52,10 @@ function openBusiness(business: SuperAdminBusiness): void {
   router.push({ name: 'superadmin.businesses.show', params: { id: business.id } })
 }
 
+// Recien creado se abre su detalle: es donde se ve el equipo, se impersona y
+// se ajusta lo que haya quedado pendiente del alta.
+const createModalOpen = ref(false)
+
 function statusBadge(business: SuperAdminBusiness): { label: string; class: string } {
   if (!business.active) {
     return { label: 'Inactivo', class: 'bg-slate-100 text-slate-500' }
@@ -68,7 +73,12 @@ function statusBadge(business: SuperAdminBusiness): { label: string; class: stri
 
 <template>
   <div class="flex flex-col gap-4">
-    <NxPageHeader title="Negocios" icon="pi pi-building" compact />
+    <div class="flex items-center justify-between gap-2">
+      <NxPageHeader title="Negocios" icon="pi pi-building" compact />
+      <NxButton size="sm" icon="pi pi-plus" @click="createModalOpen = true">Crear negocio</NxButton>
+    </div>
+
+    <BusinessFormModal v-model="createModalOpen" @created="openBusiness" />
 
     <div class="flex flex-col gap-2 sm:flex-row">
       <NxInput

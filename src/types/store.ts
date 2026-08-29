@@ -17,6 +17,14 @@ export interface StoryStat {
 /** Ranuras de imagen de la tienda. Fijas: cada una tiene su sitio. */
 export type StoreImageSlot = 'logo' | 'banner' | 'hero' | 'story'
 
+/** Un bloque del home. Ver `homeBlockCatalog.ts` para los campos por tipo. */
+export interface HomeBlock {
+  id: string
+  type: string
+  enabled?: boolean
+  [key: string]: unknown
+}
+
 export interface StoreSettings {
   is_active: boolean
   store_name: string | null
@@ -27,6 +35,12 @@ export interface StoreSettings {
   surface_color: string | null
   accent_color: string | null
   font_preset: string
+  /**
+   * La página de inicio: lista ordenada de bloques tipados. La forma de cada
+   * bloque la define el catálogo (`homeBlockCatalog.ts`), no este tipo: el
+   * backend valida por tipo y agregar uno nuevo no debería tocar esto.
+   */
+  home_blocks: HomeBlock[]
   whatsapp_number: string | null
   shipping_flat_fee: number
   min_order_amount: number

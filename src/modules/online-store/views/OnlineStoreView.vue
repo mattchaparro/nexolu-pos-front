@@ -31,7 +31,11 @@ import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 
 import StoreImageField from '../components/StoreImageField.vue'
+import StoreImagePicker from '../components/StoreImagePicker.vue'
+import StoreProductPicker from '../components/StoreProductPicker.vue'
+import { HOME_BLOCK_CATALOG } from '../homeBlockCatalog'
 import { useStoreSettings } from '../composables/useStoreSettings'
+import { BlockEditor, type Block } from '@/packages/block-editor'
 
 const router = useRouter()
 const { notify } = useSystemAlert()
@@ -48,16 +52,6 @@ const FONT_PRESETS = [
   { value: 'tecnica', label: 'Técnica — geométrica y precisa' },
 ]
 
-const ICON_OPTIONS = [
-  { value: 'truck', label: '🚚 Envío' },
-  { value: 'store', label: '🏪 Tienda' },
-  { value: 'calendar', label: '📅 Calendario' },
-  { value: 'shield', label: '🛡️ Garantía' },
-  { value: 'clock', label: '⏱️ Rapidez' },
-  { value: 'heart', label: '💚 Cuidado' },
-  { value: 'star', label: '⭐ Calidad' },
-  { value: 'phone', label: '📱 Contacto' },
-]
 
 // --- Estado del formulario ---
 const storeName = ref('')
@@ -118,6 +112,9 @@ watch(
     minOrderAmount.value = value.min_order_amount
     pickupEnabled.value = value.pickup_enabled
     orderEmailEnabled.value = value.order_email_enabled
+    // Copia, no referencia: el editor muta la lista y no debe tocar la
+    // caché de la consulta.
+    homeBlocks.value = (value.home_blocks ?? []).map((block) => ({ ...block }))
     orderEmail.value = value.order_email ?? ''
     terms.value = value.terms ?? ''
     seoTitle.value = value.seo_title ?? ''
@@ -206,26 +203,6 @@ function saveAppearance(): Promise<void> {
   )
 }
 
-function saveHome(): Promise<void> {
-  return save(
-    {
-      hero_enabled: heroEnabled.value,
-      hero_eyebrow: nullable(heroEyebrow.value),
-      hero_title: nullable(heroTitle.value),
-      hero_highlight: nullable(heroHighlight.value),
-      hero_subtitle: nullable(heroSubtitle.value),
-      hero_cta_label: nullable(heroCtaLabel.value),
-      trust_enabled: trustEnabled.value,
-      trust_items: trustItems.value.filter((item) => item.title.trim()),
-      story_enabled: storyEnabled.value,
-      story_eyebrow: nullable(storyEyebrow.value),
-      story_title: nullable(storyTitle.value),
-      story_body: nullable(storyBody.value),
-      story_stats: storyStats.value.filter((stat) => stat.value.trim() && stat.label.trim()),
-    },
-    'Inicio actualizado',
-  )
-}
 
 function toggleStore(): Promise<void> {
   const opening = !isOpen.value
@@ -239,12 +216,21 @@ async function copyPublicUrl(): Promise<void> {
   }
 }
 
-function addTrustItem(): void {
-  trustItems.value.push({ icon: 'truck', title: '', text: '' })
-}
 
-function addStat(): void {
-  storyStats.value.push({ value: '', label: '' })
+
+// La página de inicio: una lista de bloques que el comerciante ordena.
+// Reemplaza a las tres ranuras fijas (portada/confianza/historia) que hacían
+// que todas las tiendas Nexolú se vieran iguales.
+const homeBlocks = ref<Block[]>([])
+const homeError = ref<string | null>(null)
+
+async function saveHomeBlocks(): Promise<void> {
+  homeError.value = null
+  try {
+    await updateMutation.mutateAsync({ home_blocks: homeBlocks.value })
+  } catch (error) {
+    homeError.value = extractErrorMessage(error, 'No pudimos guardar la página.')
+  }
 }
 </script>
 
@@ -435,95 +421,31 @@ function addStat(): void {
           <NxTabPanel value="home">
             <div class="flex flex-col gap-4">
               <div class="rounded-xl border border-slate-200 bg-white p-4">
-                <div class="mb-3 flex items-center justify-between">
-                  <p class="text-sm font-semibold text-slate-700">Portada de bienvenida</p>
-                  <NxToggleButton v-model="heroEnabled" label="Mostrar" icon="pi pi-eye" />
-                </div>
-                <div v-if="heroEnabled" class="flex flex-col gap-3">
-                  <NxInput v-model="heroEyebrow" label="Etiqueta pequeña" :error="fieldErrors.hero_eyebrow" />
-                  <NxInput v-model="heroTitle" label="Titular" :error="fieldErrors.hero_title" />
-                  <NxInput v-model="heroHighlight" label="Parte del titular a resaltar" :error="fieldErrors.hero_highlight" />
-                  <p class="-mt-2 text-[11px] text-slate-400">
-                    Escribe una parte exacta del titular y la pintamos con el color de acento.
-                  </p>
-                  <NxTextarea v-model="heroSubtitle" label="Texto" :rows="3" :error="fieldErrors.hero_subtitle" />
-                  <NxInput v-model="heroCtaLabel" label="Texto del botón" :error="fieldErrors.hero_cta_label" />
-                  <StoreImageField image-slot="hero" label="Imagen" :url="settings.hero_image_url" aspect="wide" />
-                </div>
+                <p class="mb-1 text-sm font-semibold text-slate-700">Tu página de inicio</p>
+                <p class="text-[11px] text-slate-400">
+                  Agrega los bloques que quieras y ordénalos arrastrando o con las flechas. Tus productos
+                  siempre aparecen al final, debajo de lo que armes aquí.
+                </p>
               </div>
 
-              <div class="rounded-xl border border-slate-200 bg-white p-4">
-                <div class="mb-3 flex items-center justify-between">
-                  <p class="text-sm font-semibold text-slate-700">Franja de servicios</p>
-                  <NxToggleButton v-model="trustEnabled" label="Mostrar" icon="pi pi-eye" />
-                </div>
-                <div v-if="trustEnabled" class="flex flex-col gap-3">
-                  <div
-                    v-for="(item, index) in trustItems"
-                    :key="index"
-                    class="flex flex-col gap-2 rounded-lg bg-slate-50 p-3"
-                  >
-                    <div class="flex items-center gap-2">
-                      <NxSelect
-                        :model-value="item.icon"
-                        :options="ICON_OPTIONS"
-                        option-label="label"
-                        option-value="value"
-                        label="Icono"
-                        size="sm"
-                        class="w-40"
-                        @update:model-value="item.icon = $event as string"
-                      />
-                      <NxInput v-model="item.title" label="Título" size="sm" class="flex-1" />
-                      <button type="button" class="mb-1 text-slate-300 hover:text-red-500" @click="trustItems.splice(index, 1)">
-                        <i class="pi pi-times" />
-                      </button>
-                    </div>
-                    <NxInput v-model="item.text" label="Detalle" size="sm" />
-                  </div>
-                  <button
-                    v-if="trustItems.length < 3"
-                    type="button"
-                    class="text-left text-xs font-semibold text-indigo-600 hover:text-indigo-800"
-                    @click="addTrustItem"
-                  >
-                    + Agregar servicio
-                  </button>
-                  <p v-else class="text-[11px] text-slate-400">Máximo 3: es lo que cabe en una fila.</p>
-                </div>
+              <BlockEditor v-model="homeBlocks" :catalog="HOME_BLOCK_CATALOG">
+                <template #image-picker="{ value, onSelect }">
+                  <StoreImagePicker :value="value" @select="onSelect" />
+                </template>
+                <template #images-picker="{ value, max, onSelect }">
+                  <StoreImagePicker :value="value" :max="max" multiple @select="onSelect" />
+                </template>
+                <template #entity-picker="{ value, max, onSelect }">
+                  <StoreProductPicker :value="value" :max="max" @select="onSelect" />
+                </template>
+              </BlockEditor>
+
+              <div class="flex items-center gap-3">
+                <NxButton :loading="updateMutation.isPending.value" @click="saveHomeBlocks">
+                  Guardar página
+                </NxButton>
+                <p v-if="homeError" class="text-sm text-red-600">{{ homeError }}</p>
               </div>
-
-              <div class="rounded-xl border border-slate-200 bg-white p-4">
-                <div class="mb-3 flex items-center justify-between">
-                  <p class="text-sm font-semibold text-slate-700">Nuestra historia</p>
-                  <NxToggleButton v-model="storyEnabled" label="Mostrar" icon="pi pi-eye" />
-                </div>
-                <div v-if="storyEnabled" class="flex flex-col gap-3">
-                  <NxInput v-model="storyEyebrow" label="Etiqueta pequeña" :error="fieldErrors.story_eyebrow" />
-                  <NxInput v-model="storyTitle" label="Titular" :error="fieldErrors.story_title" />
-                  <NxTextarea v-model="storyBody" label="Texto" :rows="4" :error="fieldErrors.story_body" />
-                  <StoreImageField image-slot="story" label="Imagen" :url="settings.story_image_url" aspect="wide" />
-
-                  <p class="text-xs font-semibold text-slate-600">Cifras destacadas</p>
-                  <div v-for="(stat, index) in storyStats" :key="index" class="flex items-end gap-2">
-                    <NxInput v-model="stat.value" label="Cifra" size="sm" class="w-28" />
-                    <NxInput v-model="stat.label" label="Qué significa" size="sm" class="flex-1" />
-                    <button type="button" class="mb-1 text-slate-300 hover:text-red-500" @click="storyStats.splice(index, 1)">
-                      <i class="pi pi-times" />
-                    </button>
-                  </div>
-                  <button
-                    v-if="storyStats.length < 4"
-                    type="button"
-                    class="text-left text-xs font-semibold text-indigo-600 hover:text-indigo-800"
-                    @click="addStat"
-                  >
-                    + Agregar cifra
-                  </button>
-                </div>
-              </div>
-
-              <NxButton :loading="updateMutation.isPending.value" @click="saveHome">Guardar inicio</NxButton>
             </div>
           </NxTabPanel>
         </NxTabPanels>

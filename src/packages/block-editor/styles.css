@@ -1,0 +1,99 @@
+/*
+ * Estética del editor, toda por variables. El anfitrión las redefine para
+ * que el editor se vea como su app sin que el paquete conozca su tema.
+ */
+.bke {
+  --bke-surface: #ffffff;
+  --bke-surface-2: #f8fafc;
+  --bke-line: #e2e8f0;
+  --bke-ink: #0f172a;
+  --bke-ink-soft: #64748b;
+  --bke-ink-faint: #94a3b8;
+  --bke-accent: #4f46e5;
+  --bke-danger: #dc2626;
+  --bke-radius: 0.75rem;
+}
+
+.bke * {
+  box-sizing: border-box;
+}
+
+.bke-card {
+  border: 1px solid var(--bke-line);
+  border-radius: var(--bke-radius);
+  background: var(--bke-surface);
+}
+
+/* Mientras se arrastra, el bloque se atenúa para que se lea a dónde va. */
+.bke-card[data-dragging='true'] {
+  opacity: 0.4;
+}
+
+.bke-card[data-drop='true'] {
+  border-color: var(--bke-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--bke-accent) 25%, transparent);
+}
+
+.bke-handle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.bke-handle:active {
+  cursor: grabbing;
+}
+
+.bke-input {
+  width: 100%;
+  border: 1px solid var(--bke-line);
+  border-radius: 0.5rem;
+  background: var(--bke-surface);
+  color: var(--bke-ink);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.bke-input:focus {
+  border-color: var(--bke-accent);
+}
+
+.bke-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--bke-line);
+  border-radius: 0.5rem;
+  background: var(--bke-surface);
+  color: var(--bke-ink);
+  padding: 0.4rem 0.7rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bke-btn:hover:not(:disabled) {
+  border-color: var(--bke-accent);
+  color: var(--bke-accent);
+}
+
+.bke-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.bke-btn--danger:hover:not(:disabled) {
+  border-color: var(--bke-danger);
+  color: var(--bke-danger);
+}
+
+.bke-btn--primary {
+  background: var(--bke-accent);
+  border-color: var(--bke-accent);
+  color: #fff;
+}
+
+.bke-btn--primary:hover:not(:disabled) {
+  color: #fff;
+  filter: brightness(1.08);
+}

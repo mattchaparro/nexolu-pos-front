@@ -24,6 +24,36 @@ export async function impersonateUser(userId: number): Promise<AuthResponse> {
   return data
 }
 
+/**
+ * Alta completa (SuperAdmin\BusinessesController::store): datos del negocio y
+ * del dueño, mas lo que se pacta en una llamada de ventas. A diferencia del
+ * registro publico, los `feature_flags` de aca NO se clampan contra el plan -
+ * el panel puede darle una funcion suelta a un negocio Básico.
+ */
+export interface CreateBusinessPayload {
+  business_name: string
+  owner_name: string
+  email: string
+  password: string
+  phone?: string | null
+  whatsapp_number?: string | null
+  nit?: string | null
+  address?: string | null
+  plan: string
+  feature_flags: Record<string, boolean>
+  trial_days: number
+  activate_days?: number | null
+  amount_cop?: number | null
+  custom_price_cop?: number | null
+  notes?: string | null
+  send_credentials: boolean
+}
+
+export async function createBusiness(payload: CreateBusinessPayload): Promise<SuperAdminBusiness> {
+  const { data } = await httpClient.post<SuperAdminBusiness>('/superadmin/businesses', payload)
+  return data
+}
+
 export interface UpdateBusinessConfigPayload {
   subscription_plan: string
   feature_flags: Record<string, boolean>

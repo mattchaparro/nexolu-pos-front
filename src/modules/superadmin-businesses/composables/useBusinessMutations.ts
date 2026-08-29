@@ -4,6 +4,8 @@ import {
   activateBusiness,
   type ActivateBusinessPayload,
   changeBusinessPlan,
+  createBusiness,
+  type CreateBusinessPayload,
   extendBusinessTrial,
   setBusinessCustomPrice,
   updateBusinessConfig,
@@ -23,6 +25,15 @@ export function useBusinessMutations() {
     queryClient.invalidateQueries({ queryKey: ['superadmin', 'businesses', businessId] })
     queryClient.invalidateQueries({ queryKey: ['superadmin', 'businesses'], exact: false })
   }
+
+  // Sin id: es el alta. Solo invalida el listado (todavia no hay detalle que
+  // refrescar) y devuelve el negocio creado para poder abrirlo enseguida.
+  const createMutation = useMutation({
+    mutationFn: (payload: CreateBusinessPayload) => createBusiness(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['superadmin', 'businesses'], exact: false })
+    },
+  })
 
   const updateConfigMutation = useMutation({
     mutationFn: (params: { id: number; payload: UpdateBusinessConfigPayload }) => updateBusinessConfig(params.id, params.payload),
@@ -50,6 +61,7 @@ export function useBusinessMutations() {
   })
 
   return {
+    createMutation,
     updateConfigMutation,
     activateMutation,
     extendTrialMutation,
