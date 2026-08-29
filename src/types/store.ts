@@ -31,6 +31,9 @@ export interface StoreSettings {
   shipping_flat_fee: number
   min_order_amount: number
   pickup_enabled: boolean
+  order_email_enabled: boolean
+  /** Vacio = al correo del dueño. */
+  order_email: string | null
   terms: string | null
   seo_title: string | null
   seo_description: string | null

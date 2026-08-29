@@ -66,6 +66,8 @@ const whatsappNumber = ref('')
 const shippingFlatFee = ref<number | null>(0)
 const minOrderAmount = ref<number | null>(0)
 const pickupEnabled = ref(false)
+const orderEmailEnabled = ref(true)
+const orderEmail = ref('')
 const terms = ref('')
 const seoTitle = ref('')
 const seoDescription = ref('')
@@ -115,6 +117,8 @@ watch(
     shippingFlatFee.value = value.shipping_flat_fee
     minOrderAmount.value = value.min_order_amount
     pickupEnabled.value = value.pickup_enabled
+    orderEmailEnabled.value = value.order_email_enabled
+    orderEmail.value = value.order_email ?? ''
     terms.value = value.terms ?? ''
     seoTitle.value = value.seo_title ?? ''
     seoDescription.value = value.seo_description ?? ''
@@ -176,6 +180,8 @@ function saveStore(): Promise<void> {
       shipping_flat_fee: shippingFlatFee.value ?? 0,
       min_order_amount: minOrderAmount.value ?? 0,
       pickup_enabled: pickupEnabled.value,
+      order_email_enabled: orderEmailEnabled.value,
+      order_email: orderEmail.value.trim() || null,
       terms: nullable(terms.value),
       seo_title: nullable(seoTitle.value),
       seo_description: nullable(seoDescription.value),
@@ -327,6 +333,23 @@ function addStat(): void {
                   <NxInput v-model="instagramUrl" label="Instagram (URL)" :error="fieldErrors.instagram_url" />
                   <NxInput v-model="facebookUrl" label="Facebook (URL)" :error="fieldErrors.facebook_url" />
                   <NxTextarea v-model="terms" label="Condiciones (opcional)" :rows="3" :error="fieldErrors.terms" />
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-slate-200 bg-white p-4">
+                <p class="mb-1 text-sm font-semibold text-slate-700">Avisos de pedidos</p>
+                <p class="mb-3 text-[11px] text-slate-400">
+                  Un pedido entra sin que nadie toque el POS. El correo llega apenas se hace.
+                </p>
+                <div class="flex flex-col gap-3">
+                  <NxToggleButton v-model="orderEmailEnabled" label="Avisarme por correo" icon="pi pi-envelope" />
+                  <NxInput
+                    v-model="orderEmail"
+                    label="Correo para pedidos (opcional)"
+                    :disabled="!orderEmailEnabled"
+                    :error="fieldErrors.order_email"
+                  />
+                  <p class="text-[11px] text-slate-400">Vacío: llega al correo del dueño.</p>
                 </div>
               </div>
 
