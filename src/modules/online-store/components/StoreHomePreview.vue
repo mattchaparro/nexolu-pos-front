@@ -76,6 +76,13 @@ function send(): void {
       accent: props.settings.accent_color,
       font: props.settings.font_preset,
     },
+    // El logo y la portada no son bloques ni tema, pero se ven igual: sin
+    // esto la cabecera de la vista previa se quedaba con la imagen vieja
+    // mientras el comerciante cambiaba la suya.
+    identity: {
+      logo_url: props.settings.logo_url,
+      banner_url: props.settings.banner_url,
+    },
   }
 
   // A datos planos ANTES de enviar. `postMessage` clona con el algoritmo
