@@ -80,9 +80,8 @@ const checkout = useSaleCheckout(
 // antes de que la asignacion termine (TDZ de const/let -> ReferenceError).
 // Se declara aparte con let (ya inicializada en undefined) y se fuerza el
 // stop despues del watch() para cubrir tambien ese caso sincrono.
-let stopDraftRestore: (() => void) | undefined
 let draftRestoreHandled = false
-stopDraftRestore = watch(
+const stopDraftRestore = watch(
   () => productsQuery.data.value,
   (products) => {
     if (!products || products.length === 0) {

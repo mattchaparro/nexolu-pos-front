@@ -7,6 +7,8 @@ import { hasFeature } from '@/utils/hasFeature'
 import { adminNavItems } from '@/router/navigation'
 import type { NavItem } from '@/types/navigation'
 
+import { usePendingOrderCount } from '@/modules/online-store/composables/useOrders'
+
 import { useBusiness } from './useBusiness'
 import { usePermissions } from './usePermissions'
 
@@ -38,6 +40,12 @@ export function useNavItems() {
 
   const isAdmin = computed(() => auth.user?.roles?.includes('admin') === true)
 
+  // Un pedido online entra sin que nadie toque el POS: sin este contador, la
+  // unica forma de enterarse seria entrar a la bandeja a mirar. Solo se
+  // consulta si el negocio tiene el modulo - el endpoint responde 403 sin el.
+  const hasOnlineStore = computed(() => hasFeature(business.value, 'online_store'))
+  const { data: pendingOrders } = usePendingOrderCount(hasOnlineStore)
+
   function isRouteAccessible(routeName: string): boolean {
     const route = router.getRoutes().find((r) => r.name === routeName)
     if (!route) {
@@ -58,10 +66,16 @@ export function useNavItems() {
   }
 
   return computed<NavItem[]>(() =>
-    adminNavItems.filter(
-      (item) =>
-        (!item.featureKey || hasFeature(business.value, item.featureKey)) &&
-        (!item.routeName || isRouteAccessible(item.routeName)),
-    ),
+    adminNavItems
+      .filter(
+        (item) =>
+          (!item.featureKey || hasFeature(business.value, item.featureKey)) &&
+          (!item.routeName || isRouteAccessible(item.routeName)),
+      )
+      .map((item) =>
+        item.routeName === 'online-store.orders' && (pendingOrders.value ?? 0) > 0
+          ? { ...item, badge: pendingOrders.value }
+          : item,
+      ),
   )
 }

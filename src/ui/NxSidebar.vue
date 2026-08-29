@@ -64,6 +64,12 @@ function isActive(item: NavItem): boolean {
           >
             <i :class="item.icon" class="w-5 text-center text-lg" />
             <span v-if="!collapsed">{{ item.label }}</span>
+            <span
+              v-if="item.badge"
+              class="ml-auto rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
+            >
+              {{ item.badge }}
+            </span>
           </RouterLink>
           <span
             v-else
@@ -88,13 +94,21 @@ function isActive(item: NavItem): boolean {
           :to="{ name: item.routeName }"
           class="flex min-h-[60px] min-w-[68px] flex-col items-center justify-center rounded-xl px-2.5 py-2"
         >
-          <i
-            :class="[
-              item.icon,
-              'text-2xl leading-none',
-              isActive(item) ? 'text-indigo-700' : 'text-slate-500',
-            ]"
-          />
+          <span class="relative">
+            <i
+              :class="[
+                item.icon,
+                'text-2xl leading-none',
+                isActive(item) ? 'text-indigo-700' : 'text-slate-500',
+              ]"
+            />
+            <span
+              v-if="item.badge"
+              class="absolute -right-2.5 -top-1.5 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
+            >
+              {{ item.badge }}
+            </span>
+          </span>
           <span
             class="mt-1 max-w-[5rem] truncate text-center text-xs font-medium leading-tight"
             :class="isActive(item) ? 'text-indigo-800 font-bold' : 'text-slate-500'"

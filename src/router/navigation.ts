@@ -37,6 +37,10 @@ export const adminNavItems: NavItem[] = [
   { label: 'Planificador', icon: 'pi pi-calendar-clock', routeName: 'reminders.index', featureKey: 'reminders' },
   { label: 'Descuentos', icon: 'pi pi-tag', routeName: 'discounts.index', featureKey: 'discounts' },
   { label: 'Tienda online', icon: 'pi pi-shop', routeName: 'online-store.index', featureKey: 'online_store' },
+  // Separado de la configuracion de la tienda a proposito: configurar es
+  // cosa del dueño y se hace una vez; atender pedidos es del dia a dia y lo
+  // hace quien este en el mostrador.
+  { label: 'Pedidos online', icon: 'pi pi-inbox', routeName: 'online-store.orders', featureKey: 'online_store' },
   { label: 'Reportes', icon: 'pi pi-chart-line', routeName: 'reports.index' },
   // Sin featureKey: gestionar el equipo (alta/baja/roles) no es un extra de
   // plan, solo la edicion granular de permisos lo es (feature

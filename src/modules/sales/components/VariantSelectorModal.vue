@@ -8,7 +8,7 @@ import type { Product, ProductVariant } from '@/types/product'
 import { NxModal } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
-const props = defineProps<{
+defineProps<{
   modelValue: boolean
   product: Product | null
 }>()

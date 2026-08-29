@@ -13,4 +13,10 @@ export interface NavItem {
    * contratado.
    */
   featureKey?: string
+  /**
+   * Contador que se pinta sobre el icono. Lo resuelve useNavItems() en
+   * tiempo de ejecucion, no la lista estatica: un badge es un dato del
+   * negocio, no parte de la definicion del menu.
+   */
+  badge?: number
 }

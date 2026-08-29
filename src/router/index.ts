@@ -293,6 +293,14 @@ const router = createRouter({
           meta: { requiresFeature: 'online_store', requiresAdmin: true },
         },
         {
+          // A diferencia de la configuracion de la tienda, atender pedidos
+          // SI es trabajo de mostrador: no lleva requiresAdmin.
+          path: 'pedidos-online',
+          name: 'online-store.orders',
+          component: () => import('@/modules/online-store/views/OrdersView.vue'),
+          meta: { requiresFeature: 'online_store' },
+        },
+        {
           path: 'descuentos',
           name: 'discounts.index',
           component: () => import('@/modules/discounts/views/DiscountsView.vue'),
