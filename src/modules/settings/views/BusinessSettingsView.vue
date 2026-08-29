@@ -596,8 +596,11 @@ const { gatewaysQuery } = usePaymentGateways()
             <NxCard class="mt-3">
               <p class="mb-1 text-sm font-semibold text-slate-700">Cobrar con pasarela</p>
               <p class="mb-3 text-xs text-slate-500">
-                Conecta tu propia cuenta de Bold o Wompi. La plata entra directo a tu cuenta del proveedor: Nexolú nunca la
-                retiene. Con Bold, la misma llave te sirve después para cobrar con el datáfono.
+                Conecta tu propia cuenta de Bold o Wompi para cobrar <strong>por internet</strong>, desde tu tienda online.
+                La plata entra directo a tu cuenta del proveedor: Nexolú nunca la retiene.
+              </p>
+              <p class="mb-3 text-xs text-slate-500">
+                No cambia cómo cobras en el mostrador: los medios de arriba se siguen registrando igual.
               </p>
 
               <div class="flex flex-col gap-3">

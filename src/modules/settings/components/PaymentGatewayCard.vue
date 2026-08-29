@@ -18,10 +18,14 @@ const { connectMutation, disconnectMutation } = usePaymentGateways()
 const PROVIDER_META: Record<string, { name: string; blurb: string; help: string }> = {
   bold: {
     name: 'Bold',
-    blurb: 'Cobra con tarjeta, PSE, Nequi y botón Bancolombia.',
-    // La misma llave sirve para el datáfono: es el argumento por el que a un
-    // negocio le conviene Bold aunque no venda por internet.
-    help: 'Bold → Mi perfil → Preferencias de cobro → Integraciones. La misma llave te sirve después para cobrar con el datáfono.',
+    blurb: 'Cobra por internet con tarjeta, PSE, Nequi y botón Bancolombia.',
+    // Nada de prometer el datáfono todavía: esta llave HABILITA el cobro
+    // contra la terminal física, pero ese flujo (F3) no está construido, y
+    // el medio de pago "Bold" del catálogo es otra cosa - una etiqueta con
+    // la que el cajero registra un cobro que hizo a mano en el aparato.
+    // Escribirlo aquí en futuro haría que el comerciante conecte esperando
+    // que el botón "Bold" de la caja empiece a cobrar solo.
+    help: 'Bold → Mi perfil → Preferencias de cobro → Integraciones.',
   },
   wompi: {
     name: 'Wompi',
