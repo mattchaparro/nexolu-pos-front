@@ -31,11 +31,13 @@ import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 
 import StoreImageField from '../components/StoreImageField.vue'
+import HomePresetPicker from '../components/HomePresetPicker.vue'
 import StoreHomePreview from '../components/StoreHomePreview.vue'
 import StoreImagePicker from '../components/StoreImagePicker.vue'
 import StoreProductPicker from '../components/StoreProductPicker.vue'
 import { useStoreImageLibrary } from '../composables/useStoreImageLibrary'
 import { HOME_BLOCK_CATALOG } from '../homeBlockCatalog'
+import type { HomePreset } from '../homePresets'
 import { useStoreSettings } from '../composables/useStoreSettings'
 import { BlockEditor, type Block } from '@/packages/block-editor'
 
@@ -225,6 +227,23 @@ async function copyPublicUrl(): Promise<void> {
 // que todas las tiendas Nexolú se vieran iguales.
 const { imagesQuery } = useStoreImageLibrary()
 const homeBlocks = ref<Block[]>([])
+const presetPickerOpen = ref(false)
+
+/**
+ * Aplica una plantilla. No guarda: el comerciante la ve primero en la vista
+ * previa y decide. Guardar sin que haya mirado seria reemplazarle la pagina
+ * a ciegas.
+ */
+function applyPreset(payload: { blocks: Block[]; theme: HomePreset['theme'] | null }): void {
+  homeBlocks.value = payload.blocks
+
+  if (payload.theme) {
+    primaryColor.value = payload.theme.primary
+    surfaceColor.value = payload.theme.surface
+    accentColor.value = payload.theme.accent
+    fontPreset.value = payload.theme.font
+  }
+}
 const homeError = ref<string | null>(null)
 
 async function saveHomeBlocks(): Promise<void> {
@@ -423,12 +442,17 @@ async function saveHomeBlocks(): Promise<void> {
           <!-- ------------------------------ INICIO -->
           <NxTabPanel value="home">
             <div class="flex flex-col gap-4">
-              <div class="rounded-xl border border-slate-200 bg-white p-4">
+              <div class="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4">
+                <div class="min-w-0">
                 <p class="mb-1 text-sm font-semibold text-slate-700">Tu página de inicio</p>
                 <p class="text-[11px] text-slate-400">
                   Agrega los bloques que quieras y ordénalos arrastrando o con las flechas. Tus productos
                   siempre aparecen al final, debajo de lo que armes aquí.
                 </p>
+                </div>
+                <NxButton variant="outline" size="sm" icon="pi pi-th-large" @click="presetPickerOpen = true">
+                  Usar una plantilla
+                </NxButton>
               </div>
 
               <div class="grid gap-4 xl:grid-cols-[minmax(0,420px)_1fr]">
@@ -463,6 +487,13 @@ async function saveHomeBlocks(): Promise<void> {
                   :images="imagesQuery.data.value ?? []"
                 />
               </div>
+
+              <HomePresetPicker
+                v-if="presetPickerOpen"
+                :has-blocks="homeBlocks.length > 0"
+                @apply="applyPreset"
+                @close="presetPickerOpen = false"
+              />
             </div>
           </NxTabPanel>
         </NxTabPanels>

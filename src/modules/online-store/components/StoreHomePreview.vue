@@ -65,21 +65,30 @@ function send(): void {
     return
   }
 
-  frame.value.contentWindow.postMessage(
-    {
-      source: 'nexolu-store-preview',
-      // Los apagados no viajan: la vista previa muestra lo que va a ver el
-      // comprador, no lo que hay en el editor.
-      blocks: props.blocks.filter((block) => block.enabled !== false).map(withImages),
-      theme: {
-        primary: props.settings.primary_color,
-        surface: props.settings.surface_color,
-        accent: props.settings.accent_color,
-        font: props.settings.font_preset,
-      },
+  const payload = {
+    source: 'nexolu-store-preview',
+    // Los apagados no viajan: la vista previa muestra lo que va a ver el
+    // comprador, no lo que hay en el editor.
+    blocks: props.blocks.filter((block) => block.enabled !== false).map(withImages),
+    theme: {
+      primary: props.settings.primary_color,
+      surface: props.settings.surface_color,
+      accent: props.settings.accent_color,
+      font: props.settings.font_preset,
     },
-    targetOrigin.value,
-  )
+  }
+
+  // A datos planos ANTES de enviar. `postMessage` clona con el algoritmo
+  // structured clone, que no sabe clonar un Proxy: los bloques vienen de un
+  // `ref`, así que sus arrays anidados (los `items` de una franja, por
+  // ejemplo) son proxies reactivos y hacen que reviente con DataCloneError.
+  //
+  // El error se lanzaba dentro del ciclo de actualización de Vue y abortaba
+  // el re-render de toda la pestaña: la consecuencia visible no era una
+  // vista previa rota, era que los botones de la pantalla dejaban de
+  // responder. Todo lo que viaja aquí es JSON puro, así que serializar es
+  // suficiente y explícito.
+  frame.value.contentWindow.postMessage(JSON.parse(JSON.stringify(payload)), targetOrigin.value)
 }
 
 // La tienda avisa cuando está lista para recibir: sin eso, el primer envío
