@@ -1,0 +1,6 @@
+# Esto es la aplicacion, no contenido publico: no hay nada que indexar y una
+# SPA vacia en los resultados solo compite con la landing real.
+#
+# El marketing del POS vive en https://nexolu.co/pos
+User-agent: *
+Disallow: /
