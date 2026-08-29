@@ -51,6 +51,7 @@ import { isCashPaymentMethodId, isCreditPaymentMethodId } from '@/utils/paymentM
 
 import type { CloseOpenTabPayload, PaymentSplitInput, RecordPartialPaymentPayload } from '../../open-tabs/types'
 import { round2 } from '../support/saleMath'
+import TerminalChargePanel from './TerminalChargePanel.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -74,6 +75,13 @@ const props = withDefaults(
     // si hubiera para elegir), y excluye 'credit' del selector de medio
     // (no se puede pagar un fiado con otro fiado).
     receivableMode?: boolean
+    /**
+     * Habilita cobrar con datáfono. Solo donde la venta se crea con
+     * POST /sales: es el unico endpoint que sabe consumir el cobro. Cuentas
+     * abiertas, apartados y fiados van por otros servicios que ignorarian
+     * la referencia, y la venta quedaria facturada sin atarse a la plata.
+     */
+    allowTerminal?: boolean
   }>(),
   {
     fallbackChargeBase: 0,
@@ -83,6 +91,7 @@ const props = withDefaults(
     existingCustomerIdentification: null,
     title: undefined,
     receivableMode: false,
+    allowTerminal: false,
   },
 )
 
@@ -93,6 +102,19 @@ const emit = defineEmits<{
 }>()
 
 type PaymentTab = 'single' | 'multi' | 'split' | 'partial'
+
+// Cobro aprobado en el datáfono, listo para cerrar la venta.
+const terminalChargeReference = ref<string | null>(null)
+
+/**
+ * Con que etiqueta se registra una venta cobrada por datáfono. El catálogo
+ * lo define cada negocio, así que se busca la más parecida entre las que
+ * tiene habilitadas en vez de fijar una.
+ */
+const terminalMethodId = computed(() => {
+  const ids = props.business.payment_methods.map((m) => m.id)
+  return ids.find((id) => ['bold', 'datafono', 'card', 'tarjeta'].includes(id)) ?? singleMethod.value
+})
 
 const splitMethods = computed(() =>
   props.business.payment_methods.filter((m) => !isCreditPaymentMethodId(m.id)),
@@ -317,6 +339,13 @@ function submitConfirm(): void {
     }
   }
 
+  if (terminalChargeReference.value) {
+    payload.terminal_charge_reference = terminalChargeReference.value
+    // El medio queda registrado con la etiqueta del proveedor, para que la
+    // venta se lea igual que una cobrada a mano en el aparato.
+    payload.payment_method = terminalMethodId.value
+  }
+
   emit('confirm', payload)
 }
 
@@ -432,6 +461,16 @@ function applyClient(client: { id: number; name: string; phone: string | null })
               :methods="receivableMode ? splitMethods : business.payment_methods"
               :model-value="singleMethod"
               @update:model-value="singleMethod = $event"
+            />
+
+            <!-- El datáfono va debajo y aparte de los medios: aquellos
+                 registran cómo te pagaron, esto ejecuta el cobro. -->
+            <TerminalChargePanel
+              v-if="allowTerminal && !isCourtesy"
+              class="mt-3"
+              :amount="amountDue"
+              :disabled="submitting"
+              @approved="terminalChargeReference = $event"
             />
 
             <div v-if="showCustomerCapture" class="mt-3 flex flex-col gap-2">

@@ -33,4 +33,10 @@ export interface CloseOpenTabPayload {
   client_id?: number | null
   apply_service_charge?: boolean
   apply_ipoconsumo?: boolean
+  /**
+   * Cobro ya aprobado en un datáfono. Solo lo acepta POST /sales: el
+   * backend comprueba que esté aprobado, sin usar y por el mismo monto que
+   * la venta antes de facturar.
+   */
+  terminal_charge_reference?: string
 }

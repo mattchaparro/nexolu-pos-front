@@ -532,6 +532,7 @@ function handleNewSale(): void {
     <PaymentModal
       v-if="business"
       v-model="paymentModalOpen"
+      allow-terminal
       :sale="mode === 'quick' ? null : activeSale"
       :business="business"
       :submitting="mode === 'quick' ? createSaleMutation.isPending.value : tabMutations.closeMutation.isPending.value"
