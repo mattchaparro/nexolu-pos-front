@@ -46,6 +46,13 @@ export interface FieldDefinition {
   options?: FieldOption[]
   /** Solo para `icon`: el catálogo cerrado de iconos disponibles. */
   icons?: IconOption[]
+  /**
+   * Solo para `entities`: QUÉ se está eligiendo. El paquete no sabe qué es un
+   * producto ni una categoría — se lo pasa al anfitrión por el slot para que
+   * dibuje el selector correcto. Sin esto, dos bloques que eligen cosas
+   * distintas compartirían el mismo selector.
+   */
+  entityKind?: string
   /** Solo para `list`: los campos de cada elemento. */
   itemFields?: FieldDefinition[]
   /** Solo para `list` e `images`. */

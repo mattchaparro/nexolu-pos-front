@@ -71,6 +71,7 @@ function removeItem(field: FieldDefinition, index: number): void {
         name="entity-picker"
         :value="value(field)"
         :max="field.max"
+        :kind="field.entityKind ?? 'product'"
         :on-select="(ids: unknown) => set(field, ids)"
       />
 

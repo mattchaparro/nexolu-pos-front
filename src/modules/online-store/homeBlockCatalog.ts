@@ -1,6 +1,68 @@
-import type { BlockDefinition } from '@/packages/block-editor'
+import type { BlockDefinition, FieldDefinition } from '@/packages/block-editor'
 
 import { STORE_ICONS } from './storeIcons'
+
+/**
+ * Presentación: cómo se COLOCA el bloque, no qué dice.
+ *
+ * Se agrega a TODOS los tipos al final (ver `conPresentacion` abajo) en vez
+ * de repetirla en cada definición. Son las opciones que más cambian el
+ * aspecto de una tienda, y a propósito son catálogos cerrados: un comerciante
+ * eligiendo píxeles de espaciado produce una página inconsistente.
+ *
+ * Debe coincidir con `StoreHomeBlocks::presentationRules()` de la API.
+ */
+const PRESENTATION_FIELDS: FieldDefinition[] = [
+  {
+    key: 'width',
+    label: 'Ancho',
+    kind: 'select',
+    options: [
+      { value: 'contained', label: 'Angosto — para leer' },
+      { value: 'wide', label: 'Normal' },
+      { value: 'full', label: 'De borde a borde' },
+    ],
+  },
+  {
+    key: 'spacing',
+    label: 'Aire alrededor',
+    kind: 'select',
+    options: [
+      { value: 'compact', label: 'Poco' },
+      { value: 'normal', label: 'Normal' },
+      { value: 'spacious', label: 'Mucho' },
+    ],
+    help: 'Más aire se ve más caro. Menos aire mete más cosas en pantalla.',
+  },
+]
+
+/** Solo para los bloques que muestran una imagen. */
+const IMAGE_RATIO_FIELD: FieldDefinition = {
+  key: 'image_ratio',
+  label: 'Forma de la imagen',
+  kind: 'select',
+  options: [
+    { value: 'auto', label: 'Como la subiste' },
+    { value: 'square', label: 'Cuadrada' },
+    { value: 'landscape', label: 'Panorámica' },
+    { value: 'portrait', label: 'Vertical' },
+  ],
+  help: 'Recortar todas igual es lo que hace que una galería se vea ordenada.',
+}
+
+const BLOCKS_WITH_IMAGE = ['hero', 'story', 'text_image', 'gallery']
+
+/** Agrega la presentación al final de cada bloque, sin repetirla arriba. */
+function conPresentacion(blocks: BlockDefinition[]): BlockDefinition[] {
+  return blocks.map((block) => ({
+    ...block,
+    fields: [
+      ...block.fields,
+      ...PRESENTATION_FIELDS,
+      ...(BLOCKS_WITH_IMAGE.includes(block.type) ? [IMAGE_RATIO_FIELD] : []),
+    ],
+  }))
+}
 
 /**
  * El catálogo de bloques de la tienda online, en el vocabulario del
@@ -14,7 +76,7 @@ import { STORE_ICONS } from './storeIcons'
  * Esto es lo ESPECÍFICO de Nexolú. El editor que lo consume
  * (`@/packages/block-editor`) no sabe nada de tiendas.
  */
-export const HOME_BLOCK_CATALOG: BlockDefinition[] = [
+const BASE_CATALOG: BlockDefinition[] = [
   {
     type: 'hero',
     label: 'Portada',
@@ -211,6 +273,94 @@ export const HOME_BLOCK_CATALOG: BlockDefinition[] = [
     ],
   },
   {
+    type: 'bento',
+    label: 'Mosaico de fotos',
+    description: 'Una retícula donde la primera foto manda. Se ve moderna sin esfuerzo.',
+    icon: '🧩',
+    fields: [
+      { key: 'title', label: 'Título', kind: 'text', maxLength: 120 },
+      {
+        key: 'items',
+        label: 'Fotos',
+        kind: 'list',
+        max: 5,
+        addLabel: 'Agregar foto',
+        itemFields: [
+          { key: 'image_id', label: 'Foto', kind: 'image' },
+          { key: 'title', label: 'Texto encima', kind: 'text', maxLength: 60 },
+          { key: 'text', label: 'Detalle', kind: 'text', maxLength: 120 },
+          { key: 'url', label: 'Enlace', kind: 'url', maxLength: 255 },
+        ],
+      },
+    ],
+  },
+  {
+    type: 'marquee',
+    label: 'Cinta en movimiento',
+    description: 'Una tira con tus mensajes cortos: envío gratis, medios de pago…',
+    icon: '📢',
+    max: 2,
+    defaults: { speed: 'normal' },
+    fields: [
+      {
+        key: 'items',
+        label: 'Mensajes',
+        kind: 'list',
+        max: 6,
+        addLabel: 'Agregar mensaje',
+        itemFields: [
+          {
+            key: 'text',
+            label: 'Mensaje',
+            kind: 'text',
+            maxLength: 80,
+            placeholder: 'Envío gratis desde $80.000',
+          },
+        ],
+      },
+      {
+        key: 'speed',
+        label: 'Velocidad',
+        kind: 'select',
+        options: [
+          { value: 'slow', label: 'Lenta' },
+          { value: 'normal', label: 'Normal' },
+          { value: 'fast', label: 'Rápida' },
+        ],
+      },
+    ],
+  },
+  {
+    type: 'categories',
+    label: 'Categorías',
+    description: 'Atajos para que encuentren lo que buscan sin recorrer todo.',
+    icon: '🗂️',
+    fields: [
+      { key: 'title', label: 'Título', kind: 'text', maxLength: 120, placeholder: 'Explora' },
+      {
+        key: 'category_ids',
+        label: 'Categorías',
+        kind: 'entities',
+        entityKind: 'category',
+        max: 8,
+        help: 'Si no eliges ninguna, mostramos las principales de tu catálogo.',
+      },
+    ],
+  },
+  {
+    type: 'before_after',
+    label: 'Antes y después',
+    description: 'Dos fotos con un deslizador. Ideal para servicios y transformaciones.',
+    icon: '🪞',
+    fields: [
+      { key: 'title', label: 'Título', kind: 'text', maxLength: 120 },
+      { key: 'before_image_id', label: 'Foto "antes"', kind: 'image' },
+      { key: 'after_image_id', label: 'Foto "después"', kind: 'image' },
+      { key: 'before_label', label: 'Etiqueta izquierda', kind: 'text', maxLength: 30 },
+      { key: 'after_label', label: 'Etiqueta derecha', kind: 'text', maxLength: 30 },
+    ],
+  },
+  {
     type: 'cta',
     label: 'Llamado a la acción',
     description: 'Un cierre con un botón bien visible.',
@@ -223,3 +373,5 @@ export const HOME_BLOCK_CATALOG: BlockDefinition[] = [
     ],
   },
 ]
+
+export const HOME_BLOCK_CATALOG: BlockDefinition[] = conPresentacion(BASE_CATALOG)

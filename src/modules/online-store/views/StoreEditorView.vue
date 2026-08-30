@@ -20,6 +20,7 @@ import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
 import HomePresetPicker from '../components/HomePresetPicker.vue'
 import { useEditorHistory, useUndoShortcuts } from '../composables/useEditorHistory'
+import StoreCategoryPicker from '../components/StoreCategoryPicker.vue'
 import StoreFontPicker from '../components/StoreFontPicker.vue'
 import StoreHomePreview from '../components/StoreHomePreview.vue'
 import StoreImageField from '../components/StoreImageField.vue'
@@ -341,8 +342,14 @@ async function save(): Promise<void> {
           <template #images-picker="{ value, max, onSelect }">
             <StoreImagePicker :value="value" :max="max" multiple @select="onSelect" />
           </template>
-          <template #entity-picker="{ value, max, onSelect }">
-            <StoreProductPicker :value="value" :max="max" @select="onSelect" />
+          <template #entity-picker="{ value, max, kind, onSelect }">
+            <StoreCategoryPicker
+              v-if="kind === 'category'"
+              :value="value"
+              :max="max"
+              @select="onSelect"
+            />
+            <StoreProductPicker v-else :value="value" :max="max" @select="onSelect" />
           </template>
         </BlockEditor>
 

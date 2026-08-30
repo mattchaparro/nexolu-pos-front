@@ -9,6 +9,9 @@ export interface ProductCategory {
   name: string
   description: string | null
   icon: string | null
+  /** Si sale en la tienda online. */
+  is_published: boolean
+  sort_order: number
 }
 
 // Solo se llena cuando el producto viene de Product.ingredients (recipe) -
