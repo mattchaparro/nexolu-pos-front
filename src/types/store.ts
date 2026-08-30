@@ -45,6 +45,8 @@ export interface StoreSettings {
   shipping_flat_fee: number
   min_order_amount: number
   pickup_enabled: boolean
+  /** Clics en el botón de WhatsApp de la tienda, últimos 30 días. */
+  whatsapp_clicks_30d: number
   order_email_enabled: boolean
   /** Vacio = al correo del dueño. */
   order_email: string | null

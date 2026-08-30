@@ -275,6 +275,16 @@ async function copyPublicUrl(): Promise<void> {
                 <p class="mb-3 text-sm font-semibold text-slate-700">Contacto y envío</p>
                 <div class="flex flex-col gap-3">
                   <NxInput v-model="whatsappNumber" label="WhatsApp de atención" :error="fieldErrors.whatsapp_number" />
+                  <p v-if="whatsappNumber" class="-mt-2 text-[11px] text-slate-400">
+                    <template v-if="settings.whatsapp_clicks_30d > 0">
+                      {{ settings.whatsapp_clicks_30d }}
+                      {{ settings.whatsapp_clicks_30d === 1 ? 'persona escribió' : 'personas escribieron' }}
+                      desde tu tienda en los últimos 30 días.
+                    </template>
+                    <template v-else>
+                      Todavía nadie te ha escrito desde la tienda este mes.
+                    </template>
+                  </p>
                   <NxInputNumber v-model="shippingFlatFee" label="Costo de envío" :min="0" :error="fieldErrors.shipping_flat_fee" />
                   <NxInputNumber v-model="minOrderAmount" label="Pedido mínimo" :min="0" :error="fieldErrors.min_order_amount" />
                   <NxToggleButton v-model="pickupEnabled" label="Permitir recoger en tienda" icon="pi pi-shop" />
