@@ -361,6 +361,52 @@ const BASE_CATALOG: BlockDefinition[] = [
     ],
   },
   {
+    type: 'video',
+    label: 'Video',
+    description: 'Un video de YouTube o Vimeo. No se suben archivos.',
+    icon: '🎥',
+    fields: [
+      { key: 'title', label: 'Título', kind: 'text', maxLength: 120 },
+      {
+        key: 'url',
+        label: 'Enlace del video',
+        kind: 'url',
+        maxLength: 500,
+        help: 'Pega el enlace de YouTube o Vimeo. Se carga solo cuando alguien lo toca, para no gastar los datos de tus clientes.',
+      },
+      { key: 'caption', label: 'Pie de video', kind: 'text', maxLength: 200 },
+    ],
+  },
+  {
+    type: 'announcement',
+    label: 'Franja de anuncio',
+    description: 'Una tira delgada arriba: envío gratis, horario especial…',
+    icon: '📣',
+    max: 1,
+    defaults: { tone: 'primary' },
+    fields: [
+      {
+        key: 'text',
+        label: 'Mensaje',
+        kind: 'text',
+        maxLength: 160,
+        placeholder: 'Envío gratis en compras desde $80.000',
+      },
+      { key: 'cta_label', label: 'Texto del enlace', kind: 'text', maxLength: 40 },
+      { key: 'cta_url', label: 'Enlace', kind: 'url', maxLength: 255 },
+      {
+        key: 'tone',
+        label: 'Color',
+        kind: 'select',
+        options: [
+          { value: 'primary', label: 'Tu color de marca' },
+          { value: 'accent', label: 'Tu color de acento' },
+          { value: 'dark', label: 'Oscuro' },
+        ],
+      },
+    ],
+  },
+  {
     type: 'cta',
     label: 'Llamado a la acción',
     description: 'Un cierre con un botón bien visible.',
