@@ -79,9 +79,17 @@ function send(): void {
     // El logo y la portada no son bloques ni tema, pero se ven igual: sin
     // esto la cabecera de la vista previa se quedaba con la imagen vieja
     // mientras el comerciante cambiaba la suya.
+    // Todo lo que la tienda pinta fuera de los bloques: cabecera, pie y los
+    // avisos del carrito. Sin esto, cambiar el nombre o el pedido minimo en
+    // el editor no se veia hasta guardar y recargar.
     identity: {
       logo_url: props.settings.logo_url,
       banner_url: props.settings.banner_url,
+      name: props.settings.store_name,
+      description: props.settings.description,
+      whatsapp_number: props.settings.whatsapp_number,
+      min_order_amount: props.settings.min_order_amount,
+      shipping_flat_fee: props.settings.shipping_flat_fee,
     },
   }
 

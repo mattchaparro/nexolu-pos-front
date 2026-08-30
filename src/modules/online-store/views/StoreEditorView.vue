@@ -14,12 +14,12 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { BlockEditor, type Block } from '@/packages/block-editor'
-import type { StoreSettings } from '@/types/store'
-import { NxButton, NxColorPicker } from '@/ui'
+import { NxButton, NxColorPicker, NxInput, NxInputNumber, NxSwitch, NxTextarea } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
 import HomePresetPicker from '../components/HomePresetPicker.vue'
 import { useEditorHistory, useUndoShortcuts } from '../composables/useEditorHistory'
+import { useStoreDraft, type StoreDraft } from '../composables/useStoreDraft'
 import StoreCategoryPicker from '../components/StoreCategoryPicker.vue'
 import StoreFontPicker from '../components/StoreFontPicker.vue'
 import StoreHomePreview from '../components/StoreHomePreview.vue'
@@ -37,11 +37,17 @@ const { imagesQuery } = useStoreImageLibrary()
 
 const settings = computed(() => settingsQuery.data.value)
 
-const homeBlocks = ref<Block[]>([])
-const primaryColor = ref('#4f46e5')
-const surfaceColor = ref('#ffffff')
-const accentColor = ref('#0ea5e9')
-const fontPreset = ref('moderna')
+// Todo lo editable vive en el borrador (ver useStoreDraft): son ~18 campos y
+// dentro de esta vista el <script setup> se volvia ilegible.
+const draft = useStoreDraft()
+const {
+  blocks: homeBlocks,
+  primary: primaryColor,
+  surface: surfaceColor,
+  accent: accentColor,
+  font: fontPreset,
+} = draft
+
 const errorMessage = ref<string | null>(null)
 const saved = ref(false)
 
@@ -65,12 +71,19 @@ const BRAND_SWATCHES = [
 // los que arruinan el contraste que deriva useTheme.
 const SURFACE_SWATCHES = ['#ffffff', '#faf9f6', '#f5f5f4', '#f8fafc', '#111827', '#1c1917']
 
+// El riel. El orden es el de armar una tienda: primero qué se ve, luego cómo
+// se ve, luego los datos del negocio y por último lo que se negocia con el
+// comprador. Identidad, envío y buscadores vivían en OTRA pantalla: armar una
+// tienda obligaba a salir del editor y volver.
 const EDITOR_SECTIONS = [
   { value: 'bloques', label: 'Bloques', icon: 'pi-th-large' },
   { value: 'plantillas', label: 'Plantillas', icon: 'pi-clone' },
   { value: 'colores', label: 'Colores', icon: 'pi-palette' },
   { value: 'tipografia', label: 'Letra', icon: 'pi-pencil' },
   { value: 'marca', label: 'Marca', icon: 'pi-image' },
+  { value: 'identidad', label: 'Datos', icon: 'pi-id-card' },
+  { value: 'envio', label: 'Envío', icon: 'pi-truck' },
+  { value: 'buscadores', label: 'Google', icon: 'pi-search' },
 ] as const
 
 const editorSection = ref<(typeof EDITOR_SECTIONS)[number]['value']>('bloques')
@@ -98,31 +111,9 @@ watch(hasRoom, (room) => {
  * El borrador completo, que es la unidad del historial: deshacer tiene que
  * cubrir tanto un bloque borrado como un color cambiado.
  */
-interface EditorDraft {
-  blocks: Block[]
-  primary: string
-  surface: string
-  accent: string
-  font: string
-}
-
-// Se declara ANTES del watch de `settings`: ese watch es `immediate` y llama
-// a `reset()`, asi que el composable ya tiene que existir cuando corre.
-const { record, undo, redo, reset, canUndo, canRedo } = useEditorHistory<EditorDraft>(
-  () => ({
-    blocks: homeBlocks.value,
-    primary: primaryColor.value,
-    surface: surfaceColor.value,
-    accent: accentColor.value,
-    font: fontPreset.value,
-  }),
-  (state) => {
-    homeBlocks.value = state.blocks
-    primaryColor.value = state.primary
-    surfaceColor.value = state.surface
-    accentColor.value = state.accent
-    fontPreset.value = state.font
-  },
+const { record, undo, redo, reset, canUndo, canRedo } = useEditorHistory<StoreDraft>(
+  draft.snapshot,
+  draft.restore,
 )
 
 watch(
@@ -133,11 +124,7 @@ watch(
     }
     // Copia, no referencia: el editor muta la lista y no debe tocar la
     // cache de la consulta.
-    homeBlocks.value = (value.home_blocks ?? []).map((block) => ({ ...block })) as Block[]
-    primaryColor.value = value.primary_color ?? '#4f46e5'
-    surfaceColor.value = value.surface_color ?? '#ffffff'
-    accentColor.value = value.accent_color ?? '#0ea5e9'
-    fontPreset.value = value.font_preset ?? 'moderna'
+    draft.loadFrom(value)
 
     // Cargar lo guardado NO es un paso deshacible: sin esto el primer
     // Ctrl+Z devolvia el editor a un borrador vacio.
@@ -148,9 +135,9 @@ watch(
 
 // `deep` porque editar el texto de un bloque muta un objeto de la lista, no
 // la lista: sin esto solo se registrarian agregar/quitar/mover.
-watch([homeBlocks, primaryColor, surfaceColor, accentColor, fontPreset], () => record(), {
-  deep: true,
-})
+// `deep` porque editar el texto de un bloque muta un objeto de la lista, no
+// la lista: sin esto solo se registrarian agregar/quitar/mover.
+watch(draft.snapshot, () => record(), { deep: true })
 
 // Se apaga con la vista previa abierta: ahi la pantalla la ocupa la tienda a
 // tamaño completo y un Ctrl+Z editaria a ciegas por detras.
@@ -165,13 +152,7 @@ onUnmounted(detachShortcuts)
  * Los ajustes con lo que se esta editando AHORA, no lo guardado: la vista
  * previa tiene que mostrar el borrador completo, no la mitad.
  */
-const previewSettings = computed(() => ({
-  ...(settings.value as StoreSettings),
-  primary_color: primaryColor.value,
-  surface_color: surfaceColor.value,
-  accent_color: accentColor.value,
-  font_preset: fontPreset.value,
-}))
+const previewSettings = draft.previewSettings(settings)
 
 function applyPreset(payload: { blocks: Block[]; theme: HomePreset['theme'] | null }): void {
   homeBlocks.value = payload.blocks
@@ -187,13 +168,7 @@ function applyPreset(payload: { blocks: Block[]; theme: HomePreset['theme'] | nu
 async function save(): Promise<void> {
   errorMessage.value = null
   try {
-    await updateMutation.mutateAsync({
-      home_blocks: homeBlocks.value,
-      primary_color: primaryColor.value,
-      surface_color: surfaceColor.value,
-      accent_color: accentColor.value,
-      font_preset: fontPreset.value,
-    })
+    await updateMutation.mutateAsync(draft.toPayload())
     // El historial es de lo NO guardado: despues de publicar, deshacer
     // revertiria algo que ya esta en internet sin decirlo.
     reset()
@@ -414,6 +389,97 @@ async function save(): Promise<void> {
               aspect="wide"
               hint="Banda ancha arriba de la tienda."
             />
+          </div>
+        </div>
+
+        <!-- Datos del negocio. Antes vivían en la pantalla de Tienda online:
+             para poner el WhatsApp había que salir del editor. -->
+        <div v-else-if="editorSection === 'identidad'" class="flex flex-col gap-3">
+          <p class="text-sm font-semibold text-slate-700">Datos de tu tienda</p>
+          <NxInput v-model="draft.storeName.value" label="Nombre" />
+          <NxTextarea v-model="draft.description.value" label="Descripción corta" :rows="2" />
+          <div>
+            <NxInput
+              v-model="draft.whatsappNumber.value"
+              label="WhatsApp"
+              placeholder="573001234567"
+              inputmode="tel"
+            />
+            <p class="mt-1 text-[11px] text-slate-400">
+              Con indicativo del país y sin espacios ni signos.
+            </p>
+          </div>
+          <NxInput v-model="draft.address.value" label="Dirección" />
+          <NxTextarea
+            v-model="draft.openingHours.value"
+            label="Horario"
+            :rows="2"
+            placeholder="Lun-Sáb 9:00-19:00"
+          />
+          <NxInput v-model="draft.instagramUrl.value" label="Instagram" placeholder="https://…" />
+          <NxInput v-model="draft.facebookUrl.value" label="Facebook" placeholder="https://…" />
+        </div>
+
+        <!-- Lo que se negocia con el comprador antes de pagar. -->
+        <div v-else-if="editorSection === 'envio'" class="flex flex-col gap-3">
+          <p class="text-sm font-semibold text-slate-700">Envío y condiciones</p>
+          <NxInputNumber
+            v-model="draft.shippingFlatFee.value"
+            label="Costo de envío"
+            :min="0"
+            currency
+          />
+          <NxInputNumber
+            v-model="draft.minOrderAmount.value"
+            label="Pedido mínimo"
+            :min="0"
+            currency
+          />
+          <p class="-mt-1 text-[11px] text-slate-400">
+            Con 0 no hay mínimo. Si lo pones, el comprador ve cuánto le falta.
+          </p>
+          <label class="flex items-center gap-2 text-sm text-slate-700">
+            <NxSwitch v-model="draft.pickupEnabled.value" />
+            Permitir recoger en tienda
+          </label>
+          <div>
+            <NxTextarea v-model="draft.terms.value" label="Condiciones" :rows="4" />
+            <p class="mt-1 text-[11px] text-slate-400">
+              Devoluciones, tiempos de entrega, lo que quieras dejar claro.
+            </p>
+          </div>
+        </div>
+
+        <!-- Cómo se ve en Google. La vista previa es literal a propósito: es
+             lo que más ayuda a escribir un título que quepa. -->
+        <div v-else-if="editorSection === 'buscadores'" class="flex flex-col gap-3">
+          <p class="text-sm font-semibold text-slate-700">Cómo apareces en Google</p>
+          <NxInput
+            v-model="draft.seoTitle.value"
+            label="Título"
+            :placeholder="draft.storeName.value || 'Nombre de tu tienda'"
+          />
+          <div>
+            <NxTextarea v-model="draft.seoDescription.value" label="Descripción" :rows="3" />
+            <p class="mt-1 text-[11px] text-slate-400">
+              {{ draft.seoDescription.value.length }}/160 — Google corta lo que sobra.
+            </p>
+          </div>
+
+          <div class="rounded-lg border border-slate-200 p-3">
+            <p class="truncate text-[13px] text-emerald-700">
+              {{ settings?.public_url ?? 'tienda.nexolu.co/tu-tienda' }}
+            </p>
+            <p class="truncate text-base text-blue-800">
+              {{ draft.seoTitle.value || draft.storeName.value || 'Nombre de tu tienda' }}
+            </p>
+            <p class="line-clamp-2 text-xs text-slate-500">
+              {{
+                draft.seoDescription.value ||
+                draft.description.value ||
+                'Escribe una descripción para que Google muestre algo aquí.'
+              }}
+            </p>
           </div>
         </div>
       </aside>
