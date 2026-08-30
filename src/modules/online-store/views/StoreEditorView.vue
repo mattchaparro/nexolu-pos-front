@@ -23,11 +23,16 @@ import {
   NxSwitch,
   NxTextarea,
 } from '@/ui'
+import { useBusiness } from '@/composables/useBusiness'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
 import HomePresetPicker from '../components/HomePresetPicker.vue'
 import { useEditorHistory, useUndoShortcuts } from '../composables/useEditorHistory'
 import { useStoreDraft, type StoreDraft } from '../composables/useStoreDraft'
+import { useEditorTour } from '../composables/useEditorTour'
+import { usePublishChecklist } from '../composables/usePublishChecklist'
+import EditorTour from '../components/EditorTour.vue'
+import PublishChecklist from '../components/PublishChecklist.vue'
 import StoreCategoryPicker from '../components/StoreCategoryPicker.vue'
 import StoreFontPicker from '../components/StoreFontPicker.vue'
 import StoreHomePreview from '../components/StoreHomePreview.vue'
@@ -160,6 +165,49 @@ onBeforeRouteLeave(() => {
   return false
 })
 
+const checklistOpen = ref(false)
+
+const checklist = usePublishChecklist(
+  settings,
+  {
+    get storeName() {
+      return draft.storeName.value
+    },
+    get whatsappNumber() {
+      return draft.whatsappNumber.value
+    },
+    get seoDescription() {
+      return draft.seoDescription.value
+    },
+    get blocks() {
+      return homeBlocks.value
+    },
+  },
+  computed(() => settings.value?.published_products_count ?? 0),
+)
+
+function goToSection(section: string): void {
+  editorSection.value = section as (typeof EDITOR_SECTIONS)[number]['value']
+  checklistOpen.value = false
+}
+
+// La llave del recorrido es por NEGOCIO: el dueño con dos negocios lo ve en
+// cada uno, y en un POS compartido dos usuarios no se lo pisan.
+const { data: currentBusiness } = useBusiness()
+const tour = useEditorTour(() => currentBusiness.value?.id ?? null, goToSection)
+
+// Arranca al abrir el editor, una sola vez por negocio. Espera a que haya
+// ajustes cargados: sin eso no se sabe de que negocio es la llave.
+watch(
+  settings,
+  (value) => {
+    if (value && hasRoom.value) {
+      void tour.start()
+    }
+  },
+  { once: true },
+)
+
 function selectFromPreview(blockId: string): void {
   // Si estabas en Colores y tocas un bloque, lo esperable es ir a Bloques:
   // abrirlo en una sección que no se ve no serviría de nada.
@@ -283,6 +331,18 @@ async function save(): Promise<void> {
       <div class="flex items-center gap-2">
         <p v-if="errorMessage" class="max-w-xs truncate text-xs text-red-600">{{ errorMessage }}</p>
 
+        <!-- Relanzar el recorrido. Nadie retiene seis pasos a la primera, y
+             sin esto quien lo salta no lo recupera nunca. -->
+        <button
+          type="button"
+          class="rounded-lg px-2 py-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+          title="Ver el recorrido guiado"
+          aria-label="Ver el recorrido guiado"
+          @click="tour.start(true)"
+        >
+          <i class="pi pi-question-circle text-sm" />
+        </button>
+
         <!-- Deshacer/rehacer de lo no guardado. Iconos sin texto: la barra
              tiene que dejarle el ancho al nombre de la tienda. -->
         <div class="flex items-center">
@@ -311,7 +371,7 @@ async function save(): Promise<void> {
         <NxButton v-if="!hasRoom" variant="outline" icon="pi pi-eye" @click="previewOpen = true">
           Ver
         </NxButton>
-        <NxButton :loading="updateMutation.isPending.value" @click="save">
+        <NxButton data-tour="save" :loading="updateMutation.isPending.value" @click="save">
           {{ saved ? 'Guardado' : 'Guardar' }}
         </NxButton>
       </div>
@@ -330,11 +390,13 @@ async function save(): Promise<void> {
       <!-- Izquierda: las secciones. -->
       <nav
         v-show="!maximized"
+        data-tour="rail"
         class="order-last flex shrink-0 gap-1 overflow-x-auto border-t border-slate-200 bg-white p-2 lg:order-first lg:w-20 lg:flex-col lg:overflow-visible lg:border-r lg:border-t-0"
       >
         <button
           v-for="section in EDITOR_SECTIONS"
           :key="section.value"
+          :data-tour="`section-${section.value}`"
           type="button"
           class="flex min-w-[64px] flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2.5 transition lg:flex-none"
           :class="
@@ -387,6 +449,37 @@ async function save(): Promise<void> {
         class="min-h-0 flex-1 overflow-y-auto bg-white p-4 transition-[width] duration-200 lg:flex-none lg:border-l lg:border-slate-200"
         :class="panelOpen ? 'lg:w-[380px]' : 'lg:w-0 lg:overflow-hidden lg:border-l-0 lg:p-0'"
       >
+        <div data-tour="checklist" class="mb-4 border-b border-slate-100 pb-4">
+          <button
+            type="button"
+            class="flex w-full items-center justify-between text-left"
+            @click="checklistOpen = !checklistOpen"
+          >
+            <span class="text-sm font-semibold text-slate-700">
+              Listo para abrir
+              <span
+                v-if="checklist.blockers.value.length > 0"
+                class="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700"
+              >
+                {{ checklist.blockers.value.length }}
+              </span>
+            </span>
+            <i
+              class="pi text-xs text-slate-400"
+              :class="checklistOpen ? 'pi-chevron-up' : 'pi-chevron-down'"
+            />
+          </button>
+
+          <div v-if="checklistOpen" class="mt-3">
+            <PublishChecklist
+              :items="checklist.items.value"
+              :progress="checklist.progress.value"
+              :ready="checklist.ready.value"
+              @go="goToSection"
+            />
+          </div>
+        </div>
+
         <HomePresetPicker
           v-if="editorSection === 'plantillas'"
           :has-blocks="homeBlocks.length > 0"
@@ -573,6 +666,16 @@ async function save(): Promise<void> {
         </div>
       </aside>
     </div>
+
+    <EditorTour
+      :step="tour.step.value"
+      :index="tour.stepIndex.value"
+      :total="tour.total"
+      :is-last="tour.isLast.value"
+      @next="tour.next"
+      @back="tour.back"
+      @skip="tour.finish"
+    />
 
     <!-- Salir con cambios sin guardar perdía el trabajo sin decir nada. -->
     <NxModal v-model="leaving" title="Tienes cambios sin guardar" size="sm">
