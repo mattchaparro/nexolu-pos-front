@@ -32,7 +32,10 @@ export async function createCategory(payload: ProductCategoryPayload): Promise<P
   return data
 }
 
-export async function updateCategory(id: number, payload: Partial<ProductCategoryPayload>): Promise<ProductCategory> {
+export async function updateCategory(
+  id: number,
+  payload: Partial<ProductCategoryPayload>,
+): Promise<ProductCategory> {
   const { data } = await httpClient.put<ProductCategory>(`/product-categories/${id}`, payload)
   return data
 }
@@ -61,7 +64,9 @@ export interface FetchProductsParams {
   include_ids?: number[]
 }
 
-export async function fetchProducts(params: FetchProductsParams = {}): Promise<PaginatedResponse<Product>> {
+export async function fetchProducts(
+  params: FetchProductsParams = {},
+): Promise<PaginatedResponse<Product>> {
   const { data } = await httpClient.get<PaginatedResponse<Product>>('/products', { params })
   return data
 }
@@ -92,7 +97,10 @@ export async function createProduct(payload: ProductPayload): Promise<Product> {
   return data
 }
 
-export async function updateProduct(id: number, payload: Partial<ProductPayload>): Promise<Product> {
+export async function updateProduct(
+  id: number,
+  payload: Partial<ProductPayload>,
+): Promise<Product> {
   const { data } = await httpClient.put<Product>(`/products/${id}`, payload)
   return data
 }
@@ -105,8 +113,13 @@ export async function deleteProduct(id: number): Promise<void> {
 // PUT /products obligaria a reenviar todas las variantes del producto, y
 // omitir una la borraria (ProductService::syncVariants soft-deletea las que
 // no vienen en el payload).
-export async function toggleProductVariant(productId: number, variantId: number): Promise<ProductVariant> {
-  const { data } = await httpClient.patch<ProductVariant>(`/products/${productId}/variants/${variantId}/toggle`)
+export async function toggleProductVariant(
+  productId: number,
+  variantId: number,
+): Promise<ProductVariant> {
+  const { data } = await httpClient.patch<ProductVariant>(
+    `/products/${productId}/variants/${variantId}/toggle`,
+  )
   return data
 }
 
@@ -135,7 +148,9 @@ export interface FetchIngredientsParams {
 
 // Listado paginado para la pestaña Ingredientes del Catalogo (a diferencia
 // de fetchIngredientOptions, que trae todo para el picker de receta).
-export async function fetchIngredients(params: FetchIngredientsParams = {}): Promise<PaginatedResponse<Ingredient>> {
+export async function fetchIngredients(
+  params: FetchIngredientsParams = {},
+): Promise<PaginatedResponse<Ingredient>> {
   const { data } = await httpClient.get<PaginatedResponse<Ingredient>>('/ingredients', { params })
   return data
 }
@@ -155,7 +170,10 @@ export async function createIngredient(payload: IngredientPayload): Promise<Ingr
   return data
 }
 
-export async function updateIngredient(id: number, payload: Partial<IngredientPayload>): Promise<Ingredient> {
+export async function updateIngredient(
+  id: number,
+  payload: Partial<IngredientPayload>,
+): Promise<Ingredient> {
   const { data } = await httpClient.put<Ingredient>(`/ingredients/${id}`, payload)
   return data
 }
@@ -175,7 +193,9 @@ export async function fetchProductAttributes(): Promise<ProductAttribute[]> {
   return data
 }
 
-export async function createProductAttribute(payload: ProductAttributePayload): Promise<ProductAttribute> {
+export async function createProductAttribute(
+  payload: ProductAttributePayload,
+): Promise<ProductAttribute> {
   const { data } = await httpClient.post<ProductAttribute>('/product-attributes', payload)
   return data
 }
@@ -190,4 +210,23 @@ export async function updateProductAttribute(
 
 export async function deleteProductAttribute(id: number): Promise<void> {
   await httpClient.delete(`/product-attributes/${id}`)
+}
+
+/**
+ * Ventas cruzadas: qué sugerir a quien lleve este producto.
+ *
+ * Endpoint aparte del producto y no un campo del payload porque es una
+ * relación, no un atributo: se guarda después de que el producto existe (uno
+ * nuevo todavía no tiene id cuando se llena el formulario).
+ */
+export async function fetchCrossSells(productId: number): Promise<Product[]> {
+  const { data } = await httpClient.get<Product[]>(`/products/${productId}/cross-sells`)
+  return data
+}
+
+export async function saveCrossSells(productId: number, ids: number[]): Promise<Product[]> {
+  const { data } = await httpClient.put<Product[]>(`/products/${productId}/cross-sells`, {
+    cross_sell_ids: ids,
+  })
+  return data
 }

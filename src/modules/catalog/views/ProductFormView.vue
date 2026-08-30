@@ -16,9 +16,19 @@ import type {
   ProductVariantInput,
   VariantPhotoTarget,
 } from '@/types/product'
-import { NxButton, NxInput, NxInputNumber, NxPageHeader, NxSelect, NxTextarea, NxToggleButton } from '@/ui'
+import {
+  NxButton,
+  NxInput,
+  NxInputNumber,
+  NxPageHeader,
+  NxSelect,
+  NxTextarea,
+  NxToggleButton,
+} from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
+import CrossSellPicker from '../components/CrossSellPicker.vue'
+import { fetchCrossSells, saveCrossSells } from '../services/catalogService'
 import { hasFeature } from '@/utils/hasFeature'
 
 import ProductImagesEditor from '../components/ProductImagesEditor.vue'
@@ -62,18 +72,22 @@ const onlineStoreEnabled = computed(() => hasFeature(business.value, 'online_sto
 const productAttributesQuery = useProductAttributes(variantsEnabled)
 const { createMutation, updateMutation } = useProductMutations()
 
-
 const categoryOptions = computed(() => {
   const all = categoriesQuery.data.value ?? []
   return all.map((c) => ({
     id: c.id,
-    label: c.parent_id ? `${all.find((p) => p.id === c.parent_id)?.name ?? ''} › ${c.name}` : c.name,
+    label: c.parent_id
+      ? `${all.find((p) => p.id === c.parent_id)?.name ?? ''} › ${c.name}`
+      : c.name,
   }))
 })
 
 const name = ref('')
 const description = ref('')
 const showDescription = ref(false)
+const crossSellIds = ref<number[]>([])
+const MAX_CROSS_SELLS = 6
+
 const howToUse = ref('')
 const showHowToUse = ref(false)
 const price = ref<number | null>(null)
@@ -170,7 +184,8 @@ async function uploadPendingImages(created: Product): Promise<void> {
   for (const image of pendingImages.value) {
     try {
       await uploadProductImage(created.id, image.file, {
-        variantId: image.variantKey === null ? null : (variantIdByCombo.get(image.variantKey) ?? null),
+        variantId:
+          image.variantKey === null ? null : (variantIdByCombo.get(image.variantKey) ?? null),
       })
     } catch {
       failed += 1
@@ -195,6 +210,10 @@ watch(
     description.value = product.description ?? ''
     showDescription.value = Boolean(product.description)
     howToUse.value = product.how_to_use ?? ''
+    // Las cruzadas viven en su propio endpoint (son relacion, no atributo).
+    void fetchCrossSells(product.id).then((related) => {
+      crossSellIds.value = related.map((item) => item.id)
+    })
     showHowToUse.value = Boolean(product.how_to_use)
     price.value = Number(product.price)
     costPrice.value = Number(product.cost_price)
@@ -208,7 +227,10 @@ watch(
     sku.value = product.sku ?? ''
     isActive.value = product.is_active
     categoryId.value = product.category?.id ?? null
-    ingredients.value = (product.ingredients ?? []).map((i) => ({ ingredient_id: i.id, quantity: i.quantity }))
+    ingredients.value = (product.ingredients ?? []).map((i) => ({
+      ingredient_id: i.id,
+      quantity: i.quantity,
+    }))
     variants.value = (product.variants ?? []).map((v) => ({
       id: v.id,
       sku: v.sku,
@@ -350,7 +372,9 @@ async function submit(): Promise<void> {
     description: showDescription.value ? description.value.trim() || null : null,
     how_to_use: showHowToUse.value ? howToUse.value.trim() || null : null,
     price: effectivePrice,
-    ...(recipeCost.value === null && cheapestVariantPrice.value === null ? { cost_price: costPrice.value ?? 0 } : {}),
+    ...(recipeCost.value === null && cheapestVariantPrice.value === null
+      ? { cost_price: costPrice.value ?? 0 }
+      : {}),
     ...(isEdit.value ? {} : { stock: stock.value ?? 0 }),
     low_stock_alert_threshold: isService.value ? null : lowStockAlertThreshold.value,
     track_stock: trackStock.value,
@@ -368,6 +392,9 @@ async function submit(): Promise<void> {
   try {
     if (isEdit.value && productId.value) {
       await updateMutation.mutateAsync({ id: productId.value, payload })
+      // Despues del producto: es una relacion aparte, y si fallara no debe
+      // impedir que el producto se guarde.
+      await saveCrossSells(productId.value, crossSellIds.value)
       notify('Producto actualizado')
     } else {
       const created = await createMutation.mutateAsync(payload)
@@ -395,13 +422,19 @@ async function submit(): Promise<void> {
 <template>
   <div class="flex flex-col gap-4 pb-20 lg:pb-0">
     <div class="flex items-center gap-2">
-      <button type="button" class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" @click="router.push(returnRoute)">
+      <button
+        type="button"
+        class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+        @click="router.push(returnRoute)"
+      >
         <i class="pi pi-arrow-left" />
       </button>
       <NxPageHeader :title="pageTitle" :icon="isService ? 'pi pi-wrench' : 'pi pi-box'" compact />
     </div>
 
-    <p v-if="formError" class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ formError }}</p>
+    <p v-if="formError" class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+      {{ formError }}
+    </p>
 
     <template v-if="isEdit && productQuery.isPending.value">
       <div class="h-64 animate-pulse rounded-xl bg-slate-100" />
@@ -424,9 +457,27 @@ async function submit(): Promise<void> {
               @update:model-value="categoryId = $event as number | null"
             />
             <NxToggleButton v-model="showDescription" label="Descripción" icon="pi pi-align-left" />
-            <NxTextarea v-if="showDescription" v-model="description" label="Descripción" :rows="2" />
+            <NxTextarea
+              v-if="showDescription"
+              v-model="description"
+              label="Descripción"
+              :rows="2"
+            />
             <NxToggleButton v-model="showHowToUse" label="Cómo usarlo" icon="pi pi-info-circle" />
             <NxTextarea v-if="showHowToUse" v-model="howToUse" label="Cómo usarlo" :rows="2" />
+
+            <div class="mt-4 border-t border-slate-100 pt-4">
+              <p class="text-sm font-semibold text-slate-700">Se vende bien con</p>
+              <p class="mb-2 text-xs text-slate-400">
+                Lo que el cajero va a ver sugerido al vender esto, y lo que aparece como “Va bien
+                con” en tu tienda online.
+              </p>
+              <CrossSellPicker
+                v-model="crossSellIds"
+                :product-id="isEdit ? productId : null"
+                :max="MAX_CROSS_SELLS"
+              />
+            </div>
             <NxInput v-if="isEdit" v-model="sku" label="SKU" disabled />
           </div>
         </div>
@@ -445,7 +496,13 @@ async function submit(): Promise<void> {
           <div class="flex flex-col gap-3">
             <NxInputNumber
               :model-value="cheapestVariantPrice ?? price"
-              :label="variants.length > 0 ? 'Precio (desde)' : priceVariesAtSale ? 'Precio de referencia' : 'Precio de venta'"
+              :label="
+                variants.length > 0
+                  ? 'Precio (desde)'
+                  : priceVariesAtSale
+                    ? 'Precio de referencia'
+                    : 'Precio de venta'
+              "
               :min="0"
               required
               :disabled="variants.length > 0"
@@ -482,7 +539,12 @@ async function submit(): Promise<void> {
           <p class="mb-3 text-sm font-semibold text-slate-700">Tipo de producto</p>
           <div class="flex flex-col gap-3">
             <div class="grid grid-cols-2 gap-2">
-              <NxToggleButton v-model="isService" label="Es un servicio" icon="pi pi-wrench" :disabled="forcedService" />
+              <NxToggleButton
+                v-model="isService"
+                label="Es un servicio"
+                icon="pi pi-wrench"
+                :disabled="forcedService"
+              />
               <template v-if="!isService">
                 <NxToggleButton v-model="isSingleSale" label="Venta única" icon="pi pi-verified" />
                 <NxToggleButton
@@ -492,7 +554,11 @@ async function submit(): Promise<void> {
                   :disabled="isSingleSale || ingredients.length > 0 || variants.length > 0"
                 />
               </template>
-              <NxToggleButton v-model="isActive" :label="isService ? 'Servicio activo' : 'Producto activo'" icon="pi pi-check-circle" />
+              <NxToggleButton
+                v-model="isActive"
+                :label="isService ? 'Servicio activo' : 'Producto activo'"
+                icon="pi pi-check-circle"
+              />
             </div>
             <NxInputNumber
               v-if="isService"
@@ -504,7 +570,10 @@ async function submit(): Promise<void> {
           </div>
         </div>
 
-        <div v-if="!isService && trackStock && variants.length === 0" class="rounded-xl border border-slate-200 bg-white p-4">
+        <div
+          v-if="!isService && trackStock && variants.length === 0"
+          class="rounded-xl border border-slate-200 bg-white p-4"
+        >
           <p class="mb-3 text-sm font-semibold text-slate-700">Inventario</p>
           <div class="flex flex-col gap-3">
             <NxInputNumber
@@ -527,21 +596,37 @@ async function submit(): Promise<void> {
           </div>
         </div>
 
-        <div v-if="ingredientsEnabled && !isService && !isSingleSale" class="rounded-xl border border-slate-200 bg-white p-4">
+        <div
+          v-if="ingredientsEnabled && !isService && !isSingleSale"
+          class="rounded-xl border border-slate-200 bg-white p-4"
+        >
           <p class="mb-3 text-sm font-semibold text-slate-700">Receta de insumos (opcional)</p>
-          <ProductIngredientsEditor v-model="ingredients" :ingredients="ingredientOptionsQuery.data.value ?? []" />
+          <ProductIngredientsEditor
+            v-model="ingredients"
+            :ingredients="ingredientOptionsQuery.data.value ?? []"
+          />
         </div>
 
-        <div v-if="variantsEnabled && !isService && !isSingleSale" class="rounded-xl border border-slate-200 bg-white p-4">
+        <div
+          v-if="variantsEnabled && !isService && !isSingleSale"
+          class="rounded-xl border border-slate-200 bg-white p-4"
+        >
           <p class="mb-3 text-sm font-semibold text-slate-700">Variaciones (opcional)</p>
-          <ProductVariantsEditor v-model="variants" :attributes="productAttributesQuery.data.value ?? []" />
+          <ProductVariantsEditor
+            v-model="variants"
+            :attributes="productAttributesQuery.data.value ?? []"
+          />
         </div>
       </div>
     </div>
 
     <div class="flex gap-2">
-      <NxButton variant="outline" class="flex-1" @click="router.push({ name: 'catalog.index' })">Cancelar</NxButton>
-      <NxButton variant="outline" icon="pi pi-eye" @click="previewOpen = true">Vista previa</NxButton>
+      <NxButton variant="outline" class="flex-1" @click="router.push({ name: 'catalog.index' })"
+        >Cancelar</NxButton
+      >
+      <NxButton variant="outline" icon="pi pi-eye" @click="previewOpen = true"
+        >Vista previa</NxButton
+      >
       <NxButton class="flex-1" :loading="isSaving" @click="submit">Guardar</NxButton>
     </div>
 

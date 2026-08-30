@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { Business } from '@/types/business'
 
@@ -7,8 +7,9 @@ import type { useSaleCheckout } from '../composables/useSaleCheckout'
 import CartCheckoutSection from './CartCheckoutSection.vue'
 import CartItemsList from './CartItemsList.vue'
 import CartItemsModal from './CartItemsModal.vue'
+import CrossSellSuggestions from './CrossSellSuggestions.vue'
 
-defineProps<{
+const props = defineProps<{
   checkout: ReturnType<typeof useSaleCheckout>
   business: Business
   submitting: boolean
@@ -17,6 +18,17 @@ defineProps<{
 const emit = defineEmits<{ submit: [] }>()
 
 const itemsModalOpen = ref(false)
+
+/**
+ * El ultimo articulo agregado manda: en mostrador la sugerencia solo sirve
+ * si llega mientras el cliente todavia esta pensando en eso que pidio.
+ */
+const lastAddedProductId = computed(() => {
+  const lines = props.checkout.lines.value
+  return lines.length > 0 ? (lines[lines.length - 1].product.id ?? null) : null
+})
+
+const cartProductIds = computed(() => props.checkout.lines.value.map((line) => line.product.id))
 </script>
 
 <template>
@@ -54,6 +66,14 @@ const itemsModalOpen = ref(false)
       <div class="flex-1 overflow-y-auto">
         <CartItemsList :checkout="checkout" />
       </div>
+
+      <!-- Va justo encima del cobro: es el ultimo momento util para
+           sugerir, con el carrito ya armado y antes de pedir la plata. -->
+      <CrossSellSuggestions
+        :product-id="lastAddedProductId"
+        :in-cart-ids="cartProductIds"
+        @add="checkout.addProduct"
+      />
 
       <div class="border-t border-slate-200 pt-3">
         <CartCheckoutSection
