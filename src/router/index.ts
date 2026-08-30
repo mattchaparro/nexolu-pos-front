@@ -282,7 +282,10 @@ const router = createRouter({
           component: () => import('@/modules/expenses/views/ExpensesView.vue'),
           // expenses.create O expenses.manage (basta uno de los dos para
           // ver el listado - mismo criterio que el backend: permission:expenses.create,expenses.manage).
-          meta: { requiresFeature: 'expenses', requiresPermission: ['expenses.create', 'expenses.manage'] },
+          meta: {
+            requiresFeature: 'expenses',
+            requiresPermission: ['expenses.create', 'expenses.manage'],
+          },
         },
         {
           // Solo el dueño/admin: abrir la tienda al publico no es una accion
@@ -299,6 +302,15 @@ const router = createRouter({
           name: 'online-store.orders',
           component: () => import('@/modules/online-store/views/OrdersView.vue'),
           meta: { requiresFeature: 'online_store' },
+        },
+        {
+          // Moderar opiniones es decision editorial del negocio, no trabajo
+          // de mostrador: como la configuracion de la tienda, lleva
+          // requiresAdmin (el backend lo exige igual con business-admin).
+          path: 'opiniones',
+          name: 'online-store.reviews',
+          component: () => import('@/modules/online-store/views/ReviewsView.vue'),
+          meta: { requiresFeature: 'online_store', requiresAdmin: true },
         },
         {
           path: 'descuentos',
@@ -397,7 +409,10 @@ const router = createRouter({
           path: 'reportes/contabilidad',
           name: 'accounting.index',
           component: () => import('@/modules/accounting/views/AccountingView.vue'),
-          meta: { requiresFeature: 'managerial_accounting', requiresPermission: 'accounting.manage' },
+          meta: {
+            requiresFeature: 'managerial_accounting',
+            requiresPermission: 'accounting.manage',
+          },
         },
         {
           // Alguno de los dos permisos alcanza para ver la pantalla - dentro,
@@ -406,7 +421,10 @@ const router = createRouter({
           path: 'turnos-de-caja',
           name: 'cash-shifts.index',
           component: () => import('@/modules/cash-shifts/views/CashShiftsView.vue'),
-          meta: { requiresFeature: 'cash_closing', requiresPermission: ['cash_shift.manage', 'cash_closing.manage'] },
+          meta: {
+            requiresFeature: 'cash_closing',
+            requiresPermission: ['cash_shift.manage', 'cash_closing.manage'],
+          },
         },
         {
           // Sin requiresFeature/requiresPermission: a diferencia de los modulos
@@ -564,7 +582,10 @@ router.beforeEach(async (to) => {
 
   if (isBusinessRoute && (to.meta.requiresFeature || to.meta.requiresPurchasesAccess)) {
     try {
-      const business = await queryClient.ensureQueryData({ queryKey: ['business'], queryFn: fetchBusiness })
+      const business = await queryClient.ensureQueryData({
+        queryKey: ['business'],
+        queryFn: fetchBusiness,
+      })
       const allowed = to.meta.requiresPurchasesAccess
         ? business.can_access_purchases
         : hasFeature(business, to.meta.requiresFeature as string)

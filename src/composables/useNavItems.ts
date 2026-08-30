@@ -8,6 +8,7 @@ import { adminNavItems } from '@/router/navigation'
 import type { NavItem } from '@/types/navigation'
 
 import { usePendingOrderCount } from '@/modules/online-store/composables/useOrders'
+import { usePendingReviewCount } from '@/modules/online-store/composables/useReviews'
 
 import { useBusiness } from './useBusiness'
 import { usePermissions } from './usePermissions'
@@ -46,6 +47,12 @@ export function useNavItems() {
   const hasOnlineStore = computed(() => hasFeature(business.value, 'online_store'))
   const { data: pendingOrders } = usePendingOrderCount(hasOnlineStore)
 
+  // Las opiniones por revisar solo las cuenta el dueño: su endpoint va detras
+  // de `business-admin` y a un cajero le responderia 403.
+  const { data: pendingReviews } = usePendingReviewCount(
+    computed(() => hasOnlineStore.value && isAdmin.value),
+  )
+
   function isRouteAccessible(routeName: string): boolean {
     const route = router.getRoutes().find((r) => r.name === routeName)
     if (!route) {
@@ -72,10 +79,14 @@ export function useNavItems() {
           (!item.featureKey || hasFeature(business.value, item.featureKey)) &&
           (!item.routeName || isRouteAccessible(item.routeName)),
       )
-      .map((item) =>
-        item.routeName === 'online-store.orders' && (pendingOrders.value ?? 0) > 0
-          ? { ...item, badge: pendingOrders.value }
-          : item,
-      ),
+      .map((item) => {
+        if (item.routeName === 'online-store.orders' && (pendingOrders.value ?? 0) > 0) {
+          return { ...item, badge: pendingOrders.value }
+        }
+        if (item.routeName === 'online-store.reviews' && (pendingReviews.value ?? 0) > 0) {
+          return { ...item, badge: pendingReviews.value }
+        }
+        return item
+      }),
   )
 }

@@ -19,12 +19,42 @@ export const adminNavItems: NavItem[] = [
   // explicito: Resumen vive justo al lado de Vender por lo seguido que se
   // consulta durante el dia, no mas abajo despues de Turnos de caja.
   { label: 'Resumen', icon: 'pi pi-chart-bar', routeName: 'daily-summary.index' },
-  { label: 'Cuentas abiertas', icon: 'pi pi-receipt', routeName: 'open-tabs.index', featureKey: 'open_tabs' },
-  { label: 'Servicios', icon: 'pi pi-wrench', routeName: 'service-orders.index', featureKey: 'services' },
-  { label: 'Agenda', icon: 'pi pi-calendar', routeName: 'appointments.index', featureKey: 'scheduling' },
-  { label: 'Fiados', icon: 'pi pi-wallet', routeName: 'receivables.index', featureKey: 'receivables' },
-  { label: 'Apartados', icon: 'pi pi-bookmark', routeName: 'layaways.index', featureKey: 'layaway' },
-  { label: 'Comandera', icon: 'pi pi-list', routeName: 'kitchen.index', featureKey: 'kitchen_board' },
+  {
+    label: 'Cuentas abiertas',
+    icon: 'pi pi-receipt',
+    routeName: 'open-tabs.index',
+    featureKey: 'open_tabs',
+  },
+  {
+    label: 'Servicios',
+    icon: 'pi pi-wrench',
+    routeName: 'service-orders.index',
+    featureKey: 'services',
+  },
+  {
+    label: 'Agenda',
+    icon: 'pi pi-calendar',
+    routeName: 'appointments.index',
+    featureKey: 'scheduling',
+  },
+  {
+    label: 'Fiados',
+    icon: 'pi pi-wallet',
+    routeName: 'receivables.index',
+    featureKey: 'receivables',
+  },
+  {
+    label: 'Apartados',
+    icon: 'pi pi-bookmark',
+    routeName: 'layaways.index',
+    featureKey: 'layaway',
+  },
+  {
+    label: 'Comandera',
+    icon: 'pi pi-list',
+    routeName: 'kitchen.index',
+    featureKey: 'kitchen_board',
+  },
   { label: 'Catálogo', icon: 'pi pi-shop', routeName: 'catalog.index' },
   // Sin equivalente en admin.json del legacy a proposito: legacy tiene las
   // rutas/controlador de clientes (Admin\ClientsController) pero ningun
@@ -32,15 +62,48 @@ export const adminNavItems: NavItem[] = [
   // salvo escribiendo la URL a mano. Se agrega aca como item real, no un
   // gap que se repite.
   { label: 'Clientes', icon: 'pi pi-users', routeName: 'clients.index', featureKey: 'clients' },
-  { label: 'Turnos de caja', icon: 'pi pi-clock', routeName: 'cash-shifts.index', featureKey: 'cash_closing' },
-  { label: 'Gastos', icon: 'pi pi-money-bill', routeName: 'expenses.index', featureKey: 'expenses' },
-  { label: 'Planificador', icon: 'pi pi-calendar-clock', routeName: 'reminders.index', featureKey: 'reminders' },
+  {
+    label: 'Turnos de caja',
+    icon: 'pi pi-clock',
+    routeName: 'cash-shifts.index',
+    featureKey: 'cash_closing',
+  },
+  {
+    label: 'Gastos',
+    icon: 'pi pi-money-bill',
+    routeName: 'expenses.index',
+    featureKey: 'expenses',
+  },
+  {
+    label: 'Planificador',
+    icon: 'pi pi-calendar-clock',
+    routeName: 'reminders.index',
+    featureKey: 'reminders',
+  },
   { label: 'Descuentos', icon: 'pi pi-tag', routeName: 'discounts.index', featureKey: 'discounts' },
-  { label: 'Tienda online', icon: 'pi pi-shop', routeName: 'online-store.index', featureKey: 'online_store' },
+  {
+    label: 'Tienda online',
+    icon: 'pi pi-shop',
+    routeName: 'online-store.index',
+    featureKey: 'online_store',
+  },
   // Separado de la configuracion de la tienda a proposito: configurar es
   // cosa del dueño y se hace una vez; atender pedidos es del dia a dia y lo
   // hace quien este en el mostrador.
-  { label: 'Pedidos online', icon: 'pi pi-inbox', routeName: 'online-store.orders', featureKey: 'online_store' },
+  {
+    label: 'Pedidos online',
+    icon: 'pi pi-inbox',
+    routeName: 'online-store.orders',
+    featureKey: 'online_store',
+  },
+  // Moderar es del dueño, como configurar la tienda: lo que se publica en
+  // internet a nombre del negocio no lo decide quien esta en la caja.
+  {
+    label: 'Opiniones',
+    icon: 'pi pi-star',
+    routeName: 'online-store.reviews',
+    featureKey: 'online_store',
+  },
   { label: 'Reportes', icon: 'pi pi-chart-line', routeName: 'reports.index' },
   // Sin featureKey: gestionar el equipo (alta/baja/roles) no es un extra de
   // plan, solo la edicion granular de permisos lo es (feature
@@ -48,7 +111,12 @@ export const adminNavItems: NavItem[] = [
   // no la accion "Permisos" por fila) - ver la nota en el meta requiresAdmin
   // de router/index.ts.
   { label: 'Usuarios', icon: 'pi pi-users', routeName: 'employees.index' },
-  { label: 'Auditoría', icon: 'pi pi-history', routeName: 'audit-logs.index', featureKey: 'audit_logs' },
+  {
+    label: 'Auditoría',
+    icon: 'pi pi-history',
+    routeName: 'audit-logs.index',
+    featureKey: 'audit_logs',
+  },
   { label: 'Mi negocio', icon: 'pi pi-building', routeName: 'business-overview.index' },
 ]
 
@@ -75,15 +143,27 @@ export const superadminNavItems: NavItem[] = [
   // Sin equivalente en superadmin.json del legacy a proposito (igual que
   // 'Clientes' en adminNavItems): pantalla nueva de solo lectura sobre las
   // plantillas/flows de WhatsApp ya configurados en config/services.php.
-  { label: 'Plantillas WhatsApp', icon: 'pi pi-file-edit', routeName: 'superadmin.whatsapp-templates.index' },
+  {
+    label: 'Plantillas WhatsApp',
+    icon: 'pi pi-file-edit',
+    routeName: 'superadmin.whatsapp-templates.index',
+  },
   // Idem: documentacion de solo lectura de que trae cada plan (Basico/Full)
   // y para que sirve cada bandera - sin equivalente en el legacy (ahi la
   // comparacion de planes solo vive en la landing publica, desconectada del
   // panel de superadmin).
-  { label: 'Planes y Funciones', icon: 'pi pi-sitemap', routeName: 'superadmin.feature-catalog.index' },
+  {
+    label: 'Planes y Funciones',
+    icon: 'pi pi-sitemap',
+    routeName: 'superadmin.feature-catalog.index',
+  },
   { label: 'Cron jobs', icon: 'pi pi-clock', disabled: true },
   { label: 'Workflows servicio', icon: 'pi pi-sitemap', routeName: 'superadmin.workflows.index' },
   // Idem: sin equivalente en el legacy - catalogo normalizado de medios de
   // pago del POS (ver docs/CUTOVER_TODO.md sobre la normalizacion pendiente).
-  { label: 'Medios de pago', icon: 'pi pi-wallet', routeName: 'superadmin.pos-payment-methods.index' },
+  {
+    label: 'Medios de pago',
+    icon: 'pi pi-wallet',
+    routeName: 'superadmin.pos-payment-methods.index',
+  },
 ]
