@@ -31,6 +31,8 @@ const previewUrl = computed(() => {
   return base ? `${base}?preview=1` : ''
 })
 
+const emit = defineEmits<{ select: [blockId: string] }>()
+
 const targetOrigin = computed(() => {
   try {
     return new URL(props.settings.public_url).origin
@@ -112,9 +114,18 @@ function onFrameMessage(event: MessageEvent): void {
   if (event.origin !== targetOrigin.value) {
     return
   }
-  if ((event.data as { ready?: boolean })?.ready) {
+  const data = event.data as { ready?: boolean; source?: string; blockId?: string }
+
+  if (data?.ready) {
     ready.value = true
     send()
+    return
+  }
+
+  // Tocaron un bloque en la vista previa: el editor lo abre. Es lo que evita
+  // tener que adivinar en el riel cuál tarjeta es la que estás mirando.
+  if (data?.source === 'nexolu-store-preview-click' && data.blockId) {
+    emit('select', data.blockId)
   }
 }
 

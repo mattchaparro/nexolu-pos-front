@@ -87,6 +87,20 @@ const EDITOR_SECTIONS = [
 ] as const
 
 const editorSection = ref<(typeof EDITOR_SECTIONS)[number]['value']>('bloques')
+
+/**
+ * Qué bloque está abierto en el riel. Vive acá y no dentro de BlockEditor
+ * porque tocar un bloque en la vista previa tiene que abrirlo: el editor lo
+ * expone como v-model justamente para eso.
+ */
+const expandedBlock = ref<string | null>(null)
+
+function selectFromPreview(blockId: string): void {
+  // Si estabas en Colores y tocas un bloque, lo esperable es ir a Bloques:
+  // abrirlo en una sección que no se ve no serviría de nada.
+  editorSection.value = 'bloques'
+  expandedBlock.value = blockId
+}
 const previewWidth = ref<'mobile' | 'desktop'>('desktop')
 
 /**
@@ -287,6 +301,7 @@ async function save(): Promise<void> {
         </button>
 
         <StoreHomePreview
+          @select="selectFromPreview"
           v-model:width="previewWidth"
           class="h-full min-h-0 flex-1"
           :blocks="homeBlocks"
@@ -309,6 +324,7 @@ async function save(): Promise<void> {
         <BlockEditor
           v-else-if="editorSection === 'bloques'"
           v-model="homeBlocks"
+          v-model:expanded="expandedBlock"
           :catalog="HOME_BLOCK_CATALOG"
         >
           <template #image-picker="{ value, onSelect }">

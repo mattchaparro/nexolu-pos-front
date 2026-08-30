@@ -19,7 +19,13 @@ const { definition, canAdd, add, remove, duplicate, move, update } = useBlockLis
   toRef(props, 'catalog'),
 )
 
-const expanded = ref<string | null>(null)
+/**
+ * Qué bloque está abierto. Es un `defineModel` y no estado interno para que
+ * el anfitrión pueda abrirlo desde fuera — por ejemplo al tocar el bloque en
+ * una vista previa. Sigue funcionando sin el v-model: sin él es un ref
+ * normal con su valor por defecto.
+ */
+const expanded = defineModel<string | null>('expanded', { default: null })
 const dragIndex = ref<number | null>(null)
 const dropIndex = ref<number | null>(null)
 const adding = ref(false)
