@@ -34,9 +34,32 @@ const panelOpen = defineModel<boolean>('panelOpen', { default: true })
 const frame = ref<HTMLIFrameElement | null>(null)
 const ready = ref(false)
 
+/**
+ * Qué página de la tienda se está mirando.
+ *
+ * Antes solo se veía el inicio: para saber cómo quedaba tu ficha de producto
+ * o tu catálogo con tus colores había que salir del editor y abrir la tienda
+ * aparte. Los bloques solo aplican al inicio, pero el TEMA — colores,
+ * tipografía, logo — se ve en todas.
+ */
+type PreviewPage = 'home' | 'catalog'
+
+const page = ref<PreviewPage>('home')
+
+const PAGE_PATHS: Record<PreviewPage, string> = {
+  home: '',
+  catalog: '/tienda',
+}
+
 const previewUrl = computed(() => {
   const base = props.settings.public_url
-  return base ? `${base}?preview=1` : ''
+  return base ? `${base}${PAGE_PATHS[page.value]}?preview=1` : ''
+})
+
+// Cambiar de página recarga el iframe, así que la tienda vuelve a avisar
+// "listo" y hay que esperar ese aviso antes de mandarle el borrador.
+watch(page, () => {
+  ready.value = false
 })
 
 const emit = defineEmits<{ select: [blockId: string] }>()
@@ -148,7 +171,10 @@ watch(() => [props.blocks, props.settings], send, { deep: true })
   <div class="flex min-h-0 flex-col gap-2">
     <div class="flex items-center justify-between">
       <p class="text-sm font-semibold text-slate-700">
-        {{ width === 'mobile' ? 'Como se ve en celular' : 'Como se ve en computador' }}
+        {{ page === 'home' ? 'Tu página de inicio' : 'Tu tienda' }}
+        <span class="font-normal text-slate-400">
+          · {{ width === 'mobile' ? 'celular' : 'computador' }}
+        </span>
       </p>
       <div class="flex gap-1">
         <button
@@ -166,6 +192,30 @@ watch(() => [props.blocks, props.settings], send, { deep: true })
           "
           :title="option.title"
           @click="width = option.value"
+        >
+          <i class="pi" :class="option.icon" />
+        </button>
+
+        <span class="mx-1 w-px bg-slate-200" aria-hidden="true" />
+
+        <!-- Qué página se mira. Los bloques son del inicio, pero el tema se
+             ve en todas: sin esto no había forma de revisar la ficha de
+             producto con tus colores sin salir del editor. -->
+        <button
+          v-for="option in [
+            { value: 'home' as const, icon: 'pi-home', title: 'Inicio' },
+            { value: 'catalog' as const, icon: 'pi-shopping-bag', title: 'Tienda' },
+          ]"
+          :key="option.value"
+          type="button"
+          class="rounded-lg border px-2.5 py-1.5 text-xs"
+          :class="
+            page === option.value
+              ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+              : 'border-slate-200 text-slate-400 hover:border-slate-300'
+          "
+          :title="option.title"
+          @click="page = option.value"
         >
           <i class="pi" :class="option.icon" />
         </button>
