@@ -63,10 +63,21 @@ async function remove(): Promise<void> {
       </div>
     </div>
 
-    <input ref="input" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="onPicked" />
+    <input
+      ref="input"
+      type="file"
+      accept="image/jpeg,image/png,image/webp"
+      class="hidden"
+      @change="onPicked"
+    />
 
     <div class="flex items-center gap-2">
-      <NxButton variant="outline" size="sm" :disabled="uploadImageMutation.isPending.value" @click="input?.click()">
+      <NxButton
+        variant="outline"
+        size="sm"
+        :disabled="uploadImageMutation.isPending.value"
+        @click="input?.click()"
+      >
         {{ url ? 'Cambiar' : 'Subir' }}
       </NxButton>
       <button

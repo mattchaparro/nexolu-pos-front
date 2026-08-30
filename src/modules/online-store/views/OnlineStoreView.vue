@@ -40,7 +40,6 @@ const activeTab = ref<'tienda' | 'editor'>('tienda')
 // Los mismos presets que traduce el storefront a familias concretas
 // (useTheme.ts). Catálogo cerrado: fuente libre = tiendas ilegibles.
 
-
 // --- Estado del formulario ---
 const storeName = ref('')
 const description = ref('')
@@ -176,8 +175,6 @@ function saveStore(): Promise<void> {
   )
 }
 
-
-
 function toggleStore(): Promise<void> {
   const opening = !isOpen.value
   return save({ is_active: opening }, opening ? 'Tienda abierta al público' : 'Tienda cerrada')
@@ -190,13 +187,9 @@ async function copyPublicUrl(): Promise<void> {
   }
 }
 
-
-
 // La página de inicio: una lista de bloques que el comerciante ordena.
 // Reemplaza a las tres ranuras fijas (portada/confianza/historia) que hacían
 // que todas las tiendas Nexolú se vieran iguales.
-
-
 </script>
 
 <template>
@@ -220,7 +213,9 @@ async function copyPublicUrl(): Promise<void> {
               </span>
             </p>
             <p class="mt-1 text-xs text-slate-500">
-              {{ publishedCount }} producto{{ publishedCount === 1 ? '' : 's' }} publicado{{ publishedCount === 1 ? '' : 's' }}.
+              {{ publishedCount }} producto{{ publishedCount === 1 ? '' : 's' }} publicado{{
+                publishedCount === 1 ? '' : 's'
+              }}.
               <button
                 type="button"
                 class="font-semibold text-indigo-600 hover:text-indigo-800"
@@ -230,17 +225,32 @@ async function copyPublicUrl(): Promise<void> {
               </button>
             </p>
           </div>
-          <NxButton :variant="isOpen ? 'outline' : 'primary'" :loading="updateMutation.isPending.value" @click="toggleStore">
+          <NxButton
+            :variant="isOpen ? 'outline' : 'primary'"
+            :loading="updateMutation.isPending.value"
+            @click="toggleStore"
+          >
             {{ isOpen ? 'Cerrar tienda' : 'Abrir tienda' }}
           </NxButton>
         </div>
 
         <div class="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
-          <span class="min-w-0 flex-1 truncate font-mono text-xs text-slate-600">{{ settings.public_url }}</span>
-          <button type="button" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800" @click="copyPublicUrl">
+          <span class="min-w-0 flex-1 truncate font-mono text-xs text-slate-600">{{
+            settings.public_url
+          }}</span>
+          <button
+            type="button"
+            class="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+            @click="copyPublicUrl"
+          >
             Copiar
           </button>
-          <a :href="settings.public_url" target="_blank" rel="noopener" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+          <a
+            :href="settings.public_url"
+            target="_blank"
+            rel="noopener"
+            class="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+          >
             Abrir
           </a>
         </div>
@@ -250,7 +260,9 @@ async function copyPublicUrl(): Promise<void> {
         </p>
       </div>
 
-      <p v-if="formError" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ formError }}</p>
+      <p v-if="formError" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+        {{ formError }}
+      </p>
 
       <NxTabs v-model:value="activeTab">
         <NxTabList>
@@ -265,34 +277,84 @@ async function copyPublicUrl(): Promise<void> {
               <div class="rounded-xl border border-slate-200 bg-white p-4">
                 <p class="mb-3 text-sm font-semibold text-slate-700">Identidad</p>
                 <div class="flex flex-col gap-3">
-                  <NxInput v-model="storeName" label="Nombre de la tienda" :error="fieldErrors.store_name" />
-                  <p class="-mt-2 text-[11px] text-slate-400">Si lo dejas vacío se usa el nombre de tu negocio.</p>
-                  <NxTextarea v-model="description" label="Descripción" :rows="2" :error="fieldErrors.description" />
+                  <NxInput
+                    v-model="storeName"
+                    label="Nombre de la tienda"
+                    :error="fieldErrors.store_name"
+                  />
+                  <p class="-mt-2 text-[11px] text-slate-400">
+                    Si lo dejas vacío se usa el nombre de tu negocio.
+                  </p>
+                  <NxTextarea
+                    v-model="description"
+                    label="Descripción"
+                    :rows="2"
+                    :error="fieldErrors.description"
+                  />
                 </div>
               </div>
 
               <div class="rounded-xl border border-slate-200 bg-white p-4">
                 <p class="mb-3 text-sm font-semibold text-slate-700">Contacto y envío</p>
                 <div class="flex flex-col gap-3">
-                  <NxInput v-model="whatsappNumber" label="WhatsApp de atención" :error="fieldErrors.whatsapp_number" />
+                  <NxInput
+                    v-model="whatsappNumber"
+                    label="WhatsApp de atención"
+                    :error="fieldErrors.whatsapp_number"
+                  />
                   <p v-if="whatsappNumber" class="-mt-2 text-[11px] text-slate-400">
                     <template v-if="settings.whatsapp_clicks_30d > 0">
                       {{ settings.whatsapp_clicks_30d }}
-                      {{ settings.whatsapp_clicks_30d === 1 ? 'persona escribió' : 'personas escribieron' }}
+                      {{
+                        settings.whatsapp_clicks_30d === 1
+                          ? 'persona escribió'
+                          : 'personas escribieron'
+                      }}
                       desde tu tienda en los últimos 30 días.
                     </template>
                     <template v-else>
                       Todavía nadie te ha escrito desde la tienda este mes.
                     </template>
                   </p>
-                  <NxInputNumber v-model="shippingFlatFee" label="Costo de envío" :min="0" :error="fieldErrors.shipping_flat_fee" />
-                  <NxInputNumber v-model="minOrderAmount" label="Pedido mínimo" :min="0" :error="fieldErrors.min_order_amount" />
-                  <NxToggleButton v-model="pickupEnabled" label="Permitir recoger en tienda" icon="pi pi-shop" />
+                  <NxInputNumber
+                    v-model="shippingFlatFee"
+                    label="Costo de envío"
+                    :min="0"
+                    :error="fieldErrors.shipping_flat_fee"
+                  />
+                  <NxInputNumber
+                    v-model="minOrderAmount"
+                    label="Pedido mínimo"
+                    :min="0"
+                    :error="fieldErrors.min_order_amount"
+                  />
+                  <NxToggleButton
+                    v-model="pickupEnabled"
+                    label="Permitir recoger en tienda"
+                    icon="pi pi-shop"
+                  />
                   <NxInput v-model="address" label="Dirección" :error="fieldErrors.address" />
-                  <NxInput v-model="openingHours" label="Horario" :error="fieldErrors.opening_hours" />
-                  <NxInput v-model="instagramUrl" label="Instagram (URL)" :error="fieldErrors.instagram_url" />
-                  <NxInput v-model="facebookUrl" label="Facebook (URL)" :error="fieldErrors.facebook_url" />
-                  <NxTextarea v-model="terms" label="Condiciones (opcional)" :rows="3" :error="fieldErrors.terms" />
+                  <NxInput
+                    v-model="openingHours"
+                    label="Horario"
+                    :error="fieldErrors.opening_hours"
+                  />
+                  <NxInput
+                    v-model="instagramUrl"
+                    label="Instagram (URL)"
+                    :error="fieldErrors.instagram_url"
+                  />
+                  <NxInput
+                    v-model="facebookUrl"
+                    label="Facebook (URL)"
+                    :error="fieldErrors.facebook_url"
+                  />
+                  <NxTextarea
+                    v-model="terms"
+                    label="Condiciones (opcional)"
+                    :rows="3"
+                    :error="fieldErrors.terms"
+                  />
                 </div>
               </div>
 
@@ -302,7 +364,11 @@ async function copyPublicUrl(): Promise<void> {
                   Un pedido entra sin que nadie toque el POS. El correo llega apenas se hace.
                 </p>
                 <div class="flex flex-col gap-3">
-                  <NxToggleButton v-model="orderEmailEnabled" label="Avisarme por correo" icon="pi pi-envelope" />
+                  <NxToggleButton
+                    v-model="orderEmailEnabled"
+                    label="Avisarme por correo"
+                    icon="pi pi-envelope"
+                  />
                   <NxInput
                     v-model="orderEmail"
                     label="Correo para pedidos (opcional)"
@@ -315,14 +381,22 @@ async function copyPublicUrl(): Promise<void> {
 
               <div class="rounded-xl border border-slate-200 bg-white p-4">
                 <p class="mb-1 text-sm font-semibold text-slate-700">Buscadores</p>
-                <p class="mb-3 text-[11px] text-slate-400">Cómo aparece en Google. Vacío = se usa el nombre y la descripción.</p>
+                <p class="mb-3 text-[11px] text-slate-400">
+                  Cómo aparece en Google. Vacío = se usa el nombre y la descripción.
+                </p>
                 <div class="flex flex-col gap-3">
                   <NxInput v-model="seoTitle" label="Título" :error="fieldErrors.seo_title" />
-                  <NxInput v-model="seoDescription" label="Descripción" :error="fieldErrors.seo_description" />
+                  <NxInput
+                    v-model="seoDescription"
+                    label="Descripción"
+                    :error="fieldErrors.seo_description"
+                  />
                 </div>
               </div>
 
-              <NxButton :loading="updateMutation.isPending.value" @click="saveStore">Guardar</NxButton>
+              <NxButton :loading="updateMutation.isPending.value" @click="saveStore"
+                >Guardar</NxButton
+              >
             </div>
           </NxTabPanel>
           <!-- ------------------------------ APARIENCIA -->
@@ -335,7 +409,11 @@ async function copyPublicUrl(): Promise<void> {
                 plantillas, colores, tipografia y tu marca.
               </p>
 
-              <NxButton class="mt-4" icon="pi pi-pencil" @click="router.push({ name: 'online-store.editor' })">
+              <NxButton
+                class="mt-4"
+                icon="pi pi-pencil"
+                @click="router.push({ name: 'online-store.editor' })"
+              >
                 Abrir el editor
               </NxButton>
 

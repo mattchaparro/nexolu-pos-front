@@ -16,12 +16,12 @@ tipos del POS. Es lo único que hace que extraerlo a un repo propio sea un
 
 Todo lo específico del anfitrión entra por props, slots o callbacks:
 
-| Necesidad | Cómo entra |
-|---|---|
-| Qué bloques existen y qué campos tienen | prop `catalog` |
-| Elegir una imagen | slot `image-picker` |
-| Elegir entidades (productos, servicios…) | slot `entity-picker` |
-| Estética | variables CSS `--bke-*` (ver `styles.css`) |
+| Necesidad                                | Cómo entra                                 |
+| ---------------------------------------- | ------------------------------------------ |
+| Qué bloques existen y qué campos tienen  | prop `catalog`                             |
+| Elegir una imagen                        | slot `image-picker`                        |
+| Elegir entidades (productos, servicios…) | slot `entity-picker`                       |
+| Estética                                 | variables CSS `--bke-*` (ver `styles.css`) |
 
 Si algún día hace falta importar algo de fuera, es señal de que ese algo
 debería entrar por el borde, no de que la regla esté mal.

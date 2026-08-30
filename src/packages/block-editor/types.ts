@@ -11,18 +11,28 @@ export interface Block {
 
 /** Cómo se edita un campo. El editor dibuja el control según esto. */
 export type FieldKind =
-  | 'text'
-  | 'textarea'
-  | 'select'
-  | 'url'
-  | 'image'
-  | 'images'
-  | 'entities'
-  | 'list'
+  'text' | 'textarea' | 'select' | 'url' | 'image' | 'images' | 'entities' | 'list' | 'icon'
 
 export interface FieldOption {
   value: string
   label: string
+}
+
+/**
+ * Un icono del catálogo. `value` es lo que se guarda (una clave, nunca el
+ * glifo): quien pinta la página decide con qué se dibuja esa clave, así que
+ * cambiar el set no rompe lo ya guardado.
+ *
+ * El catálogo lo aporta el anfitrión en la definición del campo — este
+ * paquete no trae iconos propios, igual que no trae colores ni tipografías.
+ */
+export interface IconOption {
+  value: string
+  label: string
+  /** Lo que se dibuja en el selector: un emoji, una letra, lo que sea. */
+  glyph: string
+  /** Para agrupar el selector. Sin grupo, todos van juntos. */
+  group?: string
 }
 
 export interface FieldDefinition {
@@ -34,6 +44,8 @@ export interface FieldDefinition {
   maxLength?: number
   /** Solo para `select`. */
   options?: FieldOption[]
+  /** Solo para `icon`: el catálogo cerrado de iconos disponibles. */
+  icons?: IconOption[]
   /** Solo para `list`: los campos de cada elemento. */
   itemFields?: FieldDefinition[]
   /** Solo para `list` e `images`. */

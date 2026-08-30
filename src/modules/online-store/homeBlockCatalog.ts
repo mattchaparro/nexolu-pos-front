@@ -1,5 +1,7 @@
 import type { BlockDefinition } from '@/packages/block-editor'
 
+import { STORE_ICONS } from './storeIcons'
+
 /**
  * El catálogo de bloques de la tienda online, en el vocabulario del
  * comerciante.
@@ -22,7 +24,13 @@ export const HOME_BLOCK_CATALOG: BlockDefinition[] = [
     // rota. La API lo rechaza igual.
     max: 1,
     fields: [
-      { key: 'eyebrow', label: 'Antetítulo', kind: 'text', maxLength: 80, placeholder: 'TUESTE DE LA SEMANA' },
+      {
+        key: 'eyebrow',
+        label: 'Antetítulo',
+        kind: 'text',
+        maxLength: 80,
+        placeholder: 'TUESTE DE LA SEMANA',
+      },
       { key: 'title', label: 'Titular', kind: 'text', maxLength: 120 },
       {
         key: 'highlight',
@@ -50,7 +58,7 @@ export const HOME_BLOCK_CATALOG: BlockDefinition[] = [
         max: 4,
         addLabel: 'Agregar punto',
         itemFields: [
-          { key: 'icon', label: 'Ícono', kind: 'text', maxLength: 16, placeholder: 'truck' },
+          { key: 'icon', label: 'Ícono', kind: 'icon', icons: STORE_ICONS },
           { key: 'title', label: 'Título', kind: 'text', maxLength: 60 },
           { key: 'text', label: 'Detalle', kind: 'text', maxLength: 120 },
         ],
@@ -75,7 +83,13 @@ export const HOME_BLOCK_CATALOG: BlockDefinition[] = [
         addLabel: 'Agregar cifra',
         itemFields: [
           { key: 'value', label: 'Número', kind: 'text', maxLength: 20, placeholder: '12' },
-          { key: 'label', label: 'Qué es', kind: 'text', maxLength: 40, placeholder: 'años tostando' },
+          {
+            key: 'label',
+            label: 'Qué es',
+            kind: 'text',
+            maxLength: 40,
+            placeholder: 'años tostando',
+          },
         ],
       },
     ],
@@ -146,7 +160,13 @@ export const HOME_BLOCK_CATALOG: BlockDefinition[] = [
         itemFields: [
           { key: 'quote', label: 'Qué dijo', kind: 'textarea', maxLength: 300 },
           { key: 'author', label: 'Quién', kind: 'text', maxLength: 60 },
-          { key: 'role', label: 'Detalle', kind: 'text', maxLength: 60, placeholder: 'Cliente desde 2024' },
+          {
+            key: 'role',
+            label: 'Detalle',
+            kind: 'text',
+            maxLength: 60,
+            placeholder: 'Cliente desde 2024',
+          },
         ],
       },
     ],

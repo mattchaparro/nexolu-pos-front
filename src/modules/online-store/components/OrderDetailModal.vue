@@ -44,12 +44,15 @@ watch(open, (isOpen) => {
  * linea de texto plano en un dialogo del navegador.
  */
 const NEEDS_CONFIRMATION: Partial<Record<OrderStatus, string>> = {
-  confirmed: 'Se creará la venta en la caja y se descontará el inventario. Esto no se puede deshacer.',
+  confirmed:
+    'Se creará la venta en la caja y se descontará el inventario. Esto no se puede deshacer.',
   cancelled: 'El pedido se cierra y libera el stock que tenía apartado.',
 }
 
 const pendingStatus = ref<OrderStatus | null>(null)
-const confirmationText = computed(() => (pendingStatus.value ? NEEDS_CONFIRMATION[pendingStatus.value] : null))
+const confirmationText = computed(() =>
+  pendingStatus.value ? NEEDS_CONFIRMATION[pendingStatus.value] : null,
+)
 
 // Con que le pagaron. Mientras la tienda no cobre en linea, el pago se
 // coordina por fuera (transferencia, Nequi, contraentrega) y solo el
@@ -92,21 +95,30 @@ async function moveTo(status: OrderStatus): Promise<void> {
 }
 
 function formatDate(value: string | null): string {
-  return value ? new Date(value).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }) : '—'
+  return value
+    ? new Date(value).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
+    : '—'
 }
 
 const customerMessage = computed(() =>
-  order.value ? `Hola ${order.value.customer_name}, te escribimos por tu pedido #${order.value.number}.` : '',
+  order.value
+    ? `Hola ${order.value.customer_name}, te escribimos por tu pedido #${order.value.number}.`
+    : '',
 )
 </script>
 
 <template>
   <NxModal v-model="open" :title="order ? `Pedido #${order.number}` : 'Pedido'" size="lg">
-    <div v-if="orderQuery.isPending.value" class="py-10 text-center text-sm text-slate-400">Cargando…</div>
+    <div v-if="orderQuery.isPending.value" class="py-10 text-center text-sm text-slate-400">
+      Cargando…
+    </div>
 
     <div v-else-if="order" class="flex flex-col gap-4">
       <div class="flex flex-wrap items-center gap-2">
-        <span class="rounded-full px-2.5 py-1 text-xs font-semibold" :class="statusMeta(order.status).classes">
+        <span
+          class="rounded-full px-2.5 py-1 text-xs font-semibold"
+          :class="statusMeta(order.status).classes"
+        >
           {{ statusMeta(order.status).label }}
         </span>
         <span class="text-xs text-slate-400">{{ formatDate(order.created_at) }}</span>
@@ -127,10 +139,13 @@ const customerMessage = computed(() =>
           <i class="pi pi-map-marker mr-1 text-xs text-slate-400" />
           <template v-if="order.is_pickup">Recoge en la tienda</template>
           <template v-else>
-            {{ order.shipping_address }}<template v-if="order.shipping_city">, {{ order.shipping_city }}</template>
+            {{ order.shipping_address
+            }}<template v-if="order.shipping_city">, {{ order.shipping_city }}</template>
           </template>
         </p>
-        <p v-if="order.shipping_notes" class="mt-1 text-sm italic text-slate-500">“{{ order.shipping_notes }}”</p>
+        <p v-if="order.shipping_notes" class="mt-1 text-sm italic text-slate-500">
+          “{{ order.shipping_notes }}”
+        </p>
         <a
           :href="whatsappLink(order.customer_phone, customerMessage)"
           target="_blank"
@@ -144,10 +159,16 @@ const customerMessage = computed(() =>
       <!-- Articulos: nombres y precios congelados al hacer el pedido -->
       <div class="rounded-xl border border-slate-200">
         <ul class="divide-y divide-slate-100">
-          <li v-for="item in order.items ?? []" :key="item.id" class="flex justify-between gap-3 px-3 py-2 text-sm">
+          <li
+            v-for="item in order.items ?? []"
+            :key="item.id"
+            class="flex justify-between gap-3 px-3 py-2 text-sm"
+          >
             <span class="text-slate-700">
               {{ item.quantity }}× {{ item.product_name }}
-              <span v-if="item.variant_label" class="text-slate-400">({{ item.variant_label }})</span>
+              <span v-if="item.variant_label" class="text-slate-400"
+                >({{ item.variant_label }})</span
+              >
             </span>
             <span class="shrink-0 text-slate-900">{{ formatCop(item.subtotal) }}</span>
           </li>
@@ -157,7 +178,8 @@ const customerMessage = computed(() =>
             <span>Subtotal</span><span>{{ formatCop(order.subtotal) }}</span>
           </div>
           <div class="flex justify-between text-slate-500">
-            <span>Envío</span><span>{{ order.shipping_fee > 0 ? formatCop(order.shipping_fee) : 'Gratis' }}</span>
+            <span>Envío</span
+            ><span>{{ order.shipping_fee > 0 ? formatCop(order.shipping_fee) : 'Gratis' }}</span>
           </div>
           <div class="mt-1 flex justify-between text-base font-bold text-slate-900">
             <span>Total</span><span>{{ formatCop(order.total) }}</span>
@@ -167,7 +189,9 @@ const customerMessage = computed(() =>
 
       <!-- Acciones -->
       <div v-if="order.available_transitions.length > 0" class="flex flex-col gap-2">
-        <p v-if="errorMessage" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{{ errorMessage }}</p>
+        <p v-if="errorMessage" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+          {{ errorMessage }}
+        </p>
 
         <!-- Paso de confirmacion: reemplaza a los botones en vez de sumarse,
              para que no queden dos acciones distintas pidiendo el mismo clic. -->
@@ -193,7 +217,11 @@ const customerMessage = computed(() =>
             >
               Sí, continuar
             </NxButton>
-            <NxButton variant="ghost" :disabled="statusMutation.isPending.value" @click="pendingStatus = null">
+            <NxButton
+              variant="ghost"
+              :disabled="statusMutation.isPending.value"
+              @click="pendingStatus = null"
+            >
               Volver
             </NxButton>
           </div>
@@ -205,7 +233,9 @@ const customerMessage = computed(() =>
             <NxButton
               v-for="next in order.available_transitions"
               :key="next"
-              :variant="next === 'cancelled' ? 'danger' : next === 'confirmed' ? 'primary' : 'outline'"
+              :variant="
+                next === 'cancelled' ? 'danger' : next === 'confirmed' ? 'primary' : 'outline'
+              "
               :disabled="statusMutation.isPending.value"
               @click="requestMove(next)"
             >

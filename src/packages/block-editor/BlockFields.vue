@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Dibuja los campos de un bloque a partir de su esquema. Es lo que hace que
 // agregar un tipo de bloque sea escribir una definición y nada más.
+import IconPicker from './IconPicker.vue'
 import type { Block, FieldDefinition } from './types'
 
 const props = defineProps<{ block: Block; fields: FieldDefinition[] }>()
@@ -99,15 +100,29 @@ function removeItem(field: FieldDefinition, index: number): void {
         <div v-for="(item, index) in items(field)" :key="index" class="bke-list-item">
           <div class="bke-list-fields">
             <div v-for="sub in field.itemFields ?? []" :key="sub.key" class="bke-field">
-              <label class="bke-label bke-label--sm">{{ sub.label }}</label>
+              <label v-if="sub.kind !== 'icon'" class="bke-label bke-label--sm">
+                {{ sub.label }}
+              </label>
+
+              <!-- El ícono se elige de un catálogo, no se escribe: antes
+                   había que saberse `truck` de memoria. -->
+              <IconPicker
+                v-if="sub.kind === 'icon'"
+                :model-value="(item[sub.key] as string) ?? null"
+                :icons="sub.icons ?? []"
+                :label="sub.label"
+                @update:model-value="updateItem(field, index, sub.key, $event ?? '')"
+              />
               <textarea
-                v-if="sub.kind === 'textarea'"
+                v-else-if="sub.kind === 'textarea'"
                 class="bke-input"
                 rows="2"
                 :value="(item[sub.key] as string) ?? ''"
                 :placeholder="sub.placeholder"
                 :maxlength="sub.maxLength"
-                @input="updateItem(field, index, sub.key, ($event.target as HTMLTextAreaElement).value)"
+                @input="
+                  updateItem(field, index, sub.key, ($event.target as HTMLTextAreaElement).value)
+                "
               />
               <input
                 v-else
@@ -116,7 +131,9 @@ function removeItem(field: FieldDefinition, index: number): void {
                 :value="(item[sub.key] as string) ?? ''"
                 :placeholder="sub.placeholder"
                 :maxlength="sub.maxLength"
-                @input="updateItem(field, index, sub.key, ($event.target as HTMLInputElement).value)"
+                @input="
+                  updateItem(field, index, sub.key, ($event.target as HTMLInputElement).value)
+                "
               />
             </div>
           </div>
@@ -134,6 +151,13 @@ function removeItem(field: FieldDefinition, index: number): void {
           + {{ field.addLabel ?? 'Agregar' }}
         </button>
       </div>
+
+      <IconPicker
+        v-else-if="field.kind === 'icon'"
+        :model-value="(value(field) as string) ?? null"
+        :icons="field.icons ?? []"
+        @update:model-value="set(field, $event ?? '')"
+      />
 
       <input
         v-else

@@ -3,7 +3,12 @@ import { computed, type Ref } from 'vue'
 
 import type { OrderStatus } from '@/types/order'
 
-import { fetchOrder, fetchOrders, fetchPendingOrderCount, updateOrderStatus } from '../services/orderService'
+import {
+  fetchOrder,
+  fetchOrders,
+  fetchPendingOrderCount,
+  updateOrderStatus,
+} from '../services/orderService'
 
 export function useOrders(status: Ref<string>, page: Ref<number>) {
   return useQuery({
@@ -30,8 +35,12 @@ export function useOrderMutations() {
   const queryClient = useQueryClient()
 
   const statusMutation = useMutation({
-    mutationFn: (params: { id: number; status: OrderStatus; note?: string; paymentMethod?: string }) =>
-      updateOrderStatus(params.id, params.status, params.note, params.paymentMethod),
+    mutationFn: (params: {
+      id: number
+      status: OrderStatus
+      note?: string
+      paymentMethod?: string
+    }) => updateOrderStatus(params.id, params.status, params.note, params.paymentMethod),
     onSuccess: (order) => {
       queryClient.setQueryData(['orders', 'detail', order.id], order)
       void queryClient.invalidateQueries({ queryKey: ['orders', 'list'] })

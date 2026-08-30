@@ -50,6 +50,30 @@ export function useBlockList(blocks: Ref<Block[]>, catalog: Ref<BlockDefinition[
     blocks.value = blocks.value.filter((_, i) => i !== index)
   }
 
+  /**
+   * Copia un bloque justo debajo del original.
+   *
+   * Respeta `max`: duplicar un hero cuando solo se permite uno no crea una
+   * segunda portada, no hace nada. El `id` es nuevo — copiar el mismo id
+   * haría que Vue reusara el DOM del original y el editor mostraría el
+   * bloque equivocado al editar la copia.
+   */
+  function duplicate(index: number): void {
+    const original = blocks.value[index]
+    if (!original || !canAdd(original.type)) {
+      return
+    }
+
+    const copy: Block = {
+      ...structuredClone(original),
+      id: `blk_${Math.random().toString(36).slice(2, 10)}`,
+    }
+
+    const next = [...blocks.value]
+    next.splice(index + 1, 0, copy)
+    blocks.value = next
+  }
+
   function move(from: number, to: number): void {
     if (from === to || to < 0 || to >= blocks.value.length) {
       return
@@ -64,5 +88,5 @@ export function useBlockList(blocks: Ref<Block[]>, catalog: Ref<BlockDefinition[
     blocks.value = blocks.value.map((block, i) => (i === index ? { ...block, ...patch } : block))
   }
 
-  return { definition, countOf, canAdd, add, remove, move, update }
+  return { definition, countOf, canAdd, add, remove, duplicate, move, update }
 }

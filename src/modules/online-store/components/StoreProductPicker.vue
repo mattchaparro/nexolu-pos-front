@@ -18,7 +18,9 @@ const productsQuery = useQuery({
   queryFn: async () => (await fetchProducts({ per_page: 200 })).data,
 })
 
-const selected = computed<number[]>(() => (Array.isArray(props.value) ? (props.value as number[]) : []))
+const selected = computed<number[]>(() =>
+  Array.isArray(props.value) ? (props.value as number[]) : [],
+)
 
 const publishable = computed(() =>
   (productsQuery.data.value ?? [])

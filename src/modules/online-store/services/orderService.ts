@@ -2,7 +2,10 @@ import { httpClient } from '@/services/http/client'
 import type { Order, OrderStatus } from '@/types/order'
 import type { PaginatedResponse } from '@/types/pagination'
 
-export async function fetchOrders(params: { status?: string; page?: number }): Promise<PaginatedResponse<Order>> {
+export async function fetchOrders(params: {
+  status?: string
+  page?: number
+}): Promise<PaginatedResponse<Order>> {
   const { data } = await httpClient.get<PaginatedResponse<Order>>('/orders', { params })
   return data
 }

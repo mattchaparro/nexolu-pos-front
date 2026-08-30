@@ -27,7 +27,8 @@ export function useStoreSettings() {
   })
 
   const uploadImageMutation = useMutation({
-    mutationFn: (params: { slot: StoreImageSlot; file: File }) => uploadStoreImage(params.slot, params.file),
+    mutationFn: (params: { slot: StoreImageSlot; file: File }) =>
+      uploadStoreImage(params.slot, params.file),
     onSuccess: (settings) => queryClient.setQueryData(['store-settings'], settings),
   })
 

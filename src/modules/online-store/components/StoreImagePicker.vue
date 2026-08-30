@@ -85,10 +85,16 @@ async function upload(event: Event): Promise<void> {
         :key="image.id"
         type="button"
         class="relative aspect-square overflow-hidden rounded-lg border-2 transition"
-        :class="isSelected(image.id) ? 'border-indigo-600' : 'border-transparent hover:border-slate-300'"
+        :class="
+          isSelected(image.id) ? 'border-indigo-600' : 'border-transparent hover:border-slate-300'
+        "
         @click="toggle(image.id)"
       >
-        <img :src="image.thumbnail_url ?? image.url ?? ''" :alt="image.alt ?? ''" class="h-full w-full object-cover" />
+        <img
+          :src="image.thumbnail_url ?? image.url ?? ''"
+          :alt="image.alt ?? ''"
+          class="h-full w-full object-cover"
+        />
         <span
           v-if="multiple && isSelected(image.id)"
           class="absolute right-1 top-1 rounded-full bg-indigo-600 px-1.5 text-[10px] font-bold text-white"

@@ -145,7 +145,9 @@ watch(() => [props.blocks, props.settings], send, { deep: true })
       </div>
     </div>
 
-    <div class="flex min-h-0 flex-1 justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100 p-3">
+    <div
+      class="flex min-h-0 flex-1 justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100 p-3"
+    >
       <iframe
         v-if="previewUrl"
         ref="frame"

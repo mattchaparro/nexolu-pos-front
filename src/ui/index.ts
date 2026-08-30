@@ -14,6 +14,8 @@ export { default as NxCard } from './NxCard.vue'
 // re-export es seguro.
 export { default as NxColumn } from 'primevue/column'
 
+export { default as NxColorPicker } from './NxColorPicker.vue'
+
 export { default as NxDataTable } from './NxDataTable.vue'
 
 export { default as NxDatePicker } from './NxDatePicker.vue'

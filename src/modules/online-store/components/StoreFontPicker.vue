@@ -88,7 +88,10 @@ onMounted(() => {
       </span>
 
       <!-- La muestra usa las familias de verdad: es el punto. -->
-      <span class="mt-2 block text-lg leading-tight text-slate-900" :style="{ fontFamily: font.heading }">
+      <span
+        class="mt-2 block text-lg leading-tight text-slate-900"
+        :style="{ fontFamily: font.heading }"
+      >
         Café de finca
       </span>
       <span class="mt-0.5 block text-xs text-slate-500" :style="{ fontFamily: font.body }">

@@ -90,7 +90,9 @@ export const HOME_PRESETS: HomePreset[] = [
       {
         type: 'testimonials',
         title: 'Lo que dicen quienes ya compraron',
-        items: [{ quote: 'Llegó rápido y tal cual la foto.', author: 'Escribe aquí un cliente real' }],
+        items: [
+          { quote: 'Llegó rápido y tal cual la foto.', author: 'Escribe aquí un cliente real' },
+        ],
       },
       {
         type: 'cta',
@@ -145,7 +147,12 @@ export const HOME_PRESETS: HomePreset[] = [
           },
         ],
       },
-      { type: 'hours', title: 'Dónde estamos', address: 'Tu dirección', hours: 'Lun-Sáb, 9:00-18:00' },
+      {
+        type: 'hours',
+        title: 'Dónde estamos',
+        address: 'Tu dirección',
+        hours: 'Lun-Sáb, 9:00-18:00',
+      },
     ],
   },
   {
@@ -173,14 +180,12 @@ export const HOME_PRESETS: HomePreset[] = [
  * equivocado.
  */
 export function instantiate(preset: HomePreset): Block[] {
-  return preset.blocks.map(
-    (block, index): Block => ({
-      ...block,
-      // El tipo viene de la definición y siempre está; el `Omit<Block,'id'>`
-      // lo pierde de vista porque `type` es index-signature ahí.
-      type: String(block.type),
-      id: `blk_${preset.id}_${index}_${Math.random().toString(36).slice(2, 8)}`,
-      enabled: true,
-    }),
-  )
+  return preset.blocks.map((block, index): Block => ({
+    ...block,
+    // El tipo viene de la definición y siempre está; el `Omit<Block,'id'>`
+    // lo pierde de vista porque `type` es index-signature ahí.
+    type: String(block.type),
+    id: `blk_${preset.id}_${index}_${Math.random().toString(36).slice(2, 8)}`,
+    enabled: true,
+  }))
 }

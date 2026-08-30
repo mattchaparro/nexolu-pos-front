@@ -10,15 +10,16 @@
 // la tienda en vivo al centro, y el formulario de la seccion activa a la
 // derecha.
 import { useMediaQuery } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { BlockEditor, type Block } from '@/packages/block-editor'
 import type { StoreSettings } from '@/types/store'
-import { NxButton, NxInput } from '@/ui'
+import { NxButton, NxColorPicker } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
 import HomePresetPicker from '../components/HomePresetPicker.vue'
+import { useEditorHistory, useUndoShortcuts } from '../composables/useEditorHistory'
 import StoreFontPicker from '../components/StoreFontPicker.vue'
 import StoreHomePreview from '../components/StoreHomePreview.vue'
 import StoreImageField from '../components/StoreImageField.vue'
@@ -42,6 +43,26 @@ const accentColor = ref('#0ea5e9')
 const fontPreset = ref('moderna')
 const errorMessage = ref<string | null>(null)
 const saved = ref(false)
+
+/**
+ * Colores sugeridos. No son "los que quedan bien" sino un punto de partida:
+ * un comerciante frente a una rueda de color infinita casi siempre elige algo
+ * peor que cualquiera de estos.
+ */
+const BRAND_SWATCHES = [
+  '#4f46e5',
+  '#0f172a',
+  '#b91c1c',
+  '#c2410c',
+  '#15803d',
+  '#0e7490',
+  '#7e22ce',
+  '#be185d',
+]
+
+// Fondos: claros de verdad u oscuros de verdad. Los grises intermedios son
+// los que arruinan el contraste que deriva useTheme.
+const SURFACE_SWATCHES = ['#ffffff', '#faf9f6', '#f5f5f4', '#f8fafc', '#111827', '#1c1917']
 
 const EDITOR_SECTIONS = [
   { value: 'bloques', label: 'Bloques', icon: 'pi-th-large' },
@@ -72,6 +93,37 @@ watch(hasRoom, (room) => {
   }
 })
 
+/**
+ * El borrador completo, que es la unidad del historial: deshacer tiene que
+ * cubrir tanto un bloque borrado como un color cambiado.
+ */
+interface EditorDraft {
+  blocks: Block[]
+  primary: string
+  surface: string
+  accent: string
+  font: string
+}
+
+// Se declara ANTES del watch de `settings`: ese watch es `immediate` y llama
+// a `reset()`, asi que el composable ya tiene que existir cuando corre.
+const { record, undo, redo, reset, canUndo, canRedo } = useEditorHistory<EditorDraft>(
+  () => ({
+    blocks: homeBlocks.value,
+    primary: primaryColor.value,
+    surface: surfaceColor.value,
+    accent: accentColor.value,
+    font: fontPreset.value,
+  }),
+  (state) => {
+    homeBlocks.value = state.blocks
+    primaryColor.value = state.primary
+    surfaceColor.value = state.surface
+    accentColor.value = state.accent
+    fontPreset.value = state.font
+  },
+)
+
 watch(
   settings,
   (value) => {
@@ -85,9 +137,28 @@ watch(
     surfaceColor.value = value.surface_color ?? '#ffffff'
     accentColor.value = value.accent_color ?? '#0ea5e9'
     fontPreset.value = value.font_preset ?? 'moderna'
+
+    // Cargar lo guardado NO es un paso deshacible: sin esto el primer
+    // Ctrl+Z devolvia el editor a un borrador vacio.
+    reset()
   },
   { immediate: true },
 )
+
+// `deep` porque editar el texto de un bloque muta un objeto de la lista, no
+// la lista: sin esto solo se registrarian agregar/quitar/mover.
+watch([homeBlocks, primaryColor, surfaceColor, accentColor, fontPreset], () => record(), {
+  deep: true,
+})
+
+// Se apaga con la vista previa abierta: ahi la pantalla la ocupa la tienda a
+// tamaño completo y un Ctrl+Z editaria a ciegas por detras.
+const detachShortcuts = useUndoShortcuts(
+  computed(() => !previewOpen.value),
+  undo,
+  redo,
+)
+onUnmounted(detachShortcuts)
 
 /**
  * Los ajustes con lo que se esta editando AHORA, no lo guardado: la vista
@@ -122,6 +193,9 @@ async function save(): Promise<void> {
       accent_color: accentColor.value,
       font_preset: fontPreset.value,
     })
+    // El historial es de lo NO guardado: despues de publicar, deshacer
+    // revertiria algo que ya esta en internet sin decirlo.
+    reset()
     // Confirmacion breve en el mismo boton: un toast obligaria a mirar a
     // otro lado en una pantalla donde la atencion esta en el centro.
     saved.value = true
@@ -135,7 +209,9 @@ async function save(): Promise<void> {
 <template>
   <div class="flex h-screen flex-col bg-slate-100">
     <!-- Barra superior: salir, estado y guardar. -->
-    <header class="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-3 py-2">
+    <header
+      class="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-3 py-2"
+    >
       <div class="flex min-w-0 items-center gap-2">
         <button
           type="button"
@@ -151,6 +227,32 @@ async function save(): Promise<void> {
 
       <div class="flex items-center gap-2">
         <p v-if="errorMessage" class="max-w-xs truncate text-xs text-red-600">{{ errorMessage }}</p>
+
+        <!-- Deshacer/rehacer de lo no guardado. Iconos sin texto: la barra
+             tiene que dejarle el ancho al nombre de la tienda. -->
+        <div class="flex items-center">
+          <button
+            type="button"
+            class="rounded-lg px-2 py-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
+            :disabled="!canUndo"
+            title="Deshacer (Ctrl+Z)"
+            aria-label="Deshacer"
+            @click="undo"
+          >
+            <i class="pi pi-undo text-sm" />
+          </button>
+          <button
+            type="button"
+            class="rounded-lg px-2 py-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
+            :disabled="!canRedo"
+            title="Rehacer (Ctrl+Shift+Z)"
+            aria-label="Rehacer"
+            @click="redo"
+          >
+            <i class="pi pi-refresh text-sm" />
+          </button>
+        </div>
+
         <NxButton v-if="!hasRoom" variant="outline" icon="pi pi-eye" @click="previewOpen = true">
           Ver
         </NxButton>
@@ -161,7 +263,10 @@ async function save(): Promise<void> {
     </header>
 
     <!-- Aviso delgado, no una puerta cerrada: se puede trabajar igual. -->
-    <p v-if="!hasRoom" class="shrink-0 border-b border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+    <p
+      v-if="!hasRoom"
+      class="shrink-0 border-b border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800"
+    >
       Desde un computador o una tablet ves tu tienda mientras la editas. Aqui puedes igual: usa
       <strong>Ver</strong> para revisarla.
     </p>
@@ -215,7 +320,9 @@ async function save(): Promise<void> {
       </main>
 
       <!-- Derecha: el formulario de la seccion activa. -->
-      <aside class="min-h-0 flex-1 overflow-y-auto bg-white p-4 lg:w-[380px] lg:flex-none lg:border-l lg:border-slate-200">
+      <aside
+        class="min-h-0 flex-1 overflow-y-auto bg-white p-4 lg:w-[380px] lg:flex-none lg:border-l lg:border-slate-200"
+      >
         <HomePresetPicker
           v-if="editorSection === 'plantillas'"
           :has-blocks="homeBlocks.length > 0"
@@ -239,36 +346,43 @@ async function save(): Promise<void> {
           </template>
         </BlockEditor>
 
-          <div v-else-if="editorSection === 'colores'">
-            <p class="mb-1 text-sm font-semibold text-slate-700">Colores</p>
-            <p class="mb-3 text-[11px] text-slate-400">
-              Con estos tres armamos toda la tienda. El color del texto lo calculamos solos para que siempre se lea.
-            </p>
-            <div class="flex flex-col gap-3">
-              <div class="flex items-end gap-3">
-                <NxInput v-model="primaryColor" label="Marca — botones y precios" class="flex-1" />
-                <span class="mb-1 h-8 w-8 shrink-0 rounded-lg border border-slate-200" :style="{ backgroundColor: primaryColor }" />
-              </div>
-              <div class="flex items-end gap-3">
-                <NxInput v-model="surfaceColor" label="Fondo de la tienda" class="flex-1" />
-                <span class="mb-1 h-8 w-8 shrink-0 rounded-lg border border-slate-200" :style="{ backgroundColor: surfaceColor }" />
-              </div>
-              <div class="flex items-end gap-3">
-                <NxInput v-model="accentColor" label="Acento — etiquetas y destacados" class="flex-1" />
-                <span class="mb-1 h-8 w-8 shrink-0 rounded-lg border border-slate-200" :style="{ backgroundColor: accentColor }" />
-              </div>
-            </div>
-            <!-- Muestra rápida con los tres colores juntos -->
-            <div class="mt-4 rounded-lg border border-slate-200 p-3" :style="{ backgroundColor: surfaceColor }">
-              <p class="text-xs font-semibold" :style="{ color: primaryColor }">Así se ve tu marca</p>
-              <span
-                class="mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                :style="{ backgroundColor: accentColor, color: '#fff' }"
-                >
-                Etiqueta destacada
-              </span>
-            </div>
+        <div v-else-if="editorSection === 'colores'">
+          <p class="mb-1 text-sm font-semibold text-slate-700">Colores</p>
+          <p class="mb-3 text-[11px] text-slate-400">
+            Con estos tres armamos toda la tienda. El color del texto lo calculamos solos para que
+            siempre se lea.
+          </p>
+          <div class="flex flex-col gap-4">
+            <NxColorPicker
+              v-model="primaryColor"
+              label="Marca — botones y precios"
+              :swatches="BRAND_SWATCHES"
+            />
+            <NxColorPicker
+              v-model="surfaceColor"
+              label="Fondo de la tienda"
+              :swatches="SURFACE_SWATCHES"
+            />
+            <NxColorPicker
+              v-model="accentColor"
+              label="Acento — etiquetas y destacados"
+              :swatches="BRAND_SWATCHES"
+            />
           </div>
+          <!-- Muestra rápida con los tres colores juntos -->
+          <div
+            class="mt-4 rounded-lg border border-slate-200 p-3"
+            :style="{ backgroundColor: surfaceColor }"
+          >
+            <p class="text-xs font-semibold" :style="{ color: primaryColor }">Así se ve tu marca</p>
+            <span
+              class="mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold"
+              :style="{ backgroundColor: accentColor, color: '#fff' }"
+            >
+              Etiqueta destacada
+            </span>
+          </div>
+        </div>
 
         <div v-else-if="editorSection === 'tipografia'">
           <p class="mb-1 text-sm font-semibold text-slate-700">Tipografia</p>
@@ -276,19 +390,25 @@ async function save(): Promise<void> {
           <StoreFontPicker v-model="fontPreset" />
         </div>
 
-          <div v-else-if="editorSection === 'marca' && settings">
-            <p class="mb-3 text-sm font-semibold text-slate-700">Logo y portada</p>
-            <div class="flex flex-col gap-4">
-              <StoreImageField image-slot="logo" label="Logo" :url="settings.logo_url" aspect="square" hint="Cuadrado, se ve pequeño." />
-              <StoreImageField
-                image-slot="banner"
-                label="Portada"
-                :url="settings.banner_url"
-                aspect="wide"
-                hint="Banda ancha arriba de la tienda."
-                />
-              </div>
-            </div>
+        <div v-else-if="editorSection === 'marca' && settings">
+          <p class="mb-3 text-sm font-semibold text-slate-700">Logo y portada</p>
+          <div class="flex flex-col gap-4">
+            <StoreImageField
+              image-slot="logo"
+              label="Logo"
+              :url="settings.logo_url"
+              aspect="square"
+              hint="Cuadrado, se ve pequeño."
+            />
+            <StoreImageField
+              image-slot="banner"
+              label="Portada"
+              :url="settings.banner_url"
+              aspect="wide"
+              hint="Banda ancha arriba de la tienda."
+            />
+          </div>
+        </div>
       </aside>
     </div>
   </div>

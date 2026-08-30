@@ -34,7 +34,6 @@ function apply(preset: HomePreset, withTheme: boolean): void {
   chosen.value = null
   emit('close')
 }
-
 </script>
 
 <template>

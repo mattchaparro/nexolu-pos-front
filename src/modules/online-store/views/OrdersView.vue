@@ -40,7 +40,12 @@ function formatDate(value: string | null): string {
   if (!value) {
     return '—'
   }
-  return new Date(value).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+  return new Date(value).toLocaleString('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 </script>
 
@@ -78,7 +83,11 @@ function formatDate(value: string | null): string {
       >
         <template #empty>
           <p class="py-6 text-center text-sm text-slate-400">
-            {{ status ? 'No hay pedidos en este estado.' : 'Todavía no has recibido pedidos por la tienda.' }}
+            {{
+              status
+                ? 'No hay pedidos en este estado.'
+                : 'Todavía no has recibido pedidos por la tienda.'
+            }}
           </p>
         </template>
 
@@ -112,7 +121,10 @@ function formatDate(value: string | null): string {
 
         <NxColumn header="Estado">
           <template #body="{ data }: { data: Order }">
-            <span class="rounded-full px-2.5 py-1 text-xs font-semibold" :class="statusMeta(data.status).classes">
+            <span
+              class="rounded-full px-2.5 py-1 text-xs font-semibold"
+              :class="statusMeta(data.status).classes"
+            >
               {{ statusMeta(data.status).label }}
             </span>
           </template>

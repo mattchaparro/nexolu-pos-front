@@ -14,7 +14,10 @@ import './styles.css'
 const props = defineProps<{ catalog: BlockDefinition[] }>()
 const blocks = defineModel<Block[]>({ required: true })
 
-const { definition, canAdd, add, remove, move, update } = useBlockList(blocks, toRef(props, 'catalog'))
+const { definition, canAdd, add, remove, duplicate, move, update } = useBlockList(
+  blocks,
+  toRef(props, 'catalog'),
+)
 
 const expanded = ref<string | null>(null)
 const dragIndex = ref<number | null>(null)
@@ -111,12 +114,26 @@ function onDrop(index: number): void {
             <button
               type="button"
               class="bke-btn"
+              :disabled="!canAdd(block.type)"
+              :title="canAdd(block.type) ? 'Duplicar' : 'No se puede repetir este bloque'"
+              @click="duplicate(index)"
+            >
+              ⧉
+            </button>
+            <button
+              type="button"
+              class="bke-btn"
               :title="block.enabled === false ? 'Mostrar' : 'Ocultar'"
               @click="update(index, { enabled: block.enabled === false })"
             >
               {{ block.enabled === false ? '👁️‍🗨️' : '👁️' }}
             </button>
-            <button type="button" class="bke-btn bke-btn--danger" title="Quitar" @click="remove(index)">
+            <button
+              type="button"
+              class="bke-btn bke-btn--danger"
+              title="Quitar"
+              @click="remove(index)"
+            >
               ✕
             </button>
           </div>
