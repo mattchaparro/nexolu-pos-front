@@ -9,6 +9,7 @@
 // Tres columnas, como cualquier editor visual: secciones a la izquierda,
 // la tienda en vivo al centro, y el formulario de la seccion activa a la
 // derecha.
+import { useMediaQuery } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -52,6 +53,24 @@ const EDITOR_SECTIONS = [
 
 const editorSection = ref<(typeof EDITOR_SECTIONS)[number]['value']>('bloques')
 const previewWidth = ref<'mobile' | 'desktop'>('desktop')
+
+/**
+ * Con espacio, las tres columnas conviven. Sin el, no se bloquea el editor
+ * -- eso dejaba a un comerciante con solo un telefono sin poder ni aplicar
+ * una plantilla, o sea sin poder publicar su tienda. Se reacomoda: el
+ * formulario ocupa todo, las secciones bajan a una barra inferior y la
+ * tienda se mira a pantalla completa cuando se pide.
+ */
+const hasRoom = useMediaQuery('(min-width: 1024px)')
+const previewOpen = ref(false)
+
+// Al volver a una pantalla grande la vista previa deja de ser una capa
+// encima: vuelve al centro, donde siempre esta.
+watch(hasRoom, (room) => {
+  if (room) {
+    previewOpen.value = false
+  }
+})
 
 watch(
   settings,
@@ -132,35 +151,31 @@ async function save(): Promise<void> {
 
       <div class="flex items-center gap-2">
         <p v-if="errorMessage" class="max-w-xs truncate text-xs text-red-600">{{ errorMessage }}</p>
+        <NxButton v-if="!hasRoom" variant="outline" icon="pi pi-eye" @click="previewOpen = true">
+          Ver
+        </NxButton>
         <NxButton :loading="updateMutation.isPending.value" @click="save">
           {{ saved ? 'Guardado' : 'Guardar' }}
         </NxButton>
       </div>
     </header>
 
-    <!-- Un editor visual en un telefono es pelear con el espacio. -->
-    <div class="flex flex-1 items-center justify-center p-6 lg:hidden">
-      <div class="max-w-sm text-center">
-        <p class="text-4xl">🖥️</p>
-        <p class="mt-3 text-sm font-semibold text-slate-800">Mejor desde un computador</p>
-        <p class="mt-1 text-xs text-slate-500">
-          El editor necesita espacio para mostrarte tu tienda mientras la armas. Ábrelo desde un
-          computador o una tablet en horizontal.
-        </p>
-        <NxButton class="mt-4" variant="outline" @click="router.push({ name: 'online-store.index' })">
-          Volver
-        </NxButton>
-      </div>
-    </div>
+    <!-- Aviso delgado, no una puerta cerrada: se puede trabajar igual. -->
+    <p v-if="!hasRoom" class="shrink-0 border-b border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+      Desde un computador o una tablet ves tu tienda mientras la editas. Aqui puedes igual: usa
+      <strong>Ver</strong> para revisarla.
+    </p>
 
-    <div class="hidden min-h-0 flex-1 lg:flex">
+    <div class="flex min-h-0 flex-1 flex-col lg:flex-row">
       <!-- Izquierda: las secciones. -->
-      <nav class="flex w-20 shrink-0 flex-col gap-1 border-r border-slate-200 bg-white p-2">
+      <nav
+        class="order-last flex shrink-0 gap-1 overflow-x-auto border-t border-slate-200 bg-white p-2 lg:order-first lg:w-20 lg:flex-col lg:overflow-visible lg:border-r lg:border-t-0"
+      >
         <button
           v-for="section in EDITOR_SECTIONS"
           :key="section.value"
           type="button"
-          class="flex flex-col items-center gap-1 rounded-xl px-1 py-2.5 transition"
+          class="flex min-w-[64px] flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2.5 transition lg:flex-none"
           :class="
             editorSection === section.value
               ? 'bg-indigo-50 text-indigo-700'
@@ -173,12 +188,26 @@ async function save(): Promise<void> {
         </button>
       </nav>
 
-      <!-- Centro: la tienda, en vivo. -->
-      <main class="min-w-0 flex-1 overflow-hidden p-3">
+      <!-- Centro: la tienda, en vivo. Sin espacio se mira a pantalla
+           completa, pero es el MISMO componente: dos instancias serian dos
+           iframes y dos puentes escuchando. -->
+      <main
+        v-if="settings && (hasRoom || previewOpen)"
+        class="min-w-0 overflow-hidden p-3"
+        :class="hasRoom ? 'flex-1' : 'fixed inset-0 z-40 flex flex-col bg-slate-100'"
+      >
+        <button
+          v-if="!hasRoom"
+          type="button"
+          class="mb-2 self-end rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 shadow"
+          @click="previewOpen = false"
+        >
+          Cerrar
+        </button>
+
         <StoreHomePreview
-          v-if="settings"
           v-model:width="previewWidth"
-          class="h-full"
+          class="h-full min-h-0 flex-1"
           :blocks="homeBlocks"
           :settings="previewSettings"
           :images="imagesQuery.data.value ?? []"
@@ -186,7 +215,7 @@ async function save(): Promise<void> {
       </main>
 
       <!-- Derecha: el formulario de la seccion activa. -->
-      <aside class="w-[380px] shrink-0 overflow-y-auto border-l border-slate-200 bg-white p-4">
+      <aside class="min-h-0 flex-1 overflow-y-auto bg-white p-4 lg:w-[380px] lg:flex-none lg:border-l lg:border-slate-200">
         <HomePresetPicker
           v-if="editorSection === 'plantillas'"
           :has-blocks="homeBlocks.length > 0"
