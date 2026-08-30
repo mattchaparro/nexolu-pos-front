@@ -23,6 +23,14 @@ const props = defineProps<{
 
 type Width = 'mobile' | 'desktop'
 const width = defineModel<Width>('width', { default: 'desktop' })
+
+/**
+ * Los dos controles de espacio. Viven acá y no en la vista porque su sitio
+ * natural es junto a los de celular/computador: son la misma decisión —
+ * cuánta pantalla le doy a la tienda.
+ */
+const maximized = defineModel<boolean>('maximized', { default: false })
+const panelOpen = defineModel<boolean>('panelOpen', { default: true })
 const frame = ref<HTMLIFrameElement | null>(null)
 const ready = ref(false)
 
@@ -160,6 +168,34 @@ watch(() => [props.blocks, props.settings], send, { deep: true })
           @click="width = option.value"
         >
           <i class="pi" :class="option.icon" />
+        </button>
+
+        <span class="mx-1 w-px bg-slate-200" aria-hidden="true" />
+
+        <!-- Plegar el formulario. En pantalla completa no aplica: ahí ya no
+             hay formulario que plegar. -->
+        <button
+          v-if="!maximized"
+          type="button"
+          class="hidden rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-400 hover:border-slate-300 lg:block"
+          :title="panelOpen ? 'Ocultar el formulario' : 'Mostrar el formulario'"
+          @click="panelOpen = !panelOpen"
+        >
+          <i class="pi" :class="panelOpen ? 'pi-angle-double-right' : 'pi-angle-double-left'" />
+        </button>
+
+        <button
+          type="button"
+          class="rounded-lg border px-2.5 py-1.5 text-xs"
+          :class="
+            maximized
+              ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+              : 'border-slate-200 text-slate-400 hover:border-slate-300'
+          "
+          :title="maximized ? 'Salir de pantalla completa' : 'Pantalla completa'"
+          @click="maximized = !maximized"
+        >
+          <i class="pi" :class="maximized ? 'pi-window-minimize' : 'pi-window-maximize'" />
         </button>
       </div>
     </div>

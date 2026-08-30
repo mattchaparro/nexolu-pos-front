@@ -11,10 +11,18 @@
 // derecha.
 import { useMediaQuery } from '@vueuse/core'
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { onBeforeRouteLeave, useRouter } from 'vue-router'
 
 import { BlockEditor, type Block } from '@/packages/block-editor'
-import { NxButton, NxColorPicker, NxInput, NxInputNumber, NxSwitch, NxTextarea } from '@/ui'
+import {
+  NxButton,
+  NxColorPicker,
+  NxInput,
+  NxInputNumber,
+  NxModal,
+  NxSwitch,
+  NxTextarea,
+} from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
 import HomePresetPicker from '../components/HomePresetPicker.vue'
@@ -95,6 +103,63 @@ const editorSection = ref<(typeof EDITOR_SECTIONS)[number]['value']>('bloques')
  */
 const expandedBlock = ref<string | null>(null)
 
+/** Ocupar toda la pantalla con la tienda, sin riel ni formulario. */
+const maximized = ref(false)
+
+/**
+ * La columna derecha se puede plegar para darle el ancho al preview. Se
+ * pliega sola al maximizar y vuelve al salir, que es lo esperable.
+ */
+const panelOpen = ref(true)
+
+// Salir con cambios sin guardar perdia el trabajo en silencio. Ahora se
+// pregunta -- y tambien al cerrar la pestana, donde el navegador pone su
+// propio aviso porque una confirmacion nuestra ahi no se puede mostrar.
+const leaving = ref(false)
+let confirmedLeave = false
+
+function onBeforeUnload(event: BeforeUnloadEvent): void {
+  if (dirty.value) {
+    event.preventDefault()
+  }
+}
+
+window.addEventListener('beforeunload', onBeforeUnload)
+onUnmounted(() => window.removeEventListener('beforeunload', onBeforeUnload))
+
+function tryExit(): void {
+  if (dirty.value) {
+    leaving.value = true
+    return
+  }
+  router.push({ name: 'online-store.index' })
+}
+
+function exitWithoutSaving(): void {
+  confirmedLeave = true
+  leaving.value = false
+  router.push({ name: 'online-store.index' })
+}
+
+async function saveAndExit(): Promise<void> {
+  await save()
+  if (!errorMessage.value) {
+    confirmedLeave = true
+    leaving.value = false
+    router.push({ name: 'online-store.index' })
+  }
+}
+
+// Tambien cubre irse por el boton "atras" del navegador o por cualquier otro
+// enlace, no solo por el boton Salir.
+onBeforeRouteLeave(() => {
+  if (!dirty.value || confirmedLeave) {
+    return true
+  }
+  leaving.value = true
+  return false
+})
+
 function selectFromPreview(blockId: string): void {
   // Si estabas en Colores y tocas un bloque, lo esperable es ir a Bloques:
   // abrirlo en una sección que no se ve no serviría de nada.
@@ -125,7 +190,7 @@ watch(hasRoom, (room) => {
  * El borrador completo, que es la unidad del historial: deshacer tiene que
  * cubrir tanto un bloque borrado como un color cambiado.
  */
-const { record, undo, redo, reset, canUndo, canRedo } = useEditorHistory<StoreDraft>(
+const { record, undo, redo, reset, dirty, canUndo, canRedo } = useEditorHistory<StoreDraft>(
   draft.snapshot,
   draft.restore,
 )
@@ -206,7 +271,7 @@ async function save(): Promise<void> {
         <button
           type="button"
           class="rounded-lg px-2 py-1.5 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-          @click="router.push({ name: 'online-store.index' })"
+          @click="tryExit"
         >
           <i class="pi pi-arrow-left mr-1 text-xs" /> Salir
         </button>
@@ -264,6 +329,7 @@ async function save(): Promise<void> {
     <div class="flex min-h-0 flex-1 flex-col lg:flex-row">
       <!-- Izquierda: las secciones. -->
       <nav
+        v-show="!maximized"
         class="order-last flex shrink-0 gap-1 overflow-x-auto border-t border-slate-200 bg-white p-2 lg:order-first lg:w-20 lg:flex-col lg:overflow-visible lg:border-r lg:border-t-0"
       >
         <button
@@ -301,18 +367,25 @@ async function save(): Promise<void> {
         </button>
 
         <StoreHomePreview
-          @select="selectFromPreview"
           v-model:width="previewWidth"
+          v-model:maximized="maximized"
+          v-model:panel-open="panelOpen"
           class="h-full min-h-0 flex-1"
           :blocks="homeBlocks"
           :settings="previewSettings"
           :images="imagesQuery.data.value ?? []"
+          @select="selectFromPreview"
         />
       </main>
 
       <!-- Derecha: el formulario de la seccion activa. -->
+      <!-- Se pliega para darle el ancho a la tienda. `lg:w-0` y no `v-if`:
+           asi la transicion se ve, y el formulario no se desmonta (perderia
+           el scroll y el bloque abierto). -->
       <aside
-        class="min-h-0 flex-1 overflow-y-auto bg-white p-4 lg:w-[380px] lg:flex-none lg:border-l lg:border-slate-200"
+        v-show="!maximized"
+        class="min-h-0 flex-1 overflow-y-auto bg-white p-4 transition-[width] duration-200 lg:flex-none lg:border-l lg:border-slate-200"
+        :class="panelOpen ? 'lg:w-[380px]' : 'lg:w-0 lg:overflow-hidden lg:border-l-0 lg:p-0'"
       >
         <HomePresetPicker
           v-if="editorSection === 'plantillas'"
@@ -500,5 +573,22 @@ async function save(): Promise<void> {
         </div>
       </aside>
     </div>
+
+    <!-- Salir con cambios sin guardar perdía el trabajo sin decir nada. -->
+    <NxModal v-model="leaving" title="Tienes cambios sin guardar" size="sm">
+      <p class="text-sm text-slate-600">
+        Si sales ahora, lo que cambiaste no se publica y se pierde.
+      </p>
+
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <NxButton variant="ghost" @click="leaving = false">Seguir editando</NxButton>
+          <NxButton variant="danger" @click="exitWithoutSaving"> Salir sin guardar </NxButton>
+          <NxButton :loading="updateMutation.isPending.value" @click="saveAndExit">
+            Guardar y salir
+          </NxButton>
+        </div>
+      </template>
+    </NxModal>
   </div>
 </template>

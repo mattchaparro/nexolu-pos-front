@@ -31,6 +31,14 @@ export function useEditorHistory<T>(snapshot: () => T, restore: (state: T) => vo
   /** Lo último que se registró, para no grabar pasos que no cambian nada. */
   let last = JSON.stringify(snapshot())
 
+  /**
+   * El borrador tal como está PUBLICADO. Todo lo que se aleje de esto son
+   * cambios sin guardar, y es lo que permite avisar antes de salir en vez de
+   * perder el trabajo en silencio.
+   */
+  let baseline = last
+  const dirty = ref(false)
+
   function record(): void {
     if (restoring.value) {
       return
@@ -46,12 +54,15 @@ export function useEditorHistory<T>(snapshot: () => T, restore: (state: T) => vo
     // que ya no existe.
     future.value = []
     last = current
+    dirty.value = current !== baseline
   }
 
   function apply(state: string): void {
     restoring.value = true
     restore(JSON.parse(state) as T)
     last = state
+    // Deshacer hasta volver a lo publicado deja el borrador limpio otra vez.
+    dirty.value = state !== baseline
     // Se libera en el siguiente tick para que el watch del borrador (que
     // corre despues de la restauracion) vea la bandera todavia arriba.
     void Promise.resolve().then(() => {
@@ -86,6 +97,8 @@ export function useEditorHistory<T>(snapshot: () => T, restore: (state: T) => vo
     past.value = []
     future.value = []
     last = JSON.stringify(snapshot())
+    baseline = last
+    dirty.value = false
   }
 
   return {
@@ -93,6 +106,7 @@ export function useEditorHistory<T>(snapshot: () => T, restore: (state: T) => vo
     undo,
     redo,
     reset,
+    dirty,
     canUndo: computed(() => past.value.length > 0),
     canRedo: computed(() => future.value.length > 0),
   }
