@@ -271,6 +271,12 @@ const router = createRouter({
           meta: { requiresFeature: 'scheduling', requiresPermission: 'appointments.manage' },
         },
         {
+          path: 'asistente-ia',
+          name: 'ai-chat.index',
+          component: () => import('@/modules/ai-chat/views/AiChatView.vue'),
+          meta: { requiresPermission: 'ai_chat.use' },
+        },
+        {
           path: 'planificador',
           name: 'reminders.index',
           component: () => import('@/modules/reminders/views/RemindersView.vue'),

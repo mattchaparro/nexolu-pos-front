@@ -13,7 +13,7 @@ import type { NavItem } from '@/types/navigation'
 // principal lo que es configuracion de cuenta, no un modulo del dia a dia.
 export const adminNavItems: NavItem[] = [
   { label: 'Inicio', icon: 'pi pi-home', routeName: 'dashboard' },
-  { label: 'Asistente IA', icon: 'pi pi-comments', disabled: true },
+  { label: 'Asistente IA', icon: 'pi pi-comments', routeName: 'ai-chat.index' },
   { label: 'Vender', icon: 'pi pi-shopping-cart', routeName: 'sales.create' },
   // Unica desviacion del orden 1:1 del legacy en este menu, a pedido
   // explicito: Resumen vive justo al lado de Vender por lo seguido que se
