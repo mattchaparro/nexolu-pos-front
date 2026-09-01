@@ -33,6 +33,7 @@ import { hasFeature } from '@/utils/hasFeature'
 
 import ProductImagesEditor from '../components/ProductImagesEditor.vue'
 import ProductQuickViewModal from '../components/ProductQuickViewModal.vue'
+import BranchPricesEditor from '../components/BranchPricesEditor.vue'
 import ProductIngredientsEditor from '../components/ProductIngredientsEditor.vue'
 import ProductVariantsEditor from '../components/ProductVariantsEditor.vue'
 import { useCategories } from '../composables/useCategories'
@@ -65,6 +66,11 @@ const ingredientOptionsQuery = useIngredientOptions(ingredientsEnabled)
 // leyendo el JSON crudo, la seccion de Variaciones quedaba invisible justo
 // para los negocios que ya existian, que son los que van a activarla.
 const variantsEnabled = computed(() => hasFeature(business.value, 'variants'))
+// El precio por sede solo tiene sentido sobre un producto que ya existe (su
+// endpoint cuelga del id) y en un negocio con varias sedes.
+const branchPricesEnabled = computed(
+  () => hasFeature(business.value, 'multi_branch') && isEdit.value && !isService.value,
+)
 // Las fotos del catalogo existen para publicarlas en la tienda online, asi
 // que la seccion entera vive detras de ese modulo (las rutas de imagenes
 // tambien estan gateadas por `feature:online_store` en el backend).
@@ -605,6 +611,11 @@ async function submit(): Promise<void> {
             v-model="ingredients"
             :ingredients="ingredientOptionsQuery.data.value ?? []"
           />
+        </div>
+
+        <div v-if="branchPricesEnabled" class="rounded-xl border border-slate-200 bg-white p-4">
+          <p class="mb-3 text-sm font-semibold text-slate-700">Precio por sede (opcional)</p>
+          <BranchPricesEditor :product-id="productId as number" :base-price="price ?? 0" />
         </div>
 
         <div

@@ -11,6 +11,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { useBranches } from '@/composables/useBranches'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { StoreSettingsPayload, StoryStat, TrustItem } from '@/types/store'
 import {
@@ -18,6 +19,7 @@ import {
   NxInput,
   NxInputNumber,
   NxPageHeader,
+  NxSelect,
   NxTab,
   NxTabList,
   NxTabPanel,
@@ -33,7 +35,16 @@ import { useStoreSettings } from '../composables/useStoreSettings'
 
 const router = useRouter()
 const { notify } = useSystemAlert()
+
+// null primero y explicito: "la principal" es lo que significa no haber
+// elegido, y esconderlo obligaria al comerciante a fijar una sede para poder
+// volver atras.
+const fulfillmentOptions = computed(() => [
+  { label: 'Sede principal', value: null },
+  ...branches.value.map((branch) => ({ label: branch.name, value: branch.id })),
+])
 const { settingsQuery, updateMutation } = useStoreSettings()
+const { branches, hasMultipleBranches } = useBranches()
 
 const activeTab = ref<'tienda' | 'editor'>('tienda')
 
@@ -47,6 +58,7 @@ const whatsappNumber = ref('')
 const shippingFlatFee = ref<number | null>(0)
 const minOrderAmount = ref<number | null>(0)
 const pickupEnabled = ref(false)
+const fulfillmentBranchId = ref<number | null>(null)
 const orderEmailEnabled = ref(true)
 const orderEmail = ref('')
 const terms = ref('')
@@ -98,6 +110,7 @@ watch(
     shippingFlatFee.value = value.shipping_flat_fee
     minOrderAmount.value = value.min_order_amount
     pickupEnabled.value = value.pickup_enabled
+    fulfillmentBranchId.value = value.fulfillment_branch_id
     orderEmailEnabled.value = value.order_email_enabled
     orderEmail.value = value.order_email ?? ''
     terms.value = value.terms ?? ''
@@ -161,6 +174,7 @@ function saveStore(): Promise<void> {
       shipping_flat_fee: shippingFlatFee.value ?? 0,
       min_order_amount: minOrderAmount.value ?? 0,
       pickup_enabled: pickupEnabled.value,
+      ...(hasMultipleBranches.value ? { fulfillment_branch_id: fulfillmentBranchId.value } : {}),
       order_email_enabled: orderEmailEnabled.value,
       order_email: orderEmail.value.trim() || null,
       terms: nullable(terms.value),
@@ -333,6 +347,22 @@ async function copyPublicUrl(): Promise<void> {
                     label="Permitir recoger en tienda"
                     icon="pi pi-shop"
                   />
+                  <!-- Solo con multisede: define de que inventario vende la
+                       tienda y de donde sale la mercancia. -->
+                  <template v-if="hasMultipleBranches">
+                    <NxSelect
+                      v-model="fulfillmentBranchId"
+                      label="Sede que despacha"
+                      :options="fulfillmentOptions"
+                      option-label="label"
+                      option-value="value"
+                      :error="fieldErrors.fulfillment_branch_id"
+                    />
+                    <p class="-mt-1 text-xs text-slate-500">
+                      La tienda muestra el stock y los precios de esta sede, y de ahí sale lo que se
+                      despacha.
+                    </p>
+                  </template>
                   <NxInput v-model="address" label="Dirección" :error="fieldErrors.address" />
                   <NxInput
                     v-model="openingHours"

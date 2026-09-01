@@ -27,6 +27,10 @@ export interface HomeBlock {
 
 export interface StoreSettings {
   is_active: boolean
+  /** Sede desde la que se despacha. null = la principal. */
+  fulfillment_branch_id: number | null
+  /** Ya resuelto por el backend: la sede real, aunque no se haya elegido. */
+  resolved_fulfillment_branch_id: number | null
   store_name: string | null
   description: string | null
   logo_url: string | null

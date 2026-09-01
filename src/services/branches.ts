@@ -35,3 +35,32 @@ export async function fetchBranchComparison(params: {
   const { data } = await httpClient.get<BranchComparison>('/reports/branches', { params })
   return data
 }
+
+/** Precios por sede de un producto. Ausencia de fila = precio del catalogo. */
+export interface BranchPriceRow {
+  branch_id: number
+  product_variant_id: number | null
+  price: number
+}
+
+export interface BranchPricesResponse {
+  product_id: number
+  base_price: number
+  branch_prices: BranchPriceRow[]
+}
+
+export async function fetchBranchPrices(productId: number): Promise<BranchPricesResponse> {
+  const { data } = await httpClient.get<BranchPricesResponse>(`/products/${productId}/branch-prices`)
+  return data
+}
+
+export async function updateBranchPrices(
+  productId: number,
+  prices: Array<{ branch_id: number; product_variant_id?: number | null; price: number | null }>,
+): Promise<BranchPricesResponse> {
+  const { data } = await httpClient.put<BranchPricesResponse>(
+    `/products/${productId}/branch-prices`,
+    { prices },
+  )
+  return data
+}
