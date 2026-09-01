@@ -965,14 +965,14 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
       :name="quickViewProduct.name"
       :category-name="quickViewProduct.category?.name"
       :description="quickViewProduct.description"
-      :price="quickViewProduct.price"
+      :price="Number(quickViewProduct.price)"
       :price-varies-at-sale="quickViewProduct.price_varies_at_sale"
       :photos="quickViewProduct.image ? [quickViewProduct.image] : []"
       :variants="
         (quickViewProduct.variants ?? []).map((variant) => ({
           label: variantLabel(variant),
           sku: variant.sku,
-          price: variant.price,
+          price: Number(variant.price),
           stock: variant.stock,
           isActive: variant.is_active,
         }))

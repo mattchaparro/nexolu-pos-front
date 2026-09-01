@@ -41,7 +41,7 @@ export function useNewItemsCart() {
     if (maxStock <= 0) {
       return
     }
-    lines.value.push({ product, quantity: 1, unitPrice: unitPrice ?? product.price })
+    lines.value.push({ product, quantity: 1, unitPrice: unitPrice ?? Number(product.price) })
   }
 
   /**
@@ -61,7 +61,7 @@ export function useNewItemsCart() {
     if (maxStock <= 0) {
       return
     }
-    lines.value.push({ product, variant, quantity: 1, unitPrice: variant.price })
+    lines.value.push({ product, variant, quantity: 1, unitPrice: Number(variant.price) })
   }
 
   function setQuantity(productId: number, quantity: number, variantId: number | null = null): void {

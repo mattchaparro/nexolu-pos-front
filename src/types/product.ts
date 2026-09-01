@@ -65,8 +65,8 @@ export interface ProductVariantAttributeValue {
 export interface ProductVariant {
   id: number
   sku: string
-  price: number
-  cost_price: number | null
+  price: string
+  cost_price: string | null
   stock: number
   low_stock_alert_threshold: number | null
   is_active: boolean
@@ -127,8 +127,13 @@ export interface Product {
   name: string
   description: string | null
   how_to_use: string | null
-  price: number
-  cost_price: number
+  // string, no number: el backend castea los montos con `decimal:2` de
+  // Laravel, que serializa a string para no perder precision al pasar por
+  // float. Declararlo `number` era una mentira que TypeScript no podia
+  // atrapar, y por eso hay Number(...) regado por todo el modulo. Los
+  // payloads que SALEN (ProductPayload, ProductVariantInput) si son number.
+  price: string
+  cost_price: string
   stock: number
   low_stock_alert_threshold: number | null
   track_stock: boolean

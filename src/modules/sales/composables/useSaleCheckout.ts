@@ -124,7 +124,10 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
       cartKey: crypto.randomUUID(),
       product,
       quantity: 1,
-      unitPrice: product.price_varies_at_sale ? (unitPrice ?? product.price) : product.price,
+      // Number() explicito: product.price llega como string (ver el tipo).
+      // Funcionaba por accidente porque la primera operacion del carrito es
+      // una multiplicacion, que coacciona; una suma habria concatenado.
+      unitPrice: product.price_varies_at_sale ? (unitPrice ?? Number(product.price)) : Number(product.price),
       discountId: null,
     })
   }
@@ -152,7 +155,7 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
       product,
       variant,
       quantity: 1,
-      unitPrice: variant.price,
+      unitPrice: Number(variant.price),
       discountId: null,
     })
   }
