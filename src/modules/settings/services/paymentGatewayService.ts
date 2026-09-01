@@ -2,7 +2,9 @@ import { httpClient } from '@/services/http/client'
 import type { PaymentGatewayProvider } from '@/types/paymentGateway'
 
 export async function fetchPaymentGateways(): Promise<PaymentGatewayProvider[]> {
-  const { data } = await httpClient.get<{ providers: PaymentGatewayProvider[] }>('/payment-gateways')
+  const { data } = await httpClient.get<{ providers: PaymentGatewayProvider[] }>(
+    '/payment-gateways',
+  )
   return data.providers
 }
 

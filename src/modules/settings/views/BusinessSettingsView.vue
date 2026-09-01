@@ -50,7 +50,9 @@ const auth = useAuthStore()
 const { data: business, isPending } = useBusiness()
 const { notify } = useSystemAlert()
 
-const canEdit = computed(() => auth.user?.is_business_owner === true || auth.user?.roles?.includes('admin') === true)
+const canEdit = computed(
+  () => auth.user?.is_business_owner === true || auth.user?.roles?.includes('admin') === true,
+)
 
 const activeTab = ref('0')
 
@@ -124,7 +126,10 @@ async function savePaymentMethods(): Promise<void> {
     )
     notify('Medios de pago guardados')
   } catch (error) {
-    paymentMethodsFormError.value = extractErrorMessage(error, 'No pudimos guardar los medios de pago.')
+    paymentMethodsFormError.value = extractErrorMessage(
+      error,
+      'No pudimos guardar los medios de pago.',
+    )
   }
 }
 
@@ -173,7 +178,9 @@ const snoozedUntilLabel = computed(() => {
     return null
   }
   const date = new Date(until)
-  return Number.isNaN(date.getTime()) ? null : date.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })
+  return Number.isNaN(date.getTime())
+    ? null
+    : date.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })
 })
 
 async function reactivateAlerts(): Promise<void> {
@@ -207,10 +214,30 @@ const defaultServiceName = ref('')
 // negocio que fijar) ni fiados_vencidos (todavia no existe un comando que lo
 // envie).
 const NOTIFICATION_TYPES = [
-  { key: 'resumen_diario', label: 'Resumen del dia', desc: 'Cada noche: cuanto vendiste, como quedo la caja y lo importante del dia.', schedulable: true },
-  { key: 'inventario_bajo', label: 'Inventario bajo', desc: 'Cuando un producto esta por agotarse, para que puedas reponer a tiempo.', schedulable: true },
-  { key: 'recordatorios', label: 'Recordatorios y citas', desc: 'Tus recordatorios del planificador y las citas del dia.', schedulable: false },
-  { key: 'fiados_vencidos', label: 'Fiados vencidos', desc: 'Cuando un fiado pasa su fecha de pago.', schedulable: false },
+  {
+    key: 'resumen_diario',
+    label: 'Resumen del dia',
+    desc: 'Cada noche: cuanto vendiste, como quedo la caja y lo importante del dia.',
+    schedulable: true,
+  },
+  {
+    key: 'inventario_bajo',
+    label: 'Inventario bajo',
+    desc: 'Cuando un producto esta por agotarse, para que puedas reponer a tiempo.',
+    schedulable: true,
+  },
+  {
+    key: 'recordatorios',
+    label: 'Recordatorios y citas',
+    desc: 'Tus recordatorios del planificador y las citas del dia.',
+    schedulable: false,
+  },
+  {
+    key: 'fiados_vencidos',
+    label: 'Fiados vencidos',
+    desc: 'Cuando un fiado pasa su fecha de pago.',
+    schedulable: false,
+  },
 ] as const
 const notificationPrefs = reactive<Record<string, boolean>>({})
 const notificationSchedule = reactive<Record<string, string>>({})
@@ -222,7 +249,10 @@ const notificationsSaving = ref(false)
 async function saveNotifications(): Promise<void> {
   notificationsSaving.value = true
   try {
-    await updateNotifications.mutateAsync({ preferences: { ...notificationPrefs }, schedule: { ...notificationSchedule } })
+    await updateNotifications.mutateAsync({
+      preferences: { ...notificationPrefs },
+      schedule: { ...notificationSchedule },
+    })
     notify('Preferencias de notificaciones guardadas')
   } catch (error) {
     notify(extractErrorMessage(error, 'No pudimos guardar las preferencias.'))
@@ -290,7 +320,10 @@ const quotaUsedPercent = computed(() => {
   if (!quota.value || quota.value.applicable_quota <= 0) {
     return 0
   }
-  return Math.min(100, Math.round((quota.value.consumed_this_month / quota.value.applicable_quota) * 100))
+  return Math.min(
+    100,
+    Math.round((quota.value.consumed_this_month / quota.value.applicable_quota) * 100),
+  )
 })
 
 const packCheckout = useAiMessagePackCheckout()
@@ -299,7 +332,10 @@ async function buyPack(): Promise<void> {
   if (!auth.user || !quota.value) {
     return
   }
-  await packCheckout.pay({ email: auth.user.email, fullName: auth.user.full_name }, quota.value.pack_balance)
+  await packCheckout.pay(
+    { email: auth.user.email, fullName: auth.user.full_name },
+    quota.value.pack_balance,
+  )
 }
 
 onMounted(() => {
@@ -335,7 +371,10 @@ async function submitNegocio(): Promise<void> {
     if (Object.keys(fields).length > 0) {
       negocioErrors.value = fields
     } else {
-      negocioFormError.value = extractErrorMessage(error, 'No pudimos guardar los datos del negocio.')
+      negocioFormError.value = extractErrorMessage(
+        error,
+        'No pudimos guardar los datos del negocio.',
+      )
     }
   }
 }
@@ -360,7 +399,10 @@ async function submitFacturacion(): Promise<void> {
     if (Object.keys(fields).length > 0) {
       facturacionErrors.value = fields
     } else {
-      facturacionFormError.value = extractErrorMessage(error, 'No pudimos guardar la configuracion.')
+      facturacionFormError.value = extractErrorMessage(
+        error,
+        'No pudimos guardar la configuracion.',
+      )
     }
   }
 }
@@ -383,7 +425,10 @@ async function submitVentas(): Promise<void> {
     if (Object.keys(fields).length > 0) {
       ventasErrors.value = fields
     } else {
-      ventasFormError.value = extractErrorMessage(error, 'No pudimos guardar la configuracion de ventas.')
+      ventasFormError.value = extractErrorMessage(
+        error,
+        'No pudimos guardar la configuracion de ventas.',
+      )
     }
   }
 }
@@ -403,7 +448,10 @@ async function submitInventario(): Promise<void> {
     if (Object.keys(fields).length > 0) {
       inventarioErrors.value = fields
     } else {
-      inventarioFormError.value = extractErrorMessage(error, 'No pudimos guardar las alertas de inventario.')
+      inventarioFormError.value = extractErrorMessage(
+        error,
+        'No pudimos guardar las alertas de inventario.',
+      )
     }
   }
 }
@@ -411,7 +459,9 @@ async function submitInventario(): Promise<void> {
 async function submitApartados(): Promise<void> {
   try {
     await mutateAsync({
-      layaway_allowed_category_ids: layawayAllCategories.value ? null : layawaySelectedCategoryIds.value,
+      layaway_allowed_category_ids: layawayAllCategories.value
+        ? null
+        : layawaySelectedCategoryIds.value,
     })
     notify('Categorias de apartados guardadas')
   } catch (error) {
@@ -458,28 +508,87 @@ const { gatewaysQuery } = usePaymentGateways()
           <!-- ================= Negocio ================= -->
           <NxTabPanel value="0">
             <NxCard class="mt-3">
-              <p v-if="negocioFormError" class="mb-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ negocioFormError }}</p>
+              <p
+                v-if="negocioFormError"
+                class="mb-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700"
+              >
+                {{ negocioFormError }}
+              </p>
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <NxInput v-model="negocio.name" label="Nombre del negocio" :disabled="!canEdit" :error="negocioErrors.name" />
-                <NxInput v-model="negocio.owner_name" label="Nombre del propietario" :disabled="!canEdit" :error="negocioErrors.owner_name" />
-                <NxInput v-model="negocio.phone" label="Telefono" :disabled="!canEdit" :error="negocioErrors.phone" />
-                <NxInput v-model="negocio.nit" label="NIT" :disabled="!canEdit" :error="negocioErrors.nit" />
-                <NxInput v-model="negocio.address" label="Direccion" class="sm:col-span-2" :disabled="!canEdit" :error="negocioErrors.address" />
-                <NxInput v-model="negocio.whatsapp_number" label="WhatsApp de contacto" :disabled="!canEdit" :error="negocioErrors.whatsapp_number" />
-                <NxInput v-model="negocio.instagram_handle" label="Instagram" :disabled="!canEdit" :error="negocioErrors.instagram_handle" />
-                <NxInput v-model="negocio.tiktok_handle" label="TikTok" :disabled="!canEdit" :error="negocioErrors.tiktok_handle" />
+                <NxInput
+                  v-model="negocio.name"
+                  label="Nombre del negocio"
+                  :disabled="!canEdit"
+                  :error="negocioErrors.name"
+                />
+                <NxInput
+                  v-model="negocio.owner_name"
+                  label="Nombre del propietario"
+                  :disabled="!canEdit"
+                  :error="negocioErrors.owner_name"
+                />
+                <NxInput
+                  v-model="negocio.phone"
+                  label="Telefono"
+                  :disabled="!canEdit"
+                  :error="negocioErrors.phone"
+                />
+                <NxInput
+                  v-model="negocio.nit"
+                  label="NIT"
+                  :disabled="!canEdit"
+                  :error="negocioErrors.nit"
+                />
+                <NxInput
+                  v-model="negocio.address"
+                  label="Direccion"
+                  class="sm:col-span-2"
+                  :disabled="!canEdit"
+                  :error="negocioErrors.address"
+                />
+                <NxInput
+                  v-model="negocio.whatsapp_number"
+                  label="WhatsApp de contacto"
+                  :disabled="!canEdit"
+                  :error="negocioErrors.whatsapp_number"
+                />
+                <NxInput
+                  v-model="negocio.instagram_handle"
+                  label="Instagram"
+                  :disabled="!canEdit"
+                  :error="negocioErrors.instagram_handle"
+                />
+                <NxInput
+                  v-model="negocio.tiktok_handle"
+                  label="TikTok"
+                  :disabled="!canEdit"
+                  :error="negocioErrors.tiktok_handle"
+                />
               </div>
-              <NxButton v-if="canEdit" class="mt-4" :loading="isSaving" @click="submitNegocio">Guardar cambios</NxButton>
+              <NxButton v-if="canEdit" class="mt-4" :loading="isSaving" @click="submitNegocio"
+                >Guardar cambios</NxButton
+              >
             </NxCard>
           </NxTabPanel>
 
           <!-- ================= Facturacion y tickets ================= -->
           <NxTabPanel value="1">
             <NxCard class="mt-3">
-              <p v-if="facturacionFormError" class="mb-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ facturacionFormError }}</p>
+              <p
+                v-if="facturacionFormError"
+                class="mb-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700"
+              >
+                {{ facturacionFormError }}
+              </p>
               <p class="mb-3 text-sm font-semibold text-slate-700">Ticket termico</p>
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <NxInput v-model="facturacion.invoice_prefix" label="Prefijo de factura" placeholder="FAC" :disabled="!canEdit" :error="facturacionErrors.invoice_prefix" />
+                <NxInput
+                  v-model="facturacion.invoice_prefix"
+                  label="Prefijo de factura"
+                  placeholder="FAC"
+                  :disabled="!canEdit"
+                  :error="facturacionErrors.invoice_prefix"
+                />
                 <NxSelect
                   v-model="facturacion.ticket_paper_width"
                   label="Ancho de papel"
@@ -488,42 +597,99 @@ const { gatewaysQuery } = usePaymentGateways()
                   option-value="value"
                   :disabled="!canEdit"
                 />
-                <NxInput v-model="facturacion.ticket_header_tagline" label="Frase de encabezado" class="sm:col-span-2" :disabled="!canEdit" :error="facturacionErrors.ticket_header_tagline" />
-                <NxInput v-model="facturacion.ticket_thanks_message" label="Mensaje de agradecimiento" class="sm:col-span-2" :disabled="!canEdit" :error="facturacionErrors.ticket_thanks_message" />
-                <NxTextarea v-model="facturacion.ticket_footer_text" label="Texto de pie de ticket" class="sm:col-span-2" :disabled="!canEdit" :error="facturacionErrors.ticket_footer_text" />
+                <NxInput
+                  v-model="facturacion.ticket_header_tagline"
+                  label="Frase de encabezado"
+                  class="sm:col-span-2"
+                  :disabled="!canEdit"
+                  :error="facturacionErrors.ticket_header_tagline"
+                />
+                <NxInput
+                  v-model="facturacion.ticket_thanks_message"
+                  label="Mensaje de agradecimiento"
+                  class="sm:col-span-2"
+                  :disabled="!canEdit"
+                  :error="facturacionErrors.ticket_thanks_message"
+                />
+                <NxTextarea
+                  v-model="facturacion.ticket_footer_text"
+                  label="Texto de pie de ticket"
+                  class="sm:col-span-2"
+                  :disabled="!canEdit"
+                  :error="facturacionErrors.ticket_footer_text"
+                />
               </div>
 
               <p class="mb-3 mt-6 text-sm font-semibold text-slate-700">Marca en correos</p>
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label class="mb-1 block text-xs font-medium text-slate-600">Color de encabezado</label>
-                  <input v-model="facturacion.email_header_color" type="color" class="h-10 w-20 cursor-pointer rounded border border-slate-200" :disabled="!canEdit" />
+                  <label class="mb-1 block text-xs font-medium text-slate-600"
+                    >Color de encabezado</label
+                  >
+                  <input
+                    v-model="facturacion.email_header_color"
+                    type="color"
+                    class="h-10 w-20 cursor-pointer rounded border border-slate-200"
+                    :disabled="!canEdit"
+                  />
                 </div>
-                <NxInput v-model="facturacion.email_footer_text" label="Texto de pie de correo" :disabled="!canEdit" :error="facturacionErrors.email_footer_text" />
+                <NxInput
+                  v-model="facturacion.email_footer_text"
+                  label="Texto de pie de correo"
+                  :disabled="!canEdit"
+                  :error="facturacionErrors.email_footer_text"
+                />
                 <div class="sm:col-span-2">
-                  <NxToggleButton v-model="facturacion.email_whatsapp_cta" label="Incluir boton de WhatsApp en los correos" icon="pi pi-whatsapp" :disabled="!canEdit" />
+                  <NxToggleButton
+                    v-model="facturacion.email_whatsapp_cta"
+                    label="Incluir boton de WhatsApp en los correos"
+                    icon="pi pi-whatsapp"
+                    :disabled="!canEdit"
+                  />
                 </div>
               </div>
 
-              <NxButton v-if="canEdit" class="mt-4" :loading="isSaving" @click="submitFacturacion">Guardar cambios</NxButton>
+              <NxButton v-if="canEdit" class="mt-4" :loading="isSaving" @click="submitFacturacion"
+                >Guardar cambios</NxButton
+              >
             </NxCard>
           </NxTabPanel>
 
           <!-- ================= Ventas ================= -->
           <NxTabPanel value="2">
             <NxCard class="mt-3">
-              <p v-if="ventasFormError" class="mb-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ ventasFormError }}</p>
+              <p
+                v-if="ventasFormError"
+                class="mb-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700"
+              >
+                {{ ventasFormError }}
+              </p>
 
               <p class="mb-2 text-sm font-semibold text-slate-700">Domicilios</p>
               <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end">
-                <NxToggleButton v-model="ventas.delivery_enabled" label="Cobrar domicilio" icon="pi pi-truck" :disabled="!canEdit" />
-                <NxInputNumber v-model="ventas.delivery_fee" label="Valor del domicilio" :disabled="!canEdit || !ventas.delivery_enabled" :error="ventasErrors.delivery_fee" />
+                <NxToggleButton
+                  v-model="ventas.delivery_enabled"
+                  label="Cobrar domicilio"
+                  icon="pi pi-truck"
+                  :disabled="!canEdit"
+                />
+                <NxInputNumber
+                  v-model="ventas.delivery_fee"
+                  label="Valor del domicilio"
+                  :disabled="!canEdit || !ventas.delivery_enabled"
+                  :error="ventasErrors.delivery_fee"
+                />
               </div>
 
               <p class="mb-2 text-sm font-semibold text-slate-700">Cargos adicionales</p>
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="flex items-end gap-3">
-                  <NxToggleButton v-model="ventas.service_charge_enabled" label="Propina sugerida" icon="pi pi-percentage" :disabled="!canEdit" />
+                  <NxToggleButton
+                    v-model="ventas.service_charge_enabled"
+                    label="Propina sugerida"
+                    icon="pi pi-percentage"
+                    :disabled="!canEdit"
+                  />
                   <NxInputNumber
                     v-model="ventas.service_charge_rate"
                     label="% propina"
@@ -533,7 +699,12 @@ const { gatewaysQuery } = usePaymentGateways()
                   />
                 </div>
                 <div class="flex items-end gap-3">
-                  <NxToggleButton v-model="ventas.ipoconsumo_enabled" label="Impoconsumo" icon="pi pi-percentage" :disabled="!canEdit" />
+                  <NxToggleButton
+                    v-model="ventas.ipoconsumo_enabled"
+                    label="Impoconsumo"
+                    icon="pi pi-percentage"
+                    :disabled="!canEdit"
+                  />
                   <NxInputNumber
                     v-model="ventas.ipoconsumo_rate"
                     label="% impoconsumo"
@@ -544,7 +715,9 @@ const { gatewaysQuery } = usePaymentGateways()
                 </div>
               </div>
 
-              <NxButton v-if="canEdit" class="mt-4" :loading="isSaving" @click="submitVentas">Guardar cambios</NxButton>
+              <NxButton v-if="canEdit" class="mt-4" :loading="isSaving" @click="submitVentas"
+                >Guardar cambios</NxButton
+              >
             </NxCard>
           </NxTabPanel>
 
@@ -553,40 +726,72 @@ const { gatewaysQuery } = usePaymentGateways()
             <NxCard class="mt-3">
               <p class="mb-1 text-sm font-semibold text-slate-700">Metodos de pago</p>
               <p class="mb-3 text-xs text-slate-500">
-                Selecciona del catalogo los que acepta tu negocio. Un medio nunca se elimina, solo se deshabilita, para no romper el historial
-                de ventas que ya lo usaron.
+                Selecciona del catalogo los que acepta tu negocio. Un medio nunca se elimina, solo
+                se deshabilita, para no romper el historial de ventas que ya lo usaron.
               </p>
 
-              <p v-if="paymentMethodsFormError" class="mb-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ paymentMethodsFormError }}</p>
+              <p
+                v-if="paymentMethodsFormError"
+                class="mb-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700"
+              >
+                {{ paymentMethodsFormError }}
+              </p>
 
-              <div v-if="paymentMethodsQuery.isPending.value" class="mb-6 h-24 animate-pulse rounded-xl bg-slate-100" />
+              <div
+                v-if="paymentMethodsQuery.isPending.value"
+                class="mb-6 h-24 animate-pulse rounded-xl bg-slate-100"
+              />
 
               <template v-else>
                 <p
-                  v-if="!paymentMethodsQuery.data.value?.migrated && paymentMethodsQuery.data.value?.legacy_payment_methods.length"
+                  v-if="
+                    !paymentMethodsQuery.data.value?.migrated &&
+                    paymentMethodsQuery.data.value?.legacy_payment_methods.length
+                  "
                   class="mb-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800"
                 >
                   Hoy tienes configurado (todavía sin pasar al catálogo nuevo):
-                  {{ paymentMethodsQuery.data.value.legacy_payment_methods.map((m) => m.label).join(', ') }}. Selecciona abajo los que uses y
-                  guarda para pasarlos al catálogo.
+                  {{
+                    paymentMethodsQuery.data.value.legacy_payment_methods
+                      .map((m) => m.label)
+                      .join(', ')
+                  }}. Selecciona abajo los que uses y guarda para pasarlos al catálogo.
                 </p>
 
                 <div class="mb-4 divide-y divide-slate-100 rounded-xl border border-slate-200">
-                  <div v-for="method in paymentMethodsQuery.data.value?.data ?? []" :key="method.id" class="flex items-center justify-between gap-4 px-4 py-3">
+                  <div
+                    v-for="method in paymentMethodsQuery.data.value?.data ?? []"
+                    :key="method.id"
+                    class="flex items-center justify-between gap-4 px-4 py-3"
+                  >
                     <div>
                       <p class="text-sm font-medium text-slate-700">{{ method.label }}</p>
-                      <p v-if="!method.is_active" class="text-xs text-amber-600">Retirado del catálogo por Nexolú - puedes deshabilitarlo.</p>
+                      <p v-if="!method.is_active" class="text-xs text-amber-600">
+                        Retirado del catálogo por Nexolú - puedes deshabilitarlo.
+                      </p>
                     </div>
                     <NxSwitch v-model="paymentMethodSelections[method.id]" :disabled="!canEdit" />
                   </div>
-                  <p v-if="!paymentMethodsQuery.data.value?.data.length" class="px-4 py-6 text-center text-sm text-slate-400">
+                  <p
+                    v-if="!paymentMethodsQuery.data.value?.data.length"
+                    class="px-4 py-6 text-center text-sm text-slate-400"
+                  >
                     Todavía no hay medios de pago en el catálogo.
                   </p>
                 </div>
 
                 <div v-if="canEdit" class="mb-6 flex flex-wrap items-center gap-3">
-                  <NxButton size="sm" :loading="updatePaymentMethods.isPending.value" @click="savePaymentMethods">Guardar medios de pago</NxButton>
-                  <button type="button" class="text-xs font-medium text-indigo-600 hover:underline" @click="supportModalOpen = true">
+                  <NxButton
+                    size="sm"
+                    :loading="updatePaymentMethods.isPending.value"
+                    @click="savePaymentMethods"
+                    >Guardar medios de pago</NxButton
+                  >
+                  <button
+                    type="button"
+                    class="text-xs font-medium text-indigo-600 hover:underline"
+                    @click="supportModalOpen = true"
+                  >
                     ¿No está el que necesitas? Contacta a soporte
                   </button>
                 </div>
@@ -596,11 +801,13 @@ const { gatewaysQuery } = usePaymentGateways()
             <NxCard class="mt-3">
               <p class="mb-1 text-sm font-semibold text-slate-700">Cobrar con pasarela</p>
               <p class="mb-3 text-xs text-slate-500">
-                Conecta tu propia cuenta de Bold o Wompi para cobrar <strong>por internet</strong>, desde tu tienda online.
-                La plata entra directo a tu cuenta del proveedor: Nexolú nunca la retiene.
+                Conecta tu propia cuenta de Bold o Wompi para cobrar <strong>por internet</strong>,
+                desde tu tienda online. La plata entra directo a tu cuenta del proveedor: Nexolú
+                nunca la retiene.
               </p>
               <p class="mb-3 text-xs text-slate-500">
-                No cambia cómo cobras en el mostrador: los medios de arriba se siguen registrando igual.
+                No cambia cómo cobras en el mostrador: los medios de arriba se siguen registrando
+                igual.
               </p>
 
               <div class="flex flex-col gap-3">
@@ -616,14 +823,29 @@ const { gatewaysQuery } = usePaymentGateways()
           <!-- ================= Inventario ================= -->
           <NxTabPanel value="3">
             <NxCard class="mt-3">
-              <p v-if="inventarioFormError" class="mb-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ inventarioFormError }}</p>
+              <p
+                v-if="inventarioFormError"
+                class="mb-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700"
+              >
+                {{ inventarioFormError }}
+              </p>
 
               <p
                 v-if="snoozedUntilLabel"
                 class="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
               >
-                <span><i class="pi pi-bell-slash mr-1.5" />Las alertas de inventario bajo estan silenciadas hasta el {{ snoozedUntilLabel }}.</span>
-                <NxButton v-if="canEdit" size="sm" variant="outline" :loading="clearSnooze.isPending.value" @click="reactivateAlerts">Reactivar ahora</NxButton>
+                <span
+                  ><i class="pi pi-bell-slash mr-1.5" />Las alertas de inventario bajo estan
+                  silenciadas hasta el {{ snoozedUntilLabel }}.</span
+                >
+                <NxButton
+                  v-if="canEdit"
+                  size="sm"
+                  variant="outline"
+                  :loading="clearSnooze.isPending.value"
+                  @click="reactivateAlerts"
+                  >Reactivar ahora</NxButton
+                >
               </p>
 
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -636,7 +858,12 @@ const { gatewaysQuery } = usePaymentGateways()
                   :error="inventarioErrors.low_stock_alert_threshold"
                 />
                 <div class="flex items-end">
-                  <NxToggleButton v-model="inventario.low_stock_email_enabled" label="Avisar por correo" icon="pi pi-envelope" :disabled="!canEdit" />
+                  <NxToggleButton
+                    v-model="inventario.low_stock_email_enabled"
+                    label="Avisar por correo"
+                    icon="pi pi-envelope"
+                    :disabled="!canEdit"
+                  />
                 </div>
                 <NxInput
                   v-model="inventario.low_stock_email"
@@ -647,17 +874,28 @@ const { gatewaysQuery } = usePaymentGateways()
                 />
               </div>
 
-              <NxButton v-if="canEdit" class="mt-4" :loading="isSaving" @click="submitInventario">Guardar cambios</NxButton>
+              <NxButton v-if="canEdit" class="mt-4" :loading="isSaving" @click="submitInventario"
+                >Guardar cambios</NxButton
+              >
             </NxCard>
           </NxTabPanel>
 
           <!-- ================= Apartados ================= -->
           <NxTabPanel v-if="business?.can_access_layaways" value="4">
             <NxCard class="mt-3">
-              <p class="mb-1 text-sm font-semibold text-slate-700">Categorias habilitadas para apartar</p>
-              <p class="mb-3 text-xs text-slate-500">Que categorias de productos pueden reservarse con abono en el modulo de Apartados.</p>
+              <p class="mb-1 text-sm font-semibold text-slate-700">
+                Categorias habilitadas para apartar
+              </p>
+              <p class="mb-3 text-xs text-slate-500">
+                Que categorias de productos pueden reservarse con abono en el modulo de Apartados.
+              </p>
 
-              <NxToggleButton v-model="layawayAllCategories" label="Todas las categorias" icon="pi pi-tags" :disabled="!canEdit" />
+              <NxToggleButton
+                v-model="layawayAllCategories"
+                label="Todas las categorias"
+                icon="pi pi-tags"
+                :disabled="!canEdit"
+              />
 
               <div v-if="!layawayAllCategories" class="mt-4 flex flex-wrap gap-2">
                 <button
@@ -677,7 +915,9 @@ const { gatewaysQuery } = usePaymentGateways()
                 </button>
               </div>
 
-              <NxButton v-if="canEdit" class="mt-4" :loading="isSaving" @click="submitApartados">Guardar cambios</NxButton>
+              <NxButton v-if="canEdit" class="mt-4" :loading="isSaving" @click="submitApartados"
+                >Guardar cambios</NxButton
+              >
             </NxCard>
           </NxTabPanel>
 
@@ -685,21 +925,39 @@ const { gatewaysQuery } = usePaymentGateways()
           <NxTabPanel v-if="business?.can_access_services" value="5">
             <NxCard class="mt-3">
               <p class="mb-1 text-sm font-semibold text-slate-700">Órdenes de servicio</p>
-              <p class="mb-3 text-xs text-slate-500">Opciones para el formulario de creación de órdenes.</p>
+              <p class="mb-3 text-xs text-slate-500">
+                Opciones para el formulario de creación de órdenes.
+              </p>
 
               <div class="flex flex-col gap-4">
                 <div>
-                  <NxToggleButton v-model="showCatalog" label="Mostrar catálogo de servicios" icon="pi pi-wrench" :disabled="!canEdit" />
-                  <p class="mt-1 text-xs text-slate-500">Permite seleccionar un servicio del catálogo al crear una orden.</p>
+                  <NxToggleButton
+                    v-model="showCatalog"
+                    label="Mostrar catálogo de servicios"
+                    icon="pi pi-wrench"
+                    :disabled="!canEdit"
+                  />
+                  <p class="mt-1 text-xs text-slate-500">
+                    Permite seleccionar un servicio del catálogo al crear una orden.
+                  </p>
                 </div>
 
                 <div>
-                  <NxInput v-model="defaultServiceName" label="Nombre de servicio por defecto" placeholder="Ej. Servicio Técnico" :disabled="!canEdit" />
-                  <p class="mt-1 text-xs text-slate-500">Se pre-llena en el campo nombre al crear una orden nueva.</p>
+                  <NxInput
+                    v-model="defaultServiceName"
+                    label="Nombre de servicio por defecto"
+                    placeholder="Ej. Servicio Técnico"
+                    :disabled="!canEdit"
+                  />
+                  <p class="mt-1 text-xs text-slate-500">
+                    Se pre-llena en el campo nombre al crear una orden nueva.
+                  </p>
                 </div>
               </div>
 
-              <NxButton v-if="canEdit" class="mt-4" :loading="isSaving" @click="submitServicios">Guardar cambios</NxButton>
+              <NxButton v-if="canEdit" class="mt-4" :loading="isSaving" @click="submitServicios"
+                >Guardar cambios</NxButton
+              >
             </NxCard>
           </NxTabPanel>
 
@@ -707,15 +965,24 @@ const { gatewaysQuery } = usePaymentGateways()
           <NxTabPanel value="6">
             <NxCard class="mt-3">
               <p class="mb-1 text-sm font-semibold text-slate-700">Notificaciones por WhatsApp</p>
-              <p class="mb-3 text-xs text-slate-500">Que avisos quieres recibir en tu WhatsApp vinculado.</p>
+              <p class="mb-3 text-xs text-slate-500">
+                Que avisos quieres recibir en tu WhatsApp vinculado.
+              </p>
 
-              <p v-if="!whatsappLinked" class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+              <p
+                v-if="!whatsappLinked"
+                class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600"
+              >
                 Vincula tu WhatsApp desde el Dashboard para poder activar estas alertas.
               </p>
 
               <template v-else>
                 <div class="flex flex-col gap-4">
-                  <div v-for="type in NOTIFICATION_TYPES" :key="type.key" class="flex flex-col gap-2 border-b border-slate-100 pb-3 last:border-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                  <div
+                    v-for="type in NOTIFICATION_TYPES"
+                    :key="type.key"
+                    class="flex flex-col gap-2 border-b border-slate-100 pb-3 last:border-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
+                  >
                     <div>
                       <p class="text-sm font-medium text-slate-700">{{ type.label }}</p>
                       <p class="text-xs text-slate-500">{{ type.desc }}</p>
@@ -735,7 +1002,13 @@ const { gatewaysQuery } = usePaymentGateways()
                   </div>
                 </div>
 
-                <NxButton v-if="canEdit" class="mt-4" :loading="notificationsSaving" @click="saveNotifications">Guardar cambios</NxButton>
+                <NxButton
+                  v-if="canEdit"
+                  class="mt-4"
+                  :loading="notificationsSaving"
+                  @click="saveNotifications"
+                  >Guardar cambios</NxButton
+                >
               </template>
             </NxCard>
           </NxTabPanel>
@@ -744,9 +1017,14 @@ const { gatewaysQuery } = usePaymentGateways()
           <NxTabPanel value="7">
             <NxCard class="mt-3">
               <p class="mb-1 text-sm font-semibold text-slate-700">Asistente de IA</p>
-              <p class="mb-3 text-xs text-slate-500">Cupo de mensajes incluido este mes y paquetes comprados.</p>
+              <p class="mb-3 text-xs text-slate-500">
+                Cupo de mensajes incluido este mes y paquetes comprados.
+              </p>
 
-              <div v-if="quotaQuery.isPending.value" class="h-24 animate-pulse rounded-xl bg-slate-100" />
+              <div
+                v-if="quotaQuery.isPending.value"
+                class="h-24 animate-pulse rounded-xl bg-slate-100"
+              />
 
               <template v-else-if="quota">
                 <div class="mb-3">
@@ -766,7 +1044,10 @@ const { gatewaysQuery } = usePaymentGateways()
                 <div class="mb-3 grid grid-cols-2 gap-3">
                   <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
                     <p class="mb-0.5 text-xs text-slate-500">Cupo mensual restante</p>
-                    <p class="text-lg font-bold" :class="quota.remaining_quota === 0 ? 'text-red-700' : 'text-slate-900'">
+                    <p
+                      class="text-lg font-bold"
+                      :class="quota.remaining_quota === 0 ? 'text-red-700' : 'text-slate-900'"
+                    >
                       {{ quota.remaining_quota }}
                     </p>
                   </div>
@@ -781,10 +1062,15 @@ const { gatewaysQuery } = usePaymentGateways()
                   class="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800"
                 >
                   Se agotó el cupo de mensajes de este mes.
-                  <span v-if="!quota.is_admin">Pídele al dueño del negocio que compre un paquete adicional.</span>
+                  <span v-if="!quota.is_admin"
+                    >Pídele al dueño del negocio que compre un paquete adicional.</span
+                  >
                 </p>
 
-                <div v-if="packCheckout.verifying.value" class="mb-3 flex items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800">
+                <div
+                  v-if="packCheckout.verifying.value"
+                  class="mb-3 flex items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800"
+                >
                   <i class="pi pi-spin pi-spinner" />
                   Verificando tu pago...
                 </div>
@@ -804,12 +1090,16 @@ const { gatewaysQuery } = usePaymentGateways()
                   <i class="pi pi-clock mt-0.5" />
                   <div>
                     <p>Tu pago fue recibido pero la acreditación está tardando.</p>
-                    <NxButton size="sm" variant="outline" class="mt-2" @click="quotaQuery.refetch()">Verificar de nuevo</NxButton>
+                    <NxButton size="sm" variant="outline" class="mt-2" @click="quotaQuery.refetch()"
+                      >Verificar de nuevo</NxButton
+                    >
                   </div>
                 </div>
 
                 <NxButton
-                  v-if="quota.is_admin && !packCheckout.verifying.value && !packCheckout.activated.value"
+                  v-if="
+                    quota.is_admin && !packCheckout.verifying.value && !packCheckout.activated.value
+                  "
                   size="sm"
                   variant="outline"
                   icon="pi pi-credit-card"
@@ -823,7 +1113,10 @@ const { gatewaysQuery } = usePaymentGateways()
                   }}
                 </NxButton>
 
-                <p v-if="packCheckout.error.value" class="mt-2 rounded-xl border border-red-200 bg-red-50 p-2 text-xs text-red-700">
+                <p
+                  v-if="packCheckout.error.value"
+                  class="mt-2 rounded-xl border border-red-200 bg-red-50 p-2 text-xs text-red-700"
+                >
                   {{ packCheckout.error.value }}
                 </p>
               </template>
@@ -836,15 +1129,27 @@ const { gatewaysQuery } = usePaymentGateways()
     <NxModal v-model="supportModalOpen" title="Contacta a soporte" size="sm">
       <div class="flex flex-col gap-3">
         <p class="text-sm text-slate-600">
-          Cuéntanos qué medio de pago necesitas y por qué - le llega directo al equipo de Nexolú con el asunto "Solicitud de añadir medio de
-          pago".
+          Cuéntanos qué medio de pago necesitas y por qué - le llega directo al equipo de Nexolú con
+          el asunto "Solicitud de añadir medio de pago".
         </p>
-        <NxTextarea v-model="supportMessage" label="Mensaje" placeholder="Ej. Necesitamos Bancolombia a la Mano" :rows="4" />
+        <NxTextarea
+          v-model="supportMessage"
+          label="Mensaje"
+          placeholder="Ej. Necesitamos Bancolombia a la Mano"
+          :rows="4"
+        />
       </div>
       <template #footer>
         <div class="flex gap-2">
-          <NxButton variant="outline" class="flex-1" @click="supportModalOpen = false">Cancelar</NxButton>
-          <NxButton class="flex-1" :loading="requestSupport.isPending.value" :disabled="!supportMessage.trim()" @click="submitSupportRequest">
+          <NxButton variant="outline" class="flex-1" @click="supportModalOpen = false"
+            >Cancelar</NxButton
+          >
+          <NxButton
+            class="flex-1"
+            :loading="requestSupport.isPending.value"
+            :disabled="!supportMessage.trim()"
+            @click="submitSupportRequest"
+          >
             Enviar
           </NxButton>
         </div>

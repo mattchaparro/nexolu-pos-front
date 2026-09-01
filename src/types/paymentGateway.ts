@@ -3,12 +3,18 @@
  * compradores. Distinta de la de Nexolú, con la que le cobramos a él.
  *
  * Los secretos nunca viajan: la API no los devuelve ni siquiera al dueño.
- * `credential_fields` dice qué pide cada proveedor para que el formulario
- * no tenga los nombres escritos a mano.
+ *
+ * `capabilities` agrupa las llaves por lo que HABILITAN, no por proveedor.
+ * Bold emite dos juegos distintos y no intercambiables — uno para cobrar por
+ * internet y otro para el datáfono — y un negocio puede tener uno, el otro o
+ * los dos. Solo llegan las capacidades que ese negocio puede usar: sin tienda
+ * online, el botón de pagos ni siquiera se ofrece.
  */
+export type PaymentCapability = 'online' | 'terminal'
+
 export interface PaymentGatewayProvider {
   provider_slug: 'wompi' | 'bold'
-  credential_fields: string[]
+  capabilities: Partial<Record<PaymentCapability, string[]>>
   is_connected: boolean
   is_active: boolean
   environment: string | null
