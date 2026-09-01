@@ -61,6 +61,10 @@ const minOrderAmount = ref<number | null>(0)
 // restaurante que despacha en 40 minutos y una tienda que envia por
 // transportadora no caben en la misma unidad.
 const deliveryEstimate = ref('')
+// Como se explica el envio. Vive junto al COSTO y no dentro de cada bloque:
+// las plantillas lo citan con {envio}, asi que se edita una vez y cambia en
+// toda la tienda.
+const shippingNote = ref('')
 const pickupEnabled = ref(false)
 const fulfillmentBranchId = ref<number | null>(null)
 const orderEmailEnabled = ref(true)
@@ -114,6 +118,7 @@ watch(
     shippingFlatFee.value = value.shipping_flat_fee
     minOrderAmount.value = value.min_order_amount
     deliveryEstimate.value = value.delivery_estimate ?? ''
+    shippingNote.value = value.shipping_note ?? ''
     pickupEnabled.value = value.pickup_enabled
     fulfillmentBranchId.value = value.fulfillment_branch_id
     orderEmailEnabled.value = value.order_email_enabled
@@ -179,6 +184,7 @@ function saveStore(): Promise<void> {
       shipping_flat_fee: shippingFlatFee.value ?? 0,
       min_order_amount: minOrderAmount.value ?? 0,
       delivery_estimate: deliveryEstimate.value.trim() || null,
+      shipping_note: shippingNote.value.trim() || null,
       pickup_enabled: pickupEnabled.value,
       ...(hasMultipleBranches.value ? { fulfillment_branch_id: fulfillmentBranchId.value } : {}),
       order_email_enabled: orderEmailEnabled.value,
@@ -349,11 +355,27 @@ async function copyPublicUrl(): Promise<void> {
                     :error="fieldErrors.min_order_amount"
                   />
                   <NxInput
+                    v-model="shippingNote"
+                    label="Cómo explicas el envío"
+                    placeholder="Envío gratis en Bogotá desde $50.000"
+                    :error="fieldErrors.shipping_note"
+                  />
+                  <NxInput
                     v-model="deliveryEstimate"
                     label="Tiempo de entrega"
                     placeholder="2 a 3 días hábiles"
                     :error="fieldErrors.delivery_estimate"
                   />
+                  <p
+                    class="rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-500"
+                  >
+                    Estos dos datos los puedes citar dentro de los textos de tu página escribiendo
+                    <code class="font-mono text-slate-700">{envio}</code> y
+                    <code class="font-mono text-slate-700">{entrega}</code>. Las plantillas ya los
+                    usan: los cambias aquí una vez y cambian en toda la tienda. También sirven
+                    <code class="font-mono text-slate-700">{tienda}</code> y
+                    <code class="font-mono text-slate-700">{minimo}</code>.
+                  </p>
                   <NxToggleButton
                     v-model="pickupEnabled"
                     label="Permitir recoger en tienda"

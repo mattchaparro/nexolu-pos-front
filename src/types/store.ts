@@ -47,6 +47,8 @@ export interface StoreSettings {
   home_blocks: HomeBlock[]
   whatsapp_number: string | null
   shipping_flat_fee: number
+  /** Cómo se explica el envío. Es lo que reemplaza al token `{envio}`. */
+  shipping_note: string | null
   /** Lo escribe el comerciante ('2 a 3 días hábiles'). Nulo = no lo dijo. */
   delivery_estimate: string | null
   min_order_amount: number
