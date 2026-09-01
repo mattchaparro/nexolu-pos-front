@@ -68,7 +68,27 @@ const meta = computed(
 )
 
 const open = ref(false)
-const environment = ref('production')
+/**
+ * Arranca en el ambiente que la pasarela YA tiene, no en un valor fijo.
+ *
+ * Con 'production' fijo, abrir "Actualizar llaves" sobre una pasarela de
+ * pruebas mostraba "Producción" y guardar escribía sobre OTRA credencial
+ * -- la de producción -- dejando la de pruebas intacta y al comerciante
+ * convencido de que había actualizado la que estaba usando.
+ *
+ * El ambiente es parte de la identidad de la credencial (un comercio puede
+ * tener las dos), así que cambiarlo aquí no la migra: apunta a la otra.
+ */
+const environment = ref(props.provider.environment ?? 'production')
+
+watch(
+  () => props.provider.environment,
+  (value) => {
+    if (value) {
+      environment.value = value
+    }
+  },
+)
 const values = ref<Record<string, string>>({})
 const errorMessage = ref<string | null>(null)
 
@@ -208,6 +228,17 @@ async function disconnect(): Promise<void> {
         option-value="id"
         label="Ambiente"
       />
+
+      <!-- Cambiar de ambiente NO migra las llaves: apunta a otra credencial.
+           Sin este aviso parece que se estan actualizando las de siempre. -->
+      <p
+        v-if="provider.is_connected && environment !== provider.environment"
+        class="-mt-1 rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-700"
+      >
+        Estás cambiando de ambiente. Estas llaves se guardan aparte de las de
+        <strong>{{ provider.environment === 'sandbox' ? 'pruebas' : 'producción' }}</strong
+        >, que siguen como están.
+      </p>
 
       <!-- Un grupo por capacidad: en Bold son DOS juegos de llaves distintos
            y no intercambiables, y confundirlos da un 403 que no dice por qué.
