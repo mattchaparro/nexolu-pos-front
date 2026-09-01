@@ -8,6 +8,7 @@ import { computed, ref, watch } from 'vue'
 import type { PaymentGatewayProvider } from '@/types/paymentGateway'
 import { NxButton, NxInput, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
+import TerminalSyncPanel from './TerminalSyncPanel.vue'
 
 import { usePaymentGateways } from '../composables/usePaymentGateways'
 
@@ -156,6 +157,18 @@ async function disconnect(): Promise<void> {
         <p class="text-xs text-slate-400">{{ meta.blurb }}</p>
       </div>
 
+      <!-- Con la pasarela conectada tambien se pueden AGREGAR llaves: es el
+           caso de completar un juego (conectaste el boton de pagos y ahora
+           quieres el datafono) o de rotar las que ya tenias. El Core fusiona
+           sobre lo guardado, asi que mandar unas no borra las otras. -->
+      <NxButton
+        v-if="provider.is_connected && !open"
+        variant="ghost"
+        size="sm"
+        @click="open = true"
+      >
+        Actualizar llaves
+      </NxButton>
       <NxButton
         v-if="provider.is_connected"
         variant="outline"
@@ -168,6 +181,13 @@ async function disconnect(): Promise<void> {
       <NxButton v-else-if="!open" size="sm" @click="open = true">Conectar</NxButton>
     </div>
 
+    <!-- Los datáfonos solo aplican a un proveedor que los soporte y que ya
+         este conectado: antes de eso no hay a quien preguntarle. -->
+    <TerminalSyncPanel
+      v-if="provider.is_connected && capabilities.some((group) => group.key === 'terminal')"
+      class="mt-3"
+    />
+
     <p
       v-if="provider.last_error && !provider.is_connected"
       class="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700"
@@ -175,11 +195,7 @@ async function disconnect(): Promise<void> {
       Último intento: {{ provider.last_error }}
     </p>
 
-    <form
-      v-if="open && !provider.is_connected"
-      class="mt-3 flex flex-col gap-3"
-      @submit.prevent="connect"
-    >
+    <form v-if="open" class="mt-3 flex flex-col gap-3" @submit.prevent="connect">
       <p class="text-xs text-slate-500">{{ meta.help }}</p>
 
       <NxSelect
