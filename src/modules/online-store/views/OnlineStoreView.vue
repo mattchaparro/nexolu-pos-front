@@ -57,6 +57,10 @@ const description = ref('')
 const whatsappNumber = ref('')
 const shippingFlatFee = ref<number | null>(0)
 const minOrderAmount = ref<number | null>(0)
+// Cuanto se demora en llegar. Texto libre y no un numero de dias: un
+// restaurante que despacha en 40 minutos y una tienda que envia por
+// transportadora no caben en la misma unidad.
+const deliveryEstimate = ref('')
 const pickupEnabled = ref(false)
 const fulfillmentBranchId = ref<number | null>(null)
 const orderEmailEnabled = ref(true)
@@ -109,6 +113,7 @@ watch(
     whatsappNumber.value = value.whatsapp_number ?? ''
     shippingFlatFee.value = value.shipping_flat_fee
     minOrderAmount.value = value.min_order_amount
+    deliveryEstimate.value = value.delivery_estimate ?? ''
     pickupEnabled.value = value.pickup_enabled
     fulfillmentBranchId.value = value.fulfillment_branch_id
     orderEmailEnabled.value = value.order_email_enabled
@@ -173,6 +178,7 @@ function saveStore(): Promise<void> {
       whatsapp_number: nullable(whatsappNumber.value),
       shipping_flat_fee: shippingFlatFee.value ?? 0,
       min_order_amount: minOrderAmount.value ?? 0,
+      delivery_estimate: deliveryEstimate.value.trim() || null,
       pickup_enabled: pickupEnabled.value,
       ...(hasMultipleBranches.value ? { fulfillment_branch_id: fulfillmentBranchId.value } : {}),
       order_email_enabled: orderEmailEnabled.value,
@@ -341,6 +347,12 @@ async function copyPublicUrl(): Promise<void> {
                     label="Pedido mínimo"
                     :min="0"
                     :error="fieldErrors.min_order_amount"
+                  />
+                  <NxInput
+                    v-model="deliveryEstimate"
+                    label="Tiempo de entrega"
+                    placeholder="2 a 3 días hábiles"
+                    :error="fieldErrors.delivery_estimate"
                   />
                   <NxToggleButton
                     v-model="pickupEnabled"

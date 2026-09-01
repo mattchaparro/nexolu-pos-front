@@ -47,6 +47,8 @@ export interface StoreSettings {
   home_blocks: HomeBlock[]
   whatsapp_number: string | null
   shipping_flat_fee: number
+  /** Lo escribe el comerciante ('2 a 3 días hábiles'). Nulo = no lo dijo. */
+  delivery_estimate: string | null
   min_order_amount: number
   pickup_enabled: boolean
   /** Clics en el botón de WhatsApp de la tienda, últimos 30 días. */
@@ -89,6 +91,11 @@ export interface StoreSettings {
 export type StoreSettingsPayload = Partial<
   Omit<
     StoreSettings,
-    'logo_url' | 'banner_url' | 'hero_image_url' | 'story_image_url' | 'public_url' | 'published_products_count'
+    | 'logo_url'
+    | 'banner_url'
+    | 'hero_image_url'
+    | 'story_image_url'
+    | 'public_url'
+    | 'published_products_count'
   >
 >
