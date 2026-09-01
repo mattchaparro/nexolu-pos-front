@@ -440,6 +440,33 @@ const router = createRouter({
           // negocio no es delegable via permisos de empleado (ver
           // EnsureBusinessAdmin en nexolu-pos-api) - mismo criterio que
           // Usuarios, mas abajo.
+          // Administrar sedes. requiresAdmin y no un permiso de empleado:
+          // abrir o cerrar un local no es una tarea delegable del dia a dia,
+          // mismo criterio que Ajustes aqui abajo.
+          path: 'sedes',
+          name: 'branches.index',
+          component: () => import('@/modules/branches/views/BranchesView.vue'),
+          meta: { requiresAdmin: true, requiresFeature: 'multi_branch' },
+        },
+        {
+          path: 'traslados-de-inventario',
+          name: 'stock-transfers.index',
+          component: () => import('@/modules/stock-transfers/views/StockTransfersView.vue'),
+          meta: { requiresFeature: 'multi_branch', requiresPermission: 'inventory.view' },
+        },
+        {
+          path: 'traslados-de-inventario/nuevo',
+          name: 'stock-transfers.create',
+          component: () => import('@/modules/stock-transfers/views/StockTransferFormView.vue'),
+          meta: { requiresFeature: 'multi_branch', requiresPermission: 'inventory.adjust' },
+        },
+        {
+          path: 'reportes/sedes',
+          name: 'reports.branches',
+          component: () => import('@/modules/branches/views/BranchComparisonView.vue'),
+          meta: { requiresAdmin: true, requiresFeature: 'multi_branch' },
+        },
+        {
           path: 'ajustes',
           name: 'business-settings.index',
           component: () => import('@/modules/settings/views/BusinessSettingsView.vue'),

@@ -13,6 +13,9 @@ export interface Employee {
   role: EmployeeRole
   /** Solo presente si role='employee' - un admin hereda todo por rol. */
   permissions: string[] | null
+  /** Sedes a las que entra. Un admin entra a todas sin filas en el pivote. */
+  branch_ids?: number[]
+  default_branch_id: number | null
   last_active_at: string | null
 }
 
@@ -23,6 +26,7 @@ export interface CreateEmployeePayload {
   password_confirmation: string
   role: EmployeeRole
   permissions?: string[]
+  branch_ids?: number[]
 }
 
 export interface UpdateEmployeePayload {
@@ -32,6 +36,12 @@ export interface UpdateEmployeePayload {
   password_confirmation?: string
   role: EmployeeRole
   permissions?: string[]
+  /**
+   * Solo se manda si el negocio es multisede. Omitirla conserva las sedes
+   * que ya tenia (ver EmployeeController::syncBranches en la API): mandar
+   * [] dejaria al empleado sin poder entrar a ninguna.
+   */
+  branch_ids?: number[]
 }
 
 // Refleja PermissionCatalog::categoriasParaUI() via

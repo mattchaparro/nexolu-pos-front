@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
+import { branchStorage } from '@/services/http/branchStorage'
 import { httpClient } from '@/services/http/client'
 import { tokenStorage } from '@/services/http/tokenStorage'
 import { queryClient } from '@/services/query/queryClient'
@@ -35,6 +36,10 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = data.token
     user.value = data.user
     tokenStorage.set(data.token)
+    // La sede guardada es del usuario anterior: pertenece a otro negocio o
+    // es una a la que este no entra. Se borra y el backend resuelve la suya
+    // en la primera peticion (ver ResolveBranch en la API).
+    branchStorage.clear()
   }
 
   function clearSession(): void {
@@ -44,6 +49,7 @@ export const useAuthStore = defineStore('auth', () => {
     tokenStorage.clear()
     impersonatorToken.value = null
     tokenStorage.clearImpersonator()
+    branchStorage.clear()
   }
 
   async function login(credentials: LoginCredentials): Promise<void> {
@@ -127,6 +133,7 @@ export const useAuthStore = defineStore('auth', () => {
       // El token de impersonacion puede ya haber expirado - no bloquea volver.
     }
     queryClient.clear()
+    branchStorage.clear()
     impersonatorToken.value = null
     tokenStorage.clearImpersonator()
     token.value = original

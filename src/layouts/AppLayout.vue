@@ -9,6 +9,7 @@ import { useRouter } from 'vue-router'
 
 import { homeRouteFor } from '@/router'
 import logo from '@/assets/nexolu-logo.png'
+import BranchSwitcher from '@/components/BranchSwitcher.vue'
 import WelcomeExperienceModal from '@/components/WelcomeExperienceModal.vue'
 import { useNavItems } from '@/composables/useNavItems'
 import { useAuthStore } from '@/stores/auth.store'
@@ -55,6 +56,7 @@ async function stopImpersonating(): Promise<void> {
           @logout="handleLogout"
         >
           <template #actions>
+            <BranchSwitcher />
             <RouterLink
               v-if="auth.user?.roles?.includes('superadmin')"
               :to="{ name: 'superadmin.businesses.index' }"

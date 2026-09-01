@@ -4,6 +4,7 @@ import router from '@/router'
 import { useAuthStore } from '@/stores/auth.store'
 import { useFlashStore } from '@/stores/flash.store'
 
+import { branchStorage } from './branchStorage'
 import { tokenStorage } from './tokenStorage'
 
 export const httpClient = axios.create({
@@ -26,6 +27,16 @@ httpClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+
+  // La sede viaja en un header y no como parametro de cada endpoint: el
+  // backend la resuelve una vez en un middleware (ver ResolveBranch en
+  // nexolu-pos-api), asi que ninguna pantalla tiene que acordarse de
+  // mandarla. Sin header, el backend usa la sede por defecto del usuario.
+  const branch = branchStorage.get()
+  if (branch !== null) {
+    config.headers['X-Branch-Id'] = String(branch)
+  }
+
   return config
 })
 

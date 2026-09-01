@@ -44,6 +44,12 @@ export const adminNavItems: NavItem[] = [
     featureKey: 'receivables',
   },
   {
+    label: 'Traslados',
+    icon: 'pi pi-arrow-right-arrow-left',
+    routeName: 'stock-transfers.index',
+    featureKey: 'multi_branch',
+  },
+  {
     label: 'Apartados',
     icon: 'pi pi-bookmark',
     routeName: 'layaways.index',
