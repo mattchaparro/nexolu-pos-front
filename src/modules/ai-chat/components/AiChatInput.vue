@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { NxButton, NxTextarea } from '@/ui'
+import { NxTextarea } from '@/ui'
 
 const props = defineProps<{ disabled: boolean }>()
 const emit = defineEmits<{ send: [text: string] }>()
@@ -29,8 +29,15 @@ function handleKeydown(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <div class="flex items-end gap-2">
-    <div class="flex-1">
+  <!--
+    Boton circular de icono, no un NxButton con la palabra "Enviar": en el
+    celular ese boton se comia un tercio del ancho de la fila y empujaba el
+    campo de texto, y el usuario ya sabe que el avioncito manda. items-center
+    (no items-end) para que quede centrado contra el campo en vez de colgado
+    del borde inferior.
+  -->
+  <div class="flex items-center gap-2">
+    <div class="min-w-0 flex-1">
       <NxTextarea
         v-model="text"
         placeholder="Escribe tu mensaje..."
@@ -39,6 +46,15 @@ function handleKeydown(event: KeyboardEvent): void {
         @keydown="handleKeydown"
       />
     </div>
-    <NxButton icon="pi pi-send" :disabled="disabled || !text.trim()" @click="submit">Enviar</NxButton>
+    <button
+      type="button"
+      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+      :disabled="disabled || !text.trim()"
+      aria-label="Enviar mensaje"
+      title="Enviar"
+      @click="submit"
+    >
+      <i class="pi pi-send text-sm" />
+    </button>
   </div>
 </template>
