@@ -69,7 +69,7 @@ onMounted(() => {
         :draft="draft"
         :confirming="draftActions.confirmingId.value === draft.id"
         :discarding="draftActions.discardingId.value === draft.id"
-        @confirm="(id) => draftActions.confirm(id)"
+        @confirm="(id, values) => draftActions.confirm(id, values)"
         @discard="(id) => draftActions.discard(id)"
       />
 
