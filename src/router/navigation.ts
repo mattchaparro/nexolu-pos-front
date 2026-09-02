@@ -136,7 +136,7 @@ export const superadminNavItems: NavItem[] = [
   { label: 'Dashboard', icon: 'pi pi-th-large', disabled: true },
   { label: 'Negocios', icon: 'pi pi-building', routeName: 'superadmin.businesses.index' },
   { label: 'Finanzas', icon: 'pi pi-wallet', disabled: true },
-  { label: 'Uso y costos IA', icon: 'pi pi-comments', disabled: true },
+  { label: 'Uso y costos IA', icon: 'pi pi-comments', routeName: 'superadmin.ai-usage.index' },
   { label: 'Ajustes de IA', icon: 'pi pi-comments', disabled: true },
   { label: 'Usuarios (plataforma)', icon: 'pi pi-users', disabled: true },
   { label: 'Auditoría', icon: 'pi pi-history', disabled: true },

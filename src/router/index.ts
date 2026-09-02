@@ -516,6 +516,11 @@ const router = createRouter({
             import('@/modules/superadmin-businesses/views/SuperAdminBusinessShowView.vue'),
         },
         {
+          path: 'asistente-ia',
+          name: 'superadmin.ai-usage.index',
+          component: () => import('@/modules/superadmin-ai/views/SuperAdminAiUsageView.vue'),
+        },
+        {
           path: 'comunicaciones',
           name: 'superadmin.communications.index',
           component: () =>
