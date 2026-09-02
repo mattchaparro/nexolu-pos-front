@@ -1,7 +1,15 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import type { AiChatMessage } from '@/types/aiChat'
 
-defineProps<{ message: AiChatMessage }>()
+import { parseRichText } from '../support/richText'
+
+const props = defineProps<{ message: AiChatMessage }>()
+
+// Trozos, no HTML: ver el docblock de richText.ts para por que no se usa una
+// libreria de markdown con v-html sobre la salida de un modelo.
+const chunks = computed(() => parseRichText(props.message.text))
 </script>
 
 <template>
@@ -17,7 +25,12 @@ defineProps<{ message: AiChatMessage }>()
       ]"
     >
       <i v-if="message.failed" class="pi pi-exclamation-triangle mr-1.5 text-xs" />
-      <span v-if="message.text">{{ message.text }}</span>
+      <template v-if="message.text">
+        <template v-for="(chunk, index) in chunks" :key="index">
+          <strong v-if="chunk.bold">{{ chunk.text }}</strong>
+          <template v-else>{{ chunk.text }}</template>
+        </template>
+      </template>
       <span v-if="message.streaming" class="ml-1 inline-flex items-center gap-1 align-middle">
         <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-current opacity-60 [animation-delay:-0.3s]" />
         <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-current opacity-60 [animation-delay:-0.15s]" />
