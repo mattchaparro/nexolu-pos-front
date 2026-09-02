@@ -79,7 +79,14 @@ async function removeDiscount(discount: Discount): Promise<void> {
       <NxButton icon="pi pi-plus" @click="openNewDiscount">Descuento</NxButton>
     </div>
 
-    <NxInput v-model="searchInput" label="Buscar por nombre" size="lg" icon="pi pi-search" clearable blur-after-typing />
+    <NxInput
+      v-model="searchInput"
+      label="Buscar por nombre"
+      size="lg"
+      icon="pi pi-search"
+      clearable
+      blur-after-typing
+    />
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
       <NxDataTable
@@ -94,7 +101,11 @@ async function removeDiscount(discount: Discount): Promise<void> {
       >
         <template #empty>
           <p class="py-6 text-center text-sm text-slate-400">
-            {{ search ? 'Sin resultados para tu búsqueda.' : 'Todavía no hay descuentos configurados.' }}
+            {{
+              search
+                ? 'Sin resultados para tu búsqueda.'
+                : 'Todavía no hay descuentos configurados.'
+            }}
           </p>
         </template>
         <NxColumn header="Nombre">
@@ -116,7 +127,12 @@ async function removeDiscount(discount: Discount): Promise<void> {
         <NxColumn>
           <template #body="{ data }: { data: Discount }">
             <div class="flex flex-wrap items-center justify-end gap-x-2 gap-y-1.5">
-              <button type="button" class="text-slate-400 hover:text-indigo-600" title="Editar" @click="openEditDiscount(data)">
+              <button
+                type="button"
+                class="text-slate-400 hover:text-indigo-600"
+                title="Editar"
+                @click="openEditDiscount(data)"
+              >
                 <i class="pi pi-pencil text-sm" />
               </button>
               <button

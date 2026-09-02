@@ -13,6 +13,18 @@ export interface Discount {
   /** Solo presente si scope='item' y esta atado a un producto puntual. */
   product: { id: number; name: string } | null
   is_active: boolean
+  /**
+   * Con código es un CUPÓN de la tienda online: lo redime el comprador
+   * escribiéndolo. Sin código es un descuento del mostrador, que el cajero
+   * elige de una lista.
+   */
+  code: string | null
+  starts_at: string | null
+  ends_at: string | null
+  /** Tope de redenciones. Nulo = sin tope. */
+  max_uses: number | null
+  used_count: number
+  min_order_amount: number | null
 }
 
 // Refleja StoreDiscountRequest/UpdateDiscountRequest - product_id solo tiene
@@ -24,4 +36,9 @@ export interface DiscountPayload {
   scope: DiscountScope
   product_id: number | null
   is_active: boolean
+  code?: string | null
+  starts_at?: string | null
+  ends_at?: string | null
+  max_uses?: number | null
+  min_order_amount?: number | null
 }

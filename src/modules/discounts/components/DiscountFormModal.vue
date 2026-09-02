@@ -4,10 +4,12 @@
 // Admin/Discounts/Save.vue del legacy.
 import { computed, ref, watch } from 'vue'
 
+import { useBusiness } from '@/composables/useBusiness'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { Discount, DiscountScope, DiscountType } from '@/types/discount'
 import { NxButton, NxInput, NxInputNumber, NxModal, NxSelect, NxSwitch } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
+import { hasFeature } from '@/utils/hasFeature'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 
 import { useDiscountMutations } from '../composables/useDiscountMutations'
@@ -39,6 +41,14 @@ const value = ref<number | null>(null)
 const scope = ref<DiscountScope>('cart')
 const productId = ref<number | null>(null)
 const isActive = ref(true)
+// Campos de CUPÓN. Un descuento del mostrador los deja vacíos: lo que
+// convierte un descuento en cupón es tener código, porque es lo que el
+// comprador escribe. Solo se ofrecen si el negocio tiene tienda online.
+const code = ref('')
+const startsAt = ref('')
+const endsAt = ref('')
+const maxUses = ref<number | null>(null)
+const minOrderAmount = ref<number | null>(null)
 const fieldErrors = ref<Record<string, string>>({})
 const formError = ref<string | null>(null)
 
@@ -54,6 +64,11 @@ function resetForm(): void {
   scope.value = props.discount?.scope ?? 'cart'
   productId.value = props.discount?.product?.id ?? null
   isActive.value = props.discount?.is_active ?? true
+  code.value = props.discount?.code ?? ''
+  startsAt.value = props.discount?.starts_at?.slice(0, 10) ?? ''
+  endsAt.value = props.discount?.ends_at?.slice(0, 10) ?? ''
+  maxUses.value = props.discount?.max_uses ?? null
+  minOrderAmount.value = props.discount?.min_order_amount ?? null
   fieldErrors.value = {}
   formError.value = null
 }
@@ -75,6 +90,10 @@ watch(scope, (value) => {
   }
 })
 
+// Los cupones son de la tienda online: a quien no la tiene no se le
+// ofrecen campos que no puede usar.
+const { data: business } = useBusiness()
+const tieneTienda = computed(() => hasFeature(business.value, 'online_store'))
 const isEdit = computed(() => props.discount !== null)
 const isSaving = computed(() => createMutation.isPending.value || updateMutation.isPending.value)
 const modalTitle = computed(() => (isEdit.value ? 'Editar descuento' : 'Nuevo descuento'))
@@ -104,6 +123,12 @@ async function submit(): Promise<void> {
     scope: scope.value,
     product_id: scope.value === 'item' ? productId.value : null,
     is_active: isActive.value,
+    // Vacío = descuento del mostrador, sin código que redimir.
+    code: code.value.trim().toUpperCase() || null,
+    starts_at: startsAt.value || null,
+    ends_at: endsAt.value || null,
+    max_uses: maxUses.value,
+    min_order_amount: minOrderAmount.value,
   }
 
   try {
@@ -134,7 +159,9 @@ async function submit(): Promise<void> {
     @update:model-value="emit('update:modelValue', $event)"
   >
     <div class="flex flex-col gap-3">
-      <p v-if="formError" class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{{ formError }}</p>
+      <p v-if="formError" class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+        {{ formError }}
+      </p>
 
       <NxInput v-model="name" label="Nombre" required :error="fieldErrors.name" />
 
@@ -179,11 +206,61 @@ async function submit(): Promise<void> {
         Descuento activo
         <NxSwitch v-model="isActive" />
       </label>
+
+      <!-- Cupón: solo con tienda online. Lo que convierte un descuento en
+           cupón es tener código, porque es lo que el comprador escribe en el
+           checkout. Sin código sigue siendo un descuento del mostrador. -->
+      <div v-if="tieneTienda" class="flex flex-col gap-3 border-t border-slate-100 pt-3">
+        <div>
+          <NxInput
+            v-model="code"
+            label="Código del cupón"
+            placeholder="BIENVENIDA10"
+            :error="fieldErrors.code"
+          />
+          <p class="mt-1 text-[11px] text-slate-400">
+            Déjalo vacío si es un descuento que aplicas tú en la caja. Con código, el comprador lo
+            escribe en tu tienda online.
+            <template v-if="props.discount && props.discount.code">
+              Se ha usado {{ props.discount.used_count }}
+              {{ props.discount.used_count === 1 ? 'vez' : 'veces' }}.
+            </template>
+          </p>
+        </div>
+
+        <template v-if="code.trim() !== ''">
+          <div class="grid grid-cols-2 gap-3">
+            <NxInput v-model="startsAt" type="date" label="Desde" :error="fieldErrors.starts_at" />
+            <NxInput v-model="endsAt" type="date" label="Hasta" :error="fieldErrors.ends_at" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <NxInputNumber
+              v-model="maxUses"
+              label="Máximo de usos"
+              :min="1"
+              :error="fieldErrors.max_uses"
+            />
+            <NxInputNumber
+              v-model="minOrderAmount"
+              label="Compra mínima"
+              currency
+              :min="0"
+              :error="fieldErrors.min_order_amount"
+            />
+          </div>
+          <p class="text-[11px] text-slate-400">
+            Los campos vacíos no limitan: sin fechas el cupón está siempre vigente, y sin máximo de
+            usos no se agota.
+          </p>
+        </template>
+      </div>
     </div>
 
     <template #footer>
       <div class="flex gap-2">
-        <NxButton variant="outline" class="flex-1" @click="emit('update:modelValue', false)">Cancelar</NxButton>
+        <NxButton variant="outline" class="flex-1" @click="emit('update:modelValue', false)"
+          >Cancelar</NxButton
+        >
         <NxButton class="flex-1" :loading="isSaving" @click="submit">Guardar</NxButton>
       </div>
     </template>
