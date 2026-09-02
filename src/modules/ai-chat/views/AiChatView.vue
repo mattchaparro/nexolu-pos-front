@@ -5,8 +5,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import type { AiAgent } from '@/types/aiChat'
-import { NxPageHeader, NxSelect } from '@/ui'
+import { NxPageHeader } from '@/ui'
 
 import AiChatInput from '../components/AiChatInput.vue'
 import AiChatMessageBubble from '../components/AiChatMessageBubble.vue'
@@ -15,14 +14,7 @@ import AiQuotaExhaustedBanner from '../components/AiQuotaExhaustedBanner.vue'
 import { useAiChat } from '../composables/useAiChat'
 import { useAiDraftActions } from '../composables/useAiDraftActions'
 
-const AGENT_OPTIONS: { label: string; value: AiAgent }[] = [
-  { label: 'Cajero', value: 'cajero' },
-  { label: 'Analista', value: 'analista' },
-  { label: 'Inventario', value: 'inventario' },
-  { label: 'Restaurante', value: 'restaurante' },
-]
-
-const chat = useAiChat('cajero')
+const chat = useAiChat()
 const draftActions = useAiDraftActions((draftId) => chat.removeDraft(draftId))
 
 const isQuotaExhausted = computed(() => chat.error.value?.includes('cupo de mensajes') === true)
@@ -35,10 +27,6 @@ watch(
     messagesEnd.value?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   },
 )
-
-function handleAgentChange(value: unknown): void {
-  chat.switchAgent(value as AiAgent)
-}
 
 // Pregunta que llega por la URL (?q=...), con la que las tarjetas de insight
 // del Inicio abren el chat ya contextualizado: el chat es la continuacion de
@@ -63,19 +51,10 @@ onMounted(() => {
 
 <template>
   <div class="flex h-full flex-col gap-4">
-    <div class="flex items-center justify-between gap-4">
-      <NxPageHeader title="Asistente de IA" subtitle="Pregúntale por ventas, inventario o caja - o pídele que registre algo." icon="pi pi-comments" />
-      <div class="w-48">
-        <NxSelect
-          :model-value="chat.agent.value"
-          :options="AGENT_OPTIONS"
-          option-label="label"
-          option-value="value"
-          label="Agente"
-          @update:model-value="handleAgentChange"
-        />
-      </div>
-    </div>
+    <!-- Sin selector de agente: el Asistente tiene todas las herramientas y
+         elige la que aplica. Antes habia cuatro y el usuario tenia que
+         adivinar cual servia para su pregunta. -->
+    <NxPageHeader title="Asistente de IA" subtitle="Pregúntale por ventas, inventario o caja - o pídele que registre algo." icon="pi pi-comments" />
 
     <div class="flex flex-1 flex-col gap-3 overflow-y-auto rounded-xl border border-slate-200 bg-white p-4">
       <p v-if="chat.messages.value.length === 0" class="my-auto text-center text-sm text-slate-400">

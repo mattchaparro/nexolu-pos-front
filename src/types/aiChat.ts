@@ -26,7 +26,14 @@ export interface AiChatStreamChunk {
   error?: string
 }
 
-export type AiAgent = 'cajero' | 'analista' | 'inventario' | 'restaurante'
+/**
+ * Un solo agente, con todas las herramientas del POS (ver apps/pos/agents.py
+ * en nexolu-ia-core). Antes eran cuatro y el usuario elegia: preguntarle al
+ * "cajero" cuanto se vendio en agosto respondia "no tengo esa herramienta",
+ * porque ventas_resumen vivia en "analista". Elegir la herramienta es
+ * trabajo del modelo.
+ */
+export type AiAgent = 'asistente'
 
 export interface AiChatMessage {
   id: string

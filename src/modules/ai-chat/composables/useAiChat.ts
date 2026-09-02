@@ -8,7 +8,7 @@ import type { AiAgent, AiChatMessage, AiDraft } from '@/types/aiChat'
  * no Pinia ni TanStack Query - es un stream en vivo, no estado de servidor
  * cacheable (mismo criterio que useAiMessagePackCheckout).
  */
-export function useAiChat(initialAgent: AiAgent = 'cajero') {
+export function useAiChat(initialAgent: AiAgent = 'asistente') {
   const agent = ref<AiAgent>(initialAgent)
   const messages = ref<AiChatMessage[]>([])
   const conversationId = ref<string | null>(null)
@@ -17,12 +17,6 @@ export function useAiChat(initialAgent: AiAgent = 'cajero') {
   const error = ref<string | null>(null)
 
   let controller: AbortController | null = null
-
-  /** Cambiar de agente implica conversacion nueva - IA Core resuelve conversacion por (agent, conversation_id). */
-  function switchAgent(next: AiAgent): void {
-    agent.value = next
-    conversationId.value = null
-  }
 
   async function sendMessage(text: string): Promise<void> {
     const trimmed = text.trim()
@@ -90,5 +84,5 @@ export function useAiChat(initialAgent: AiAgent = 'cajero') {
     pendingDrafts.value = pendingDrafts.value.filter((draft) => draft.id !== draftId)
   }
 
-  return { agent, messages, conversationId, pendingDrafts, isStreaming, error, sendMessage, switchAgent, cancel, removeDraft }
+  return { agent, messages, conversationId, pendingDrafts, isStreaming, error, sendMessage, cancel, removeDraft }
 }
