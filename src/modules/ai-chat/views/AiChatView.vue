@@ -2,7 +2,8 @@
 // Asistente de IA - chat con streaming contra POST /ai/chat/stream. Primer
 // modulo de frontend que consume IA Core (el backend ya lo hacia desde
 // hace tiempo, ver docs/BACKEND_READINESS.md en nexolu-pos-api).
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import type { AiAgent } from '@/types/aiChat'
 import { NxPageHeader, NxSelect } from '@/ui'
@@ -38,6 +39,26 @@ watch(
 function handleAgentChange(value: unknown): void {
   chat.switchAgent(value as AiAgent)
 }
+
+// Pregunta que llega por la URL (?q=...), con la que las tarjetas de insight
+// del Inicio abren el chat ya contextualizado: el chat es la continuacion de
+// lo que el dueño estaba mirando, no una pantalla aparte a la que hay que
+// acordarse de entrar.
+//
+// Se limpia la query despues de mandarla para que recargar la pagina no
+// vuelva a preguntar lo mismo (y no gaste otro mensaje de la cuota).
+const route = useRoute()
+const router = useRouter()
+
+onMounted(() => {
+  const question = typeof route.query.q === 'string' ? route.query.q.trim() : ''
+  if (!question) {
+    return
+  }
+
+  router.replace({ query: {} })
+  chat.sendMessage(question)
+})
 </script>
 
 <template>

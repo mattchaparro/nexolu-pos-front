@@ -17,9 +17,12 @@ import { computed, ref } from 'vue'
 
 import { useBusiness } from '@/composables/useBusiness'
 import { useNavItems } from '@/composables/useNavItems'
+import { usePermissions } from '@/composables/usePermissions'
+import { useAuthStore } from '@/stores/auth.store'
 import { NxPageHeader, NxStatCard } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
+import AiInsightCard from '../components/AiInsightCard.vue'
 import ConsejoDelDiaCard from '../components/ConsejoDelDiaCard.vue'
 import ShortcutCustomizer from '../components/ShortcutCustomizer.vue'
 import ShortcutsGrid from '../components/ShortcutsGrid.vue'
@@ -27,9 +30,19 @@ import WhatsappOnboardingCard from '../components/WhatsappOnboardingCard.vue'
 import { useDashboardSummary } from '../composables/useDashboardSummary'
 import { resolveShortcuts } from '../support/shortcuts'
 
+
 const { data: stats, isPending, isError } = useDashboardSummary()
 const { data: business } = useBusiness()
 const navItems = useNavItems()
+
+// Mismo gate que el chat (ai_chat.use): el insight lo redacta el mismo
+// servicio de IA, solo que embebido. Un empleado sin ese permiso no deberia
+// ver en Inicio lo que no puede consultar en el Asistente.
+const auth = useAuthStore()
+const { hasPermission } = usePermissions()
+const canUseAi = computed(
+  () => hasPermission('ai_chat.use') || auth.user?.roles?.includes('admin') === true,
+)
 
 const customizerOpen = ref(false)
 const shortcuts = computed(() => resolveShortcuts(stats.value?.shortcuts ?? null, navItems.value))
@@ -82,6 +95,7 @@ const shortcuts = computed(() => resolveShortcuts(stats.value?.shortcuts ?? null
 
     <ShortcutsGrid v-if="stats" class="mt-6" :shortcuts="shortcuts" @customize="customizerOpen = true" />
 
+    <AiInsightCard v-if="canUseAi" class="mt-6" />
     <WhatsappOnboardingCard class="mt-6" />
     <ConsejoDelDiaCard class="mt-6" />
 

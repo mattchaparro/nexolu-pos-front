@@ -1,10 +1,10 @@
 import axios from 'axios'
 
 import router from '@/router'
-import { useAuthStore } from '@/stores/auth.store'
 import { useFlashStore } from '@/stores/flash.store'
 
 import { branchStorage } from './branchStorage'
+import { handleExpiredSession } from './session'
 import { tokenStorage } from './tokenStorage'
 
 export const httpClient = axios.create({
@@ -54,17 +54,10 @@ httpClient.interceptors.response.use(
     const status = error.response?.status
     const onLogin = router.currentRoute.value.name === 'login'
 
-    if (status === 401 && !onLogin) {
-      // clearSession() (no solo tokenStorage.clear()) es necesario: el guard
-      // de router/index.ts redirige de vuelta a home si to.name === 'login'
-      // y auth.isAuthenticated es true, e isAuthenticated se calcula del
-      // token en memoria del store de Pinia, no de localStorage - limpiar
-      // solo el storage dejaba el store todavia "autenticado" y el push a
-      // login rebotaba de inmediato, sin sacar al usuario (bug reportado:
-      // la alerta aparecia pero la app seguia navegable como logueado).
-      useAuthStore().clearSession()
-      useFlashStore().set('Tu sesión expiró. Inicia sesión de nuevo.', 'warn')
-      router.push({ name: 'login' })
+    if (status === 401) {
+      // El detalle de por que esto limpia el store y no solo el storage vive
+      // en handleExpiredSession(), compartido con el cliente SSE del chat.
+      handleExpiredSession()
     } else if (status === 403 && !onLogin) {
       // El guard del router (ver router/index.ts) ya bloquea la mayoria de
       // estos casos antes de llegar aca, pero no cubre acciones dentro de

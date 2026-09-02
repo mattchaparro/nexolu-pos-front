@@ -1,4 +1,6 @@
+import { branchStorage } from '@/services/http/branchStorage'
 import { httpClient } from '@/services/http/client'
+import { handleExpiredSession } from '@/services/http/session'
 import { tokenStorage } from '@/services/http/tokenStorage'
 import type { AiAgent, AiChatResult, AiChatStreamChunk } from '@/types/aiChat'
 
@@ -40,6 +42,7 @@ export async function streamAiChatMessage(
   signal?: AbortSignal,
 ): Promise<void> {
   const token = tokenStorage.get()
+  const branch = branchStorage.get()
   let response: Response
 
   try {
@@ -49,12 +52,26 @@ export async function streamAiChatMessage(
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        // La sede, igual que en el interceptor de axios: este fetch no pasa
+        // por el, asi que hay que repetirlo a mano o el backend resolveria
+        // la sede por defecto del usuario y no la que tiene seleccionada.
+        ...(branch !== null ? { 'X-Branch-Id': String(branch) } : {}),
       },
       body: JSON.stringify(payload),
       signal,
     })
   } catch {
     handlers.onError('No pudimos conectar con el Asistente de IA.')
+    return
+  }
+
+  // Un token vencido a mitad de conversacion tiene que sacar al usuario al
+  // login igual que en cualquier otra pantalla. Este fetch no pasa por el
+  // interceptor de axios, asi que sin esto el usuario veia "no pudimos
+  // procesar el mensaje" y la app aparentemente normal, sin entender que
+  // su sesion ya no valia.
+  if (response.status === 401) {
+    handleExpiredSession()
     return
   }
 
