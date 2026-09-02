@@ -43,6 +43,12 @@ const effectivePlaceholder = computed(() => (props.label ? undefined : props.pla
 <template>
   <div class="flex flex-col gap-1">
     <PrimeFloatLabel variant="on">
+      <!--
+        class="block": un textarea inline arrastra el descender de su line
+        box y deja ~6px de hueco fantasma DEBAJO del campo, dentro de este
+        contenedor. Se nota al alinear algo contra el - el boton de enviar
+        del chat quedaba 3px por debajo del centro real del campo.
+      -->
       <PrimeTextarea
         :id="inputId"
         :model-value="modelValue"
@@ -50,6 +56,7 @@ const effectivePlaceholder = computed(() => (props.label ? undefined : props.pla
         :disabled="disabled"
         :invalid="isInvalid"
         :rows="rows"
+        class="block"
         style="font-size: 16px"
         fluid
         @update:model-value="(value) => emit('update:modelValue', value as string)"

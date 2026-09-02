@@ -98,9 +98,9 @@ onMounted(() => {
     </div>
 
     <AiQuotaExhaustedBanner v-if="isQuotaExhausted" :message="chat.error.value!" />
-    <p v-else-if="chat.error.value" class="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-      {{ chat.error.value }}
-    </p>
+    <!-- El error generico ya no lleva banner: se responde dentro del chat
+         (ver useAiChat.onError). El de cupo si lo conserva porque trae su
+         propia llamada a la accion, que en una burbuja se perderia. -->
     <p v-if="draftActions.error.value" class="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
       {{ draftActions.error.value }}
     </p>

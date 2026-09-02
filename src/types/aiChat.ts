@@ -33,4 +33,6 @@ export interface AiChatMessage {
   role: 'user' | 'assistant'
   text: string
   streaming: boolean
+  /** El Asistente no pudo responder: la burbuja se pinta como aviso, no como respuesta. */
+  failed?: boolean
 }
