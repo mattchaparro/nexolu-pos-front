@@ -144,7 +144,11 @@ export const superadminNavItems: NavItem[] = [
   { label: 'Tickets soporte', icon: 'pi pi-ticket', disabled: true },
   { label: 'Guías ayuda', icon: 'pi pi-book', disabled: true },
   { label: 'Ajustes globales', icon: 'pi pi-cog', disabled: true },
-  { label: 'Transacciones suscripción', icon: 'pi pi-receipt', disabled: true },
+  {
+    label: 'Transacciones suscripción',
+    icon: 'pi pi-receipt',
+    routeName: 'superadmin.subscription-transactions.index',
+  },
   { label: 'Comunicaciones', icon: 'pi pi-envelope', routeName: 'superadmin.communications.index' },
   // Sin equivalente en superadmin.json del legacy a proposito (igual que
   // 'Clientes' en adminNavItems): pantalla nueva de solo lectura sobre las

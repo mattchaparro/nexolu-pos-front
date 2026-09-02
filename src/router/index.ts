@@ -521,6 +521,12 @@ const router = createRouter({
           component: () => import('@/modules/superadmin-ai/views/SuperAdminAiUsageView.vue'),
         },
         {
+          path: 'transacciones-suscripcion',
+          name: 'superadmin.subscription-transactions.index',
+          component: () =>
+            import('@/modules/superadmin-subscription-transactions/views/SuperAdminSubscriptionTransactionsView.vue'),
+        },
+        {
           path: 'auditoria',
           name: 'superadmin.audit-logs.index',
           component: () => import('@/modules/superadmin-audit-logs/views/SuperAdminAuditLogsView.vue'),
