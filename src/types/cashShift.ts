@@ -75,12 +75,39 @@ export interface CurrentShiftResponse {
   preview_totals: CashTotals | null
 }
 
+/**
+ * Lo que el POS registró por medios electrónicos frente a lo que la pasarela
+ * dice haber cobrado. Nulo si el negocio no tiene pasarela conectada.
+ */
+export interface GatewayReconciliation {
+  pos: { count: number; total: number }
+  gateway: { count: number; total: number }
+  balanced: boolean
+  /** Cobró la pasarela, el POS no lo tiene: plata que entró sin registrarse. */
+  unmatched_payments: {
+    amount: number
+    payment_method: string | null
+    /** El número del voucher físico: con eso reclama el comerciante. */
+    approval_number: string | null
+    occurred_at: string | null
+  }[]
+  /** El POS lo registró, la pasarela no lo reporta. */
+  unmatched_sales: {
+    id: number
+    invoice_number: string | null
+    total: number
+    payment_method: string | null
+    created_at: string | null
+  }[]
+}
+
 export interface CashClosingPreview {
   date: string
   totals: CashTotals
   suggested_opening_cash: number
   existing_closing: CashClosing | null
   shifts_to_auto_close: CashShift[]
+  gateway_reconciliation: GatewayReconciliation | null
 }
 
 export interface OpenCashShiftPayload {
