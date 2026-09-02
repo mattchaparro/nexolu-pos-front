@@ -26,6 +26,13 @@ const props = withDefaults(
     required?: boolean
     size?: NxInputSize
     id?: string
+    /**
+     * Boton de "limpiar" dentro del campo, para selects que son un FILTRO y
+     * cuyo estado natural es "sin elegir" (ej. tipo de accion en Auditoria).
+     * No usar en formularios: ahi vaciar un campo obligatorio no es una
+     * accion que el usuario deba tener a un clic.
+     */
+    showClear?: boolean
     /** Buscador dentro del dropdown - para listas largas (ej. productos/insumos en una linea de compra). */
     filter?: boolean
     /**
@@ -50,6 +57,7 @@ const props = withDefaults(
     required: false,
     size: 'md',
     id: undefined,
+    showClear: false,
     filter: false,
     filterFields: undefined,
   },
@@ -105,6 +113,7 @@ const fontSizeStyle = { fontSize: '16px' }
         :invalid="isInvalid"
         :size="primeSize"
         :style="fontSizeStyle"
+        :show-clear="showClear"
         :filter="filter"
         :filter-fields="filterFields ?? [optionLabel]"
         :class="{ 'p-inputwrapper-filled': hasMatchingOption }"

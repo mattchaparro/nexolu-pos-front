@@ -521,6 +521,16 @@ const router = createRouter({
           component: () => import('@/modules/superadmin-ai/views/SuperAdminAiUsageView.vue'),
         },
         {
+          path: 'auditoria',
+          name: 'superadmin.audit-logs.index',
+          component: () => import('@/modules/superadmin-audit-logs/views/SuperAdminAuditLogsView.vue'),
+        },
+        {
+          path: 'cron-jobs',
+          name: 'superadmin.cron-jobs.index',
+          component: () => import('@/modules/superadmin-cron-jobs/views/SuperAdminCronJobsView.vue'),
+        },
+        {
           path: 'comunicaciones',
           name: 'superadmin.communications.index',
           component: () =>

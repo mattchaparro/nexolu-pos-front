@@ -11,3 +11,18 @@ export interface AuditLogEntry {
   method: string | null
   created_at: string
 }
+
+/**
+ * Fila de la auditoria GLOBAL del SuperAdmin
+ * (App\Http\Resources\Api\V1\SuperAdmin\LogActionResource).
+ *
+ * Se diferencia de AuditLogEntry en que trae el negocio y la marca de
+ * impersonacion: la auditoria del propio negocio filtra las acciones que
+ * hizo soporte en su nombre (ver AuditLogQuery::forBusiness), pero desde el
+ * panel de plataforma son justo las que hay que poder distinguir.
+ */
+export interface SuperAdminAuditLogEntry extends AuditLogEntry {
+  business_id: number | null
+  business: { id: number; name: string } | null
+  impersonated_by_superadmin_id: number | null
+}

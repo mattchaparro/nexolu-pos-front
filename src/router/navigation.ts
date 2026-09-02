@@ -139,7 +139,7 @@ export const superadminNavItems: NavItem[] = [
   { label: 'Uso y costos IA', icon: 'pi pi-comments', routeName: 'superadmin.ai-usage.index' },
   { label: 'Ajustes de IA', icon: 'pi pi-comments', disabled: true },
   { label: 'Usuarios (plataforma)', icon: 'pi pi-users', disabled: true },
-  { label: 'Auditoría', icon: 'pi pi-history', disabled: true },
+  { label: 'Auditoría', icon: 'pi pi-history', routeName: 'superadmin.audit-logs.index' },
   { label: 'Sistema', icon: 'pi pi-server', disabled: true },
   { label: 'Tickets soporte', icon: 'pi pi-ticket', disabled: true },
   { label: 'Guías ayuda', icon: 'pi pi-book', disabled: true },
@@ -163,7 +163,7 @@ export const superadminNavItems: NavItem[] = [
     icon: 'pi pi-sitemap',
     routeName: 'superadmin.feature-catalog.index',
   },
-  { label: 'Cron jobs', icon: 'pi pi-clock', disabled: true },
+  { label: 'Cron jobs', icon: 'pi pi-clock', routeName: 'superadmin.cron-jobs.index' },
   { label: 'Workflows servicio', icon: 'pi pi-sitemap', routeName: 'superadmin.workflows.index' },
   // Idem: sin equivalente en el legacy - catalogo normalizado de medios de
   // pago del POS (ver docs/CUTOVER_TODO.md sobre la normalizacion pendiente).
