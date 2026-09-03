@@ -12,6 +12,9 @@
 // nombre - el amarillo separado no aportaba significado, solo ruido. La
 // seleccion se distingue con relleno solido, no combinando borde + ring
 // (esa combinacion se veia recargada).
+import { computed, ref } from 'vue'
+
+import { NxInput } from '@/ui'
 import type { Sale } from '@/types/sale'
 import type { BusinessTable } from '@/types/table'
 import { formatCop } from '@/utils/formatCop'
@@ -36,6 +39,57 @@ const emit = defineEmits<{
   'select-tab': [tab: Sale]
 }>()
 
+// Buscador de mesas/cuentas, restaurado del legacy (SalesTerminal.vue:
+// "Buscar mesa, cliente o número de cuenta…"). La tira sola obliga a
+// scrollear entre todas las cuentas; en un negocio con muchas mesas y
+// cuentas por nombre eso no escala. Filtra en memoria las mismas dos listas
+// que ya llegan por props, sin pedir nada al backend.
+const search = ref('')
+
+// Siempre visible mientras haya al menos una mesa o cuenta para filtrar,
+// igual que el legacy lo mostraba siempre en su panel de cuentas. Solo se
+// oculta en el caso degenerado sin nada que buscar (0 mesas y 0 cuentas),
+// donde el input no filtraria nada.
+const showSearch = computed(() => props.tables.length > 0 || props.openTabsByName.length > 0)
+
+function matchesTab(tab: Sale, q: string): boolean {
+  return (
+    (tab.customer_name ?? '').toLowerCase().includes(q) ||
+    (tab.customer_phone ?? '').toLowerCase().includes(q) ||
+    String(tab.id).includes(q)
+  )
+}
+
+const filteredTables = computed<BusinessTable[]>(() => {
+  const q = search.value.trim().toLowerCase()
+  if (!q) {
+    return props.tables
+  }
+  return props.tables.filter((table) => {
+    if (table.name.toLowerCase().includes(q)) {
+      return true
+    }
+    // Tambien se puede buscar una mesa por el cliente de su cuenta abierta.
+    const sale = props.openSaleByTable.get(table.id)
+    return !!sale && matchesTab(sale, q)
+  })
+})
+
+const filteredOpenTabsByName = computed<Sale[]>(() => {
+  const q = search.value.trim().toLowerCase()
+  if (!q) {
+    return props.openTabsByName
+  }
+  return props.openTabsByName.filter((tab) => matchesTab(tab, q))
+})
+
+const noResults = computed(
+  () =>
+    search.value.trim() !== '' &&
+    filteredTables.value.length === 0 &&
+    filteredOpenTabsByName.value.length === 0,
+)
+
 // Number(): sale.total llega como string desde el backend (cast decimal:2
 // de Laravel se serializa como string en JSON) - sumarlo directo con "+"
 // concatenaria texto en vez de sumar.
@@ -55,8 +109,23 @@ function tabTotal(tab: Sale): number {
 </script>
 
 <template>
-  <div class="flex items-center gap-2">
-    <div class="flex flex-1 gap-2 overflow-x-auto pb-1">
+  <div class="space-y-2">
+    <div v-if="showSearch">
+      <NxInput
+        v-model="search"
+        size="sm"
+        icon="pi pi-search"
+        placeholder="Buscar mesa, cliente o número de cuenta…"
+        clearable
+        blur-after-typing
+      />
+      <p v-if="noResults" class="mt-1 text-xs text-amber-700">
+        Ninguna mesa o cuenta coincide con "{{ search.trim() }}".
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <div class="flex flex-1 gap-2 overflow-x-auto pb-1">
       <button
         type="button"
         class="flex min-w-[64px] shrink-0 flex-col items-center gap-0.5 rounded-xl border px-3 py-2 text-center transition-colors active:scale-95"
@@ -75,7 +144,7 @@ function tabTotal(tab: Sale): number {
       </button>
 
       <button
-        v-for="table in tables"
+        v-for="table in filteredTables"
         :key="table.id"
         type="button"
         class="flex min-w-[76px] shrink-0 flex-col items-center gap-0.5 rounded-xl border px-3 py-2 text-center transition-colors active:scale-95"
@@ -107,7 +176,7 @@ function tabTotal(tab: Sale): number {
       </button>
 
       <button
-        v-for="tab in openTabsByName"
+        v-for="tab in filteredOpenTabsByName"
         :key="tab.id"
         type="button"
         class="flex min-w-[76px] shrink-0 flex-col items-center gap-0.5 rounded-xl border px-3 py-2 text-center transition-colors active:scale-95"
@@ -134,5 +203,6 @@ function tabTotal(tab: Sale): number {
       <i class="pi pi-external-link text-xs" />
       Ver detalle
     </RouterLink>
+    </div>
   </div>
 </template>
