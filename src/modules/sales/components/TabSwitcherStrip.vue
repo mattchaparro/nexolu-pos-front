@@ -124,6 +124,20 @@ function tabTotal(tab: Sale): number {
   const isActive = props.activeMode === 'tab' && props.activeSaleId === tab.id
   return remainingOf(tab) + (isActive ? props.pendingCartTotal : 0)
 }
+
+/**
+ * Si la cuenta tiene abonos, el chip lo señala ("abonó"): asi se entiende
+ * que el monto mostrado es el saldo y no el total de lo consumido.
+ */
+function hasPartialPayments(sale: Sale | undefined): boolean {
+  if (!sale) {
+    return false
+  }
+  if (sale.amount_paid !== null && sale.amount_paid !== undefined) {
+    return Number(sale.amount_paid) > 0
+  }
+  return (sale.partial_payments?.length ?? 0) > 0
+}
 </script>
 
 <template>
@@ -191,6 +205,18 @@ function tabTotal(tab: Sale): number {
         <p v-if="openSaleByTable.has(table.id)" class="text-[10px] font-bold">
           {{ formatCop(tableTotal(table)) }}
         </p>
+        <p
+          v-if="hasPartialPayments(openSaleByTable.get(table.id))"
+          class="text-[9px] font-semibold leading-none"
+          :class="
+            (activeMode === 'tab' && activeSaleId === openSaleByTable.get(table.id)?.id) ||
+            (activeMode === 'new-tab' && pendingTableId === table.id)
+              ? 'text-white/80'
+              : 'text-emerald-600'
+          "
+        >
+          abonó
+        </p>
       </button>
 
       <button
@@ -211,6 +237,13 @@ function tabTotal(tab: Sale): number {
         />
         <p class="max-w-[70px] truncate text-xs font-semibold">{{ tab.customer_name || `#${tab.id}` }}</p>
         <p class="text-[10px] font-bold">{{ formatCop(tabTotal(tab)) }}</p>
+        <p
+          v-if="hasPartialPayments(tab)"
+          class="text-[9px] font-semibold leading-none"
+          :class="activeMode === 'tab' && activeSaleId === tab.id ? 'text-white/80' : 'text-emerald-600'"
+        >
+          abonó
+        </p>
       </button>
     </div>
 
