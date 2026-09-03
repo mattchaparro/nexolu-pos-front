@@ -93,18 +93,36 @@ const noResults = computed(
 // Number(): sale.total llega como string desde el backend (cast decimal:2
 // de Laravel se serializa como string en JSON) - sumarlo directo con "+"
 // concatenaria texto en vez de sumar.
+
+/**
+ * Lo que FALTA cobrar de la cuenta (total - abonos), no el total. Mejora
+ * deliberada sobre el legacy (decision del usuario, 2026-09-03): alla el
+ * chip mostraba el total y el saldo solo aparecia al entrar al modal de
+ * cobro; con abonos registrados eso le mostraba al cajero una deuda que el
+ * cliente ya no tiene. balance_due lo calcula el backend cuando la lista
+ * carga los abonos; el fallback resta localmente por si llegara una Sale
+ * sin esa relacion cargada.
+ */
+function remainingOf(sale: Sale): number {
+  if (sale.balance_due !== null && sale.balance_due !== undefined) {
+    return Number(sale.balance_due)
+  }
+  const paid = (sale.partial_payments ?? []).reduce((sum, p) => sum + Number(p.amount || 0), 0)
+  return Number(sale.total) - paid
+}
+
 function tableTotal(table: BusinessTable): number {
   const sale = props.openSaleByTable.get(table.id)
   if (!sale) {
     return 0
   }
   const isActive = props.activeMode === 'tab' && props.activeSaleId === sale.id
-  return Number(sale.total) + (isActive ? props.pendingCartTotal : 0)
+  return remainingOf(sale) + (isActive ? props.pendingCartTotal : 0)
 }
 
 function tabTotal(tab: Sale): number {
   const isActive = props.activeMode === 'tab' && props.activeSaleId === tab.id
-  return Number(tab.total) + (isActive ? props.pendingCartTotal : 0)
+  return remainingOf(tab) + (isActive ? props.pendingCartTotal : 0)
 }
 </script>
 
