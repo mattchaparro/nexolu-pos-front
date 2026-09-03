@@ -45,7 +45,10 @@ declare module 'vue-router' {
 // que volvia a /iniciar-sesion terminaba en el dashboard de negocio, que
 // le rompe por no tener business_id).
 export function homeRouteFor(user: User | null): { name: string } {
-  return { name: user?.roles?.includes('superadmin') ? 'superadmin.businesses.index' : 'dashboard' }
+  // Ahora que el tablero de plataforma existe, el super admin entra ahi y no
+  // al listado de negocios: es el primer item del menu y lo unico que
+  // responde "como va todo" de un vistazo.
+  return { name: user?.roles?.includes('superadmin') ? 'superadmin.dashboard' : 'dashboard' }
 }
 
 const router = createRouter({
@@ -519,6 +522,21 @@ const router = createRouter({
           path: 'asistente-ia',
           name: 'superadmin.ai-usage.index',
           component: () => import('@/modules/superadmin-ai/views/SuperAdminAiUsageView.vue'),
+        },
+        {
+          path: '',
+          name: 'superadmin.dashboard',
+          component: () => import('@/modules/superadmin-dashboard/views/SuperAdminDashboardView.vue'),
+        },
+        {
+          path: 'usuarios',
+          name: 'superadmin.users.index',
+          component: () => import('@/modules/superadmin-users/views/SuperAdminUsersView.vue'),
+        },
+        {
+          path: 'sistema',
+          name: 'superadmin.system.index',
+          component: () => import('@/modules/superadmin-system/views/SuperAdminSystemView.vue'),
         },
         {
           path: 'transacciones-suscripcion',

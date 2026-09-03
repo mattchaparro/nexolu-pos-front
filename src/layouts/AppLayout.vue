@@ -12,12 +12,14 @@ import logo from '@/assets/nexolu-logo.png'
 import BranchSwitcher from '@/components/BranchSwitcher.vue'
 import WelcomeExperienceModal from '@/components/WelcomeExperienceModal.vue'
 import { useNavItems } from '@/composables/useNavItems'
+import { useSupportContact } from '@/composables/useSupportContact'
 import { useAuthStore } from '@/stores/auth.store'
 import { NxNavbar, NxSidebar } from '@/ui'
 
 const auth = useAuthStore()
 const router = useRouter()
 const navItems = useNavItems()
+const supportWhatsappUrl = useSupportContact()
 // Ajustes y Mi suscripcion solo tienen sentido para quien administra el
 // negocio (mismo gate que ya tenian sus rutas via requiresAdmin, ver
 // router/index.ts) - ahora viven en el dropdown de perfil en vez del menu
@@ -53,6 +55,7 @@ async function stopImpersonating(): Promise<void> {
           show-profile-link
           :show-settings-link="isAdmin"
           :show-subscription-link="isAdmin"
+          :support-whatsapp-url="supportWhatsappUrl"
           @logout="handleLogout"
         >
           <template #actions>

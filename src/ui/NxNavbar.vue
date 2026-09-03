@@ -25,11 +25,18 @@ const props = withDefaults(
     showSettingsLink?: boolean
     /** Mostrar "Mi suscripción" - idem, solo admin. */
     showSubscriptionLink?: boolean
+    /**
+     * Enlace de WhatsApp a soporte, ya armado por el backend (incluye quien
+     * escribe y de que negocio). Vacio mientras carga o si no se pudo
+     * resolver: el item no se muestra, mejor eso que un enlace roto.
+     */
+    supportWhatsappUrl?: string | null
   }>(),
   {
     showProfileLink: false,
     showSettingsLink: false,
     showSubscriptionLink: false,
+    supportWhatsappUrl: null,
   },
 )
 
@@ -117,7 +124,25 @@ const initials = computed(() => {
             Mi suscripción
           </RouterLink>
 
-          <div v-if="showProfileLink || showSettingsLink || showSubscriptionLink" class="my-1.5 border-t border-slate-100" />
+          <!-- Soporte por WhatsApp: reemplaza al modulo de tickets del
+               legacy, que no uso nadie. Un dueño de local no abre un ticket,
+               escribe por WhatsApp. -->
+          <a
+            v-if="supportWhatsappUrl"
+            :href="supportWhatsappUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center gap-2.5 px-4 py-2 text-sm hover:bg-slate-50"
+            @click="closeMenu"
+          >
+            <i class="pi pi-whatsapp w-4 text-emerald-500" />
+            Soporte por WhatsApp
+          </a>
+
+          <div
+            v-if="showProfileLink || showSettingsLink || showSubscriptionLink || supportWhatsappUrl"
+            class="my-1.5 border-t border-slate-100"
+          />
 
           <button type="button" class="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50" @click="handleLogout">
             <i class="pi pi-sign-out w-4" />

@@ -132,16 +132,19 @@ export const adminNavItems: NavItem[] = [
 // nuevo. "Asistente IA" en el legacy es un item con 2 hijos (Uso y costos,
 // Ajustes de IA) - NavItem no soporta anidamiento (ningun menu lo necesito
 // hasta ahora), asi que quedan como dos items planos.
+//
+// "Tickets soporte" del legacy NO se porta: el modulo se retiro entero
+// (2026-09-03) porque no lo uso nadie nunca. El soporte ahora es por
+// WhatsApp, desde el dropdown de perfil de la navbar.
 export const superadminNavItems: NavItem[] = [
-  { label: 'Dashboard', icon: 'pi pi-th-large', disabled: true },
+  { label: 'Dashboard', icon: 'pi pi-th-large', routeName: 'superadmin.dashboard' },
   { label: 'Negocios', icon: 'pi pi-building', routeName: 'superadmin.businesses.index' },
   { label: 'Finanzas', icon: 'pi pi-wallet', disabled: true },
   { label: 'Uso y costos IA', icon: 'pi pi-comments', routeName: 'superadmin.ai-usage.index' },
   { label: 'Ajustes de IA', icon: 'pi pi-comments', disabled: true },
-  { label: 'Usuarios (plataforma)', icon: 'pi pi-users', disabled: true },
+  { label: 'Usuarios (plataforma)', icon: 'pi pi-users', routeName: 'superadmin.users.index' },
   { label: 'Auditoría', icon: 'pi pi-history', routeName: 'superadmin.audit-logs.index' },
-  { label: 'Sistema', icon: 'pi pi-server', disabled: true },
-  { label: 'Tickets soporte', icon: 'pi pi-ticket', disabled: true },
+  { label: 'Sistema', icon: 'pi pi-server', routeName: 'superadmin.system.index' },
   { label: 'Guías ayuda', icon: 'pi pi-book', disabled: true },
   { label: 'Ajustes globales', icon: 'pi pi-cog', disabled: true },
   {
