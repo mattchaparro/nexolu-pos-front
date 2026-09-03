@@ -63,7 +63,14 @@ export function useActiveTabItemActions(
     }
 
     try {
-      await mutations.syncItemsMutation.mutateAsync({
+      // Asignar la cuenta fresca que devuelve el backend (con items y total
+      // ya actualizados), igual que submitTabCart. activeSale es un ref
+      // local, no atado a la query: sin esto el cambio se persiste pero la
+      // pantalla de Vender no lo refleja (los items guardados y el total se
+      // quedan como estaban, y el cajero percibe que "no confirma"). La
+      // pantalla de Cuentas abiertas no sufria el bug porque re-deriva
+      // activeSale del query en su propio watcher; este fix la deja igual.
+      activeSale.value = await mutations.syncItemsMutation.mutateAsync({
         saleId: activeSale.value.id,
         payload: { items: itemsWithOverride(activeSale.value, itemId, newQuantity) },
       })
