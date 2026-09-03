@@ -27,6 +27,36 @@ export function useActiveTabItemActions(
       .filter((item) => item.quantity > 0)
   }
 
+  /**
+   * Copia de la cuenta con la cantidad de un item ya ajustada, para pintar
+   * el cambio ANTES de que el servidor responda. Solo toca lo que la UI
+   * muestra (cantidad, subtotal de la fila y total de la cuenta); el estado
+   * definitivo lo pone la respuesta real del sync al llegar.
+   */
+  function optimisticAdjust(sale: Sale, itemId: number, quantity: number): Sale {
+    const current = sale.items.find((i) => i.id === itemId)
+    if (!current) {
+      return sale
+    }
+    const diff = (quantity - current.quantity) * Number(current.unit_price)
+    return {
+      ...sale,
+      total: Number(sale.total) + diff,
+      items: sale.items
+        .map((item) =>
+          item.id === itemId ? { ...item, quantity, subtotal: quantity * Number(item.unit_price) } : item,
+        )
+        .filter((item) => item.quantity > 0),
+    }
+  }
+
+  // Syncs en vuelo. Cada clic manda la LISTA COMPLETA deseada (no un delta),
+  // asi que el ultimo request siempre lleva el estado final acumulado y no
+  // importa que haya varios en el aire: gana el ultimo. Este contador evita
+  // que la respuesta de un sync viejo pise el estado optimista de un clic
+  // mas nuevo.
+  let pendingSyncs = 0
+
   async function destroyActiveTab(): Promise<void> {
     if (!activeSale.value) {
       return
@@ -62,20 +92,35 @@ export function useActiveTabItemActions(
       return
     }
 
+    // Optimista: pintar el cambio YA y confirmar con el servidor por
+    // detras. Esperar el round-trip para recien ahi actualizar la pantalla
+    // hacia sentir lento cada +/- (reportado por un negocio real); con esto
+    // el numero cambia al instante y clics rapidos se acumulan sin esperar.
+    const snapshot = activeSale.value
+    activeSale.value = optimisticAdjust(activeSale.value, itemId, newQuantity)
+
+    pendingSyncs++
     try {
-      // Asignar la cuenta fresca que devuelve el backend (con items y total
-      // ya actualizados), igual que submitTabCart. activeSale es un ref
-      // local, no atado a la query: sin esto el cambio se persiste pero la
-      // pantalla de Vender no lo refleja (los items guardados y el total se
-      // quedan como estaban, y el cajero percibe que "no confirma"). La
-      // pantalla de Cuentas abiertas no sufria el bug porque re-deriva
-      // activeSale del query en su propio watcher; este fix la deja igual.
-      activeSale.value = await mutations.syncItemsMutation.mutateAsync({
-        saleId: activeSale.value.id,
+      const updated = await mutations.syncItemsMutation.mutateAsync({
+        saleId: snapshot.id,
         payload: { items: itemsWithOverride(activeSale.value, itemId, newQuantity) },
       })
+      // Solo el sync MAS RECIENTE reconcilia con la verdad del servidor -
+      // una respuesta vieja llegando tarde no debe pisar el estado
+      // optimista de un clic posterior.
+      if (pendingSyncs === 1) {
+        activeSale.value = updated
+      }
     } catch (error) {
+      // Rollback solo si no hay un sync mas nuevo en el aire (ese va a
+      // reconciliar el estado real al resolver; restaurar aca pisaria su
+      // estado optimista con uno mas viejo todavia).
+      if (pendingSyncs === 1) {
+        activeSale.value = snapshot
+      }
       onError(extractErrorMessage(error, 'No pudimos actualizar la cantidad.'))
+    } finally {
+      pendingSyncs--
     }
   }
 
