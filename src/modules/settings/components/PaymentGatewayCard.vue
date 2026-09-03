@@ -3,37 +3,69 @@
 // llaves que pide cada uno salen del backend (`capabilities`), no
 // escritas a mano aca, para que agregar un proveedor no obligue a tocar
 // esta pantalla.
+import { useClipboard } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
-import type { PaymentGatewayProvider } from '@/types/paymentGateway'
+import type { PaymentGatewayProvider, PaymentGatewayTest } from '@/types/paymentGateway'
 import { NxButton, NxInput, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import TerminalSyncPanel from './TerminalSyncPanel.vue'
 
 import { usePaymentGateways } from '../composables/usePaymentGateways'
+import { testPaymentGateway } from '../services/paymentGatewayService'
 
 const props = defineProps<{ provider: PaymentGatewayProvider }>()
 
 const { connectMutation, disconnectMutation } = usePaymentGateways()
 
-const PROVIDER_META: Record<string, { name: string; blurb: string; help: string }> = {
-  bold: {
-    name: 'Bold',
-    blurb: 'Cobra por internet con tarjeta, PSE, Nequi y botón Bancolombia.',
-    // Nada de prometer el datáfono todavía: esta llave HABILITA el cobro
-    // contra la terminal física, pero ese flujo (F3) no está construido, y
-    // el medio de pago "Bold" del catálogo es otra cosa - una etiqueta con
-    // la que el cajero registra un cobro que hizo a mano en el aparato.
-    // Escribirlo aquí en futuro haría que el comerciante conecte esperando
-    // que el botón "Bold" de la caja empiece a cobrar solo.
-    help: 'Bold → Mi perfil → Preferencias de cobro → Integraciones.',
-  },
-  wompi: {
-    name: 'Wompi',
-    blurb: 'Cobra con tarjeta, PSE, Nequi y botón Bancolombia.',
-    help: 'Wompi → Desarrolladores → Llaves de API. Necesitas las cuatro.',
-  },
+/**
+ * Probar las llaves sin cobrarle a nadie.
+ *
+ * "Conectado" solo significa que hay algo guardado. Sin esta prueba el
+ * comerciante se entera de que las llaves están mal con el primer comprador
+ * que no puede pagar.
+ */
+const testing = ref(false)
+const testResult = ref<PaymentGatewayTest | null>(null)
+
+async function test(): Promise<void> {
+  testing.value = true
+  testResult.value = null
+  try {
+    testResult.value = await testPaymentGateway(props.provider.provider_slug)
+  } catch (error) {
+    testResult.value = {
+      ok: false,
+      message: extractErrorMessage(error, 'No pudimos probar la conexión.'),
+    }
+  } finally {
+    testing.value = false
+  }
 }
+
+const { copy, copied } = useClipboard()
+
+const PROVIDER_META: Record<string, { name: string; blurb: string; help: string; signup: string }> =
+  {
+    bold: {
+      name: 'Bold',
+      blurb: 'Cobra por internet con tarjeta, PSE, Nequi y botón Bancolombia.',
+      // Nada de prometer el datáfono todavía: esta llave HABILITA el cobro
+      // contra la terminal física, pero ese flujo (F3) no está construido, y
+      // el medio de pago "Bold" del catálogo es otra cosa - una etiqueta con
+      // la que el cajero registra un cobro que hizo a mano en el aparato.
+      // Escribirlo aquí en futuro haría que el comerciante conecte esperando
+      // que el botón "Bold" de la caja empiece a cobrar solo.
+      help: 'Bold → Mi perfil → Preferencias de cobro → Integraciones.',
+      signup: 'https://bold.co',
+    },
+    wompi: {
+      name: 'Wompi',
+      blurb: 'Cobra con tarjeta, PSE, Nequi y botón Bancolombia.',
+      help: 'Wompi → Desarrolladores → Llaves de API. Necesitas las cuatro.',
+      signup: 'https://wompi.co',
+    },
+  }
 
 const CAPABILITY_META: Record<string, { title: string; blurb: string }> = {
   online: {
@@ -201,6 +233,55 @@ async function disconnect(): Promise<void> {
       <NxButton v-else-if="!open" size="sm" @click="open = true">Conectar</NxButton>
     </div>
 
+    <!-- Lo que falta después de guardar las llaves, y que nadie adivina.
+         Sin este paso el comerciante ve "Conectado", cree que terminó, y su
+         primer pedido se queda esperando un pago que ya entró. -->
+    <div
+      v-if="provider.is_connected && provider.webhook_url"
+      class="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3"
+    >
+      <p class="text-sm font-semibold text-amber-900">Falta un paso en {{ meta.name }}</p>
+      <p class="mt-0.5 text-[11px] text-amber-800">
+        Pega esta dirección en el panel de {{ meta.name }}, en la sección de webhooks. Es lo que le
+        avisa a tu POS cuando alguien te paga.
+      </p>
+      <div class="mt-2 flex items-center gap-2">
+        <code
+          class="min-w-0 flex-1 truncate rounded-lg bg-white px-2.5 py-1.5 font-mono text-[11px] text-slate-700"
+        >
+          {{ provider.webhook_url }}
+        </code>
+        <NxButton size="sm" variant="outline" @click="copy(provider.webhook_url)">
+          {{ copied ? 'Copiado' : 'Copiar' }}
+        </NxButton>
+      </div>
+    </div>
+
+    <!-- En pruebas no entra dinero. Un comerciante puede leer "pruebas" y
+         creer que es la opción prudente. -->
+    <p
+      v-if="provider.is_connected && provider.environment === 'sandbox'"
+      class="mt-3 rounded-xl bg-slate-100 px-3 py-2 text-[11px] text-slate-600"
+    >
+      Estás en <strong>modo pruebas</strong>: puedes simular compras, pero
+      <strong>no entra dinero real</strong>. Cuando quieras cobrar de verdad, vuelve a conectar
+      eligiendo «Producción» con tus llaves productivas.
+    </p>
+
+    <!-- "Conectado" solo dice que hay algo guardado. Esto dice si sirve. -->
+    <div v-if="provider.is_connected" class="mt-3">
+      <NxButton size="sm" variant="outline" :loading="testing" @click="test">
+        Probar la conexión
+      </NxButton>
+      <p
+        v-if="testResult"
+        class="mt-2 rounded-lg px-3 py-2 text-xs"
+        :class="testResult.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'"
+      >
+        {{ testResult.message }}
+      </p>
+    </div>
+
     <!-- Los datáfonos solo aplican a un proveedor que los soporte y que ya
          este conectado: antes de eso no hay a quien preguntarle. -->
     <TerminalSyncPanel
@@ -216,7 +297,15 @@ async function disconnect(): Promise<void> {
     </p>
 
     <form v-if="open" class="mt-3 flex flex-col gap-3" @submit.prevent="connect">
-      <p class="text-xs text-slate-500">{{ meta.help }}</p>
+      <p class="text-xs text-slate-500">
+        {{ meta.help }}
+        <br />
+        ¿Todavía no tienes cuenta?
+        <a :href="meta.signup" target="_blank" rel="noopener" class="text-indigo-600 underline">
+          Ábrela en {{ meta.name }}
+        </a>
+        y vuelve aquí con tus llaves.
+      </p>
 
       <NxSelect
         v-model="environment"

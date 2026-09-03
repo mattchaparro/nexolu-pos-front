@@ -21,4 +21,15 @@ export interface PaymentGatewayProvider {
   connected_at: string | null
   /** Por qué falló el último intento de conectar. */
   last_error: string | null
+  /**
+   * La URL que hay que pegar en el panel del proveedor para que avise de
+   * los pagos. Nula si todavía no se ha conectado.
+   */
+  webhook_url: string | null
+}
+
+/** Respuesta de probar las llaves sin cobrarle a nadie. */
+export interface PaymentGatewayTest {
+  ok: boolean
+  message: string
 }
