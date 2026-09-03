@@ -67,7 +67,14 @@ const PROVIDER_META: Record<string, { name: string; blurb: string; help: string;
     },
   }
 
-const CAPABILITY_META: Record<string, { title: string; blurb: string }> = {
+/**
+ * `optional` es lo que evita que un negocio que solo vende por internet
+ * crea que le faltan datos. El backend nunca exigió el juego del datáfono
+ * — un grupo vacío ni siquiera se envía — pero la pantalla mostraba los dos
+ * bloques con el mismo peso y cuatro campos en blanco, que se lee como
+ * "esto está incompleto".
+ */
+const CAPABILITY_META: Record<string, { title: string; blurb: string; optional?: boolean }> = {
   online: {
     title: 'Cobrar por internet',
     blurb: 'Las llaves de “Botón de Pagos”. Sirven para que te paguen en tu tienda online.',
@@ -76,6 +83,7 @@ const CAPABILITY_META: Record<string, { title: string; blurb: string }> = {
     title: 'Cobrar con datáfono',
     blurb:
       'Las llaves de “API Datáfono”, distintas de las anteriores. Sirven para disparar el cobro en tu terminal desde el POS.',
+    optional: true,
   },
 }
 
@@ -136,6 +144,21 @@ const capabilities = computed(() =>
 )
 
 const allFields = computed(() => capabilities.value.flatMap((group) => group.fields))
+
+/**
+ * Los grupos opcionales arrancan cerrados: el camino normal — vender por
+ * internet — queda en un solo bloque de dos campos. Se abre solo si ya hay
+ * algo escrito, para no esconderle a alguien lo que estaba llenando.
+ */
+const openGroups = ref<Record<string, boolean>>({})
+
+function isGroupOpen(key: string): boolean {
+  return openGroups.value[key] ?? false
+}
+
+function toggleGroup(key: string): void {
+  openGroups.value = { ...openGroups.value, [key]: !isGroupOpen(key) }
+}
 
 watch(
   allFields,
@@ -337,10 +360,43 @@ async function disconnect(): Promise<void> {
         :key="group.key"
         class="rounded-lg border border-slate-200 p-3"
       >
-        <p class="text-sm font-semibold text-slate-700">{{ group.title }}</p>
-        <p class="mb-2 text-[11px] text-slate-400">{{ group.blurb }}</p>
+        <!-- Un grupo opcional arranca cerrado y detrás de una pregunta: así
+             quien solo vende por internet ve un formulario de dos campos, no
+             uno de cuatro con la mitad que no entiende. -->
+        <button
+          v-if="group.optional"
+          type="button"
+          class="flex w-full items-center justify-between gap-2 text-left"
+          @click="toggleGroup(group.key)"
+        >
+          <span>
+            <span class="text-sm font-semibold text-slate-700">
+              ¿Cobras también con datáfono?
+            </span>
+            <span class="ml-1.5 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
+              Opcional
+            </span>
+          </span>
+          <i :class="isGroupOpen(group.key) ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" />
+        </button>
 
-        <div class="flex flex-col gap-3">
+        <template v-else>
+          <p class="text-sm font-semibold text-slate-700">{{ group.title }}</p>
+          <p class="mb-2 text-[11px] text-slate-400">{{ group.blurb }}</p>
+        </template>
+
+        <p v-if="group.optional && !isGroupOpen(group.key)" class="mt-1 text-[11px] text-slate-400">
+          Si solo vendes por internet, sáltate esto. Lo puedes agregar después sin desconectar nada.
+        </p>
+
+        <p
+          v-if="group.optional && isGroupOpen(group.key)"
+          class="mt-1 mb-2 text-[11px] text-slate-400"
+        >
+          {{ group.blurb }} Si las llenas, tienen que ir las dos.
+        </p>
+
+        <div v-show="!group.optional || isGroupOpen(group.key)" class="flex flex-col gap-3">
           <NxInput
             v-for="field in group.fields"
             :key="field"
