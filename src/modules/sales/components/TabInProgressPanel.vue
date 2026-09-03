@@ -23,6 +23,11 @@ const props = defineProps<{
   cart: ReturnType<typeof useNewItemsCart>
   submittingCart: boolean
   syncingItems: boolean
+  // Borrador de items guardados (semantica legacy: los +/- se acumulan
+  // local y solo persisten al confirmar) - ver useActiveTabItemActions.
+  draftItems: SaleItem[]
+  hasDraftChanges: boolean
+  draftTotalDelta: number
 }>()
 
 const emit = defineEmits<{
@@ -32,6 +37,8 @@ const emit = defineEmits<{
   'increment-item': [item: SaleItem]
   'decrement-item': [item: SaleItem]
   'remove-item': [item: SaleItem]
+  'confirm-draft': []
+  'discard-draft': []
 }>()
 
 const newTabName = defineModel<string>('newTabName', { default: '' })
@@ -57,7 +64,7 @@ function title(): string {
       </div>
       <div class="flex shrink-0 items-center gap-1">
         <p v-if="activeSale" class="text-sm font-bold text-slate-900">
-          {{ formatCop(Number(activeSale.total) + cart.total.value) }}
+          {{ formatCop(Number(activeSale.total) + draftTotalDelta + cart.total.value) }}
         </p>
         <button type="button" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100" @click="emit('cancel')">
           <i class="pi pi-times" />
@@ -78,11 +85,11 @@ function title(): string {
     </div>
 
     <div class="flex-1 overflow-y-auto">
-      <template v-if="activeSale && activeSale.items.length > 0">
+      <template v-if="activeSale && draftItems.length > 0">
         <p class="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">Ítems guardados</p>
         <SavedTabItemsList
           class="mb-3"
-          :items="activeSale.items"
+          :items="draftItems"
           :syncing="syncingItems"
           @increment-item="emit('increment-item', $event)"
           @decrement-item="emit('decrement-item', $event)"
@@ -96,10 +103,25 @@ function title(): string {
     </div>
 
     <div class="flex flex-col gap-2 border-t border-slate-200 pt-3">
+      <!-- Cambios sobre items YA guardados: confirmar (un solo sync) o
+           descartar (vuelve a lo guardado, sin red) - como el "Guardar
+           cambios" del legacy. -->
+      <div v-if="hasDraftChanges" class="flex gap-2">
+        <NxButton class="flex-1" variant="dark" :loading="syncingItems" @click="emit('confirm-draft')">
+          Confirmar cambios
+        </NxButton>
+        <NxButton variant="outline" :disabled="syncingItems" @click="emit('discard-draft')">
+          Descartar
+        </NxButton>
+      </div>
+      <!-- disabled con borrador pendiente: agregar items nuevos puede
+           fusionarse server-side con una linea que el borrador tambien
+           toca (mismo producto), y el confirmar posterior la pisaria. -->
       <NxButton
         v-if="cart.lines.value.length > 0"
         :variant="activeSale ? 'dark' : 'primary'"
         :loading="submittingCart"
+        :disabled="hasDraftChanges"
         @click="emit('submit')"
       >
         {{ activeSale ? 'Agregar a la cuenta' : 'Abrir cuenta' }}
@@ -107,13 +129,16 @@ function title(): string {
       <NxButton
         v-if="activeSale"
         icon="pi pi-money-bill"
-        :disabled="cart.lines.value.length > 0"
+        :disabled="cart.lines.value.length > 0 || hasDraftChanges"
         @click="emit('close')"
       >
         Cobrar
       </NxButton>
       <p v-if="activeSale && cart.lines.value.length > 0" class="text-center text-xs text-amber-700">
         Agrega los nuevos productos a la cuenta antes de cobrar.
+      </p>
+      <p v-else-if="activeSale && hasDraftChanges" class="text-center text-xs text-amber-700">
+        Confirma o descarta los cambios antes de cobrar.
       </p>
     </div>
   </div>

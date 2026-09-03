@@ -195,18 +195,19 @@ function cancelTab(): void {
   submitError.value = null
 }
 
-// Ajustar cantidad/quitar un item YA guardado de la cuenta activa - misma
-// logica que la pantalla completa de Cuentas abiertas (ver
-// useActiveTabItemActions), el cajero no debería tener que salir de Vender
-// para editar lo que ya guardó.
-const { adjustItemQuantity } = useActiveTabItemActions(
-  activeSale,
-  tabMutations,
-  (message) => {
-    submitError.value = message
-  },
-  cancelTab,
-)
+// Editar items YA guardados de la cuenta activa, en BORRADOR (semantica
+// legacy): los +/- se acumulan local y solo persisten con "Confirmar
+// cambios"; salir de la cuenta descarta - misma logica que la pantalla
+// completa de Cuentas abiertas (ver useActiveTabItemActions).
+const { adjustItemQuantity, draftItems, hasDraftChanges, draftTotalDelta, confirmDraftChanges, discardDraftChanges } =
+  useActiveTabItemActions(
+    activeSale,
+    tabMutations,
+    (message) => {
+      submitError.value = message
+    },
+    cancelTab,
+  )
 
 async function submitTabCart(): Promise<void> {
   if (tabCart.lines.value.length === 0) {
@@ -445,12 +446,17 @@ function handleNewSale(): void {
           :cart="tabCart"
           :submitting-cart="tabMutations.addItemsMutation.isPending.value || tabMutations.openMutation.isPending.value"
           :syncing-items="tabMutations.syncItemsMutation.isPending.value"
+          :draft-items="draftItems"
+          :has-draft-changes="hasDraftChanges"
+          :draft-total-delta="draftTotalDelta"
           @cancel="cancelTab"
           @submit="submitTabCart"
           @close="openPaymentModal"
           @increment-item="adjustItemQuantity($event.id, 1)"
           @decrement-item="adjustItemQuantity($event.id, -1)"
           @remove-item="adjustItemQuantity($event.id, -$event.quantity)"
+          @confirm-draft="confirmDraftChanges"
+          @discard-draft="discardDraftChanges"
         />
       </div>
     </div>
@@ -474,7 +480,7 @@ function handleNewSale(): void {
       <span class="text-sm font-medium">
         {{ mobileTabLabel() }}
       </span>
-      <span class="font-bold">{{ formatCop(Number(activeSale?.total ?? 0) + tabCart.total.value) }}</span>
+      <span class="font-bold">{{ formatCop(Number(activeSale?.total ?? 0) + draftTotalDelta + tabCart.total.value) }}</span>
     </button>
 
     <Teleport to="body">
@@ -497,6 +503,9 @@ function handleNewSale(): void {
         :cart="tabCart"
         :submitting-cart="tabMutations.addItemsMutation.isPending.value || tabMutations.openMutation.isPending.value"
         :syncing-items="tabMutations.syncItemsMutation.isPending.value"
+        :draft-items="draftItems"
+        :has-draft-changes="hasDraftChanges"
+        :draft-total-delta="draftTotalDelta"
         @cancel="cancelTab"
         @submit="submitTabCart"
         @close="
@@ -506,6 +515,8 @@ function handleNewSale(): void {
         @increment-item="adjustItemQuantity($event.id, 1)"
         @decrement-item="adjustItemQuantity($event.id, -1)"
         @remove-item="adjustItemQuantity($event.id, -$event.quantity)"
+        @confirm-draft="confirmDraftChanges"
+        @discard-draft="discardDraftChanges"
       />
     </Teleport>
 

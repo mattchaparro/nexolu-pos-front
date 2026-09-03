@@ -189,7 +189,15 @@ async function submitCart(): Promise<void> {
   }
 }
 
-const { adjustItemQuantity, confirmDestroyActiveTab } = useActiveTabItemActions(
+const {
+  adjustItemQuantity,
+  confirmDestroyActiveTab,
+  draftItems,
+  hasDraftChanges,
+  draftTotalDelta,
+  confirmDraftChanges,
+  discardDraftChanges,
+} = useActiveTabItemActions(
   activeSale,
   mutations,
   (message) => {
@@ -287,9 +295,14 @@ async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Prom
           :sale="activeSale"
           :syncing="mutations.syncItemsMutation.isPending.value"
           :has-partial-payments="(activeSale.partial_payments?.length ?? 0) > 0"
+          :draft-items="draftItems"
+          :has-draft-changes="hasDraftChanges"
+          :draft-total-delta="draftTotalDelta"
           @increment-item="adjustItemQuantity($event.id, 1)"
           @decrement-item="adjustItemQuantity($event.id, -1)"
           @remove-item="adjustItemQuantity($event.id, -$event.quantity)"
+          @confirm-draft="confirmDraftChanges"
+          @discard-draft="discardDraftChanges"
           @close="closeModalOpen = true"
           @destroy="confirmDestroyActiveTab"
         />

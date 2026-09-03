@@ -19,6 +19,9 @@ defineProps<{
   cart: ReturnType<typeof useNewItemsCart>
   submittingCart: boolean
   syncingItems: boolean
+  draftItems: SaleItem[]
+  hasDraftChanges: boolean
+  draftTotalDelta: number
 }>()
 
 const emit = defineEmits<{
@@ -29,6 +32,8 @@ const emit = defineEmits<{
   'increment-item': [item: SaleItem]
   'decrement-item': [item: SaleItem]
   'remove-item': [item: SaleItem]
+  'confirm-draft': []
+  'discard-draft': []
 }>()
 
 const newTabName = defineModel<string>('newTabName', { default: '' })
@@ -53,6 +58,9 @@ const newTabIsDelivery = defineModel<boolean>('newTabIsDelivery', { default: fal
         :cart="cart"
         :submitting-cart="submittingCart"
         :syncing-items="syncingItems"
+        :draft-items="draftItems"
+        :has-draft-changes="hasDraftChanges"
+        :draft-total-delta="draftTotalDelta"
         @cancel="
           emit('cancel');
           emit('update:modelValue', false)
@@ -62,6 +70,8 @@ const newTabIsDelivery = defineModel<boolean>('newTabIsDelivery', { default: fal
         @increment-item="emit('increment-item', $event)"
         @decrement-item="emit('decrement-item', $event)"
         @remove-item="emit('remove-item', $event)"
+        @confirm-draft="emit('confirm-draft')"
+        @discard-draft="emit('discard-draft')"
       />
     </div>
   </template>

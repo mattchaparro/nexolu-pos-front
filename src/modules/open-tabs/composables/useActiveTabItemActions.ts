@@ -1,15 +1,25 @@
+import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
-import type { Sale } from '@/types/sale'
+import type { Sale, SaleItem } from '@/types/sale'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
 import type { useOpenTabMutations } from './useOpenTabMutations'
 
 /**
- * Ajustar cantidad/quitar un item YA guardado de una cuenta abierta (sync
- * inmediato al backend) y eliminar la cuenta completa - compartido entre
- * la pantalla de Cuentas abiertas y el panel embebido en Vender, misma
- * logica en los dos lugares.
+ * Edicion de los items YA guardados de una cuenta abierta, con la semantica
+ * del legacy (SalesTerminal.vue): los +/-/quitar se acumulan en un BORRADOR
+ * local y solo se persisten al tocar "Confirmar cambios" - un unico sync con
+ * la lista completa deseada. Salir de la cuenta (o cambiar a otra) descarta
+ * el borrador, asi un dedazo nunca queda escrito sin querer.
+ *
+ * Primero se probo sync-inmediato por clic y fallo por las dos puntas: se
+ * sentia lento (un round-trip por clic) y era peligroso (el error quedaba
+ * persistido y tocaba deshacerlo a mano). El borrador resuelve ambas: los
+ * clics son instantaneos y gratis, y nada toca el backend hasta confirmar.
+ *
+ * Compartido entre la pantalla de Cuentas abiertas y el panel embebido en
+ * Vender - misma logica en los dos lugares.
  */
 export function useActiveTabItemActions(
   activeSale: Ref<Sale | null>,
@@ -17,45 +27,58 @@ export function useActiveTabItemActions(
   onError: (message: string) => void,
   onDestroyed: () => void,
 ) {
-  function itemsWithOverride(sale: Sale, itemId: number, quantity: number) {
-    return sale.items
-      .map((item) => ({
-        product_id: item.product.id,
-        quantity: item.id === itemId ? quantity : item.quantity,
-        unit_price: item.unit_price,
-      }))
-      .filter((item) => item.quantity > 0)
+  /** itemId -> cantidad deseada. Solo guarda los items tocados. */
+  const draft = ref<Record<number, number>>({})
+
+  // Cambiar de cuenta (o salir: id -> undefined) descarta el borrador -
+  // exactamente el comportamiento del legacy que protege del dedazo.
+  watch(
+    () => activeSale.value?.id,
+    () => {
+      draft.value = {}
+    },
+  )
+
+  function draftQuantityOf(item: SaleItem): number {
+    return draft.value[item.id] ?? item.quantity
   }
 
   /**
-   * Copia de la cuenta con la cantidad de un item ya ajustada, para pintar
-   * el cambio ANTES de que el servidor responda. Solo toca lo que la UI
-   * muestra (cantidad, subtotal de la fila y total de la cuenta); el estado
-   * definitivo lo pone la respuesta real del sync al llegar.
+   * Los items guardados con el borrador ya aplicado - lo que la UI debe
+   * pintar. Un item llevado a 0 desaparece de la lista (y reaparece si se
+   * descarta el borrador).
    */
-  function optimisticAdjust(sale: Sale, itemId: number, quantity: number): Sale {
-    const current = sale.items.find((i) => i.id === itemId)
-    if (!current) {
-      return sale
+  const draftItems = computed<SaleItem[]>(() => {
+    if (!activeSale.value) {
+      return []
     }
-    const diff = (quantity - current.quantity) * Number(current.unit_price)
-    return {
-      ...sale,
-      total: Number(sale.total) + diff,
-      items: sale.items
-        .map((item) =>
-          item.id === itemId ? { ...item, quantity, subtotal: quantity * Number(item.unit_price) } : item,
-        )
-        .filter((item) => item.quantity > 0),
-    }
-  }
+    return activeSale.value.items
+      .map((item) => {
+        const quantity = draftQuantityOf(item)
+        return quantity === item.quantity
+          ? item
+          : { ...item, quantity, subtotal: quantity * Number(item.unit_price) }
+      })
+      .filter((item) => item.quantity > 0)
+  })
 
-  // Syncs en vuelo. Cada clic manda la LISTA COMPLETA deseada (no un delta),
-  // asi que el ultimo request siempre lleva el estado final acumulado y no
-  // importa que haya varios en el aire: gana el ultimo. Este contador evita
-  // que la respuesta de un sync viejo pise el estado optimista de un clic
-  // mas nuevo.
-  let pendingSyncs = 0
+  const hasDraftChanges = computed(() => {
+    if (!activeSale.value) {
+      return false
+    }
+    return activeSale.value.items.some((item) => draftQuantityOf(item) !== item.quantity)
+  })
+
+  /** Cuanto sube/baja el total de la cuenta con el borrador aplicado. */
+  const draftTotalDelta = computed(() => {
+    if (!activeSale.value) {
+      return 0
+    }
+    return activeSale.value.items.reduce(
+      (sum, item) => sum + (draftQuantityOf(item) - item.quantity) * Number(item.unit_price),
+      0,
+    )
+  })
 
   async function destroyActiveTab(): Promise<void> {
     if (!activeSale.value) {
@@ -75,54 +98,82 @@ export function useActiveTabItemActions(
     }
   }
 
-  async function adjustItemQuantity(itemId: number, delta: number): Promise<void> {
-    if (!activeSale.value) {
+  /**
+   * Ajusta el borrador, sin tocar el backend. Instantaneo a proposito.
+   */
+  function adjustItemQuantity(itemId: number, delta: number): void {
+    const sale = activeSale.value
+    if (!sale) {
       return
     }
-    const item = activeSale.value.items.find((i) => i.id === itemId)
+    const item = sale.items.find((i) => i.id === itemId)
     if (!item) {
       return
     }
-    const newQuantity = item.quantity + delta
+    const newQuantity = Math.max(0, draftQuantityOf(item) + delta)
 
-    if (newQuantity <= 0 && activeSale.value.items.length === 1) {
+    // Si el ajuste dejaria la cuenta entera vacia, eso ya no es "editar
+    // items": es eliminar la cuenta, y eso se decide explicito.
+    const wouldBeEmpty = sale.items.every((i) => (i.id === itemId ? newQuantity : draftQuantityOf(i)) <= 0)
+    if (wouldBeEmpty) {
       if (window.confirm('Esto dejaría la cuenta sin productos. ¿Eliminar la cuenta completa en su lugar?')) {
-        await destroyActiveTab()
+        destroyActiveTab()
       }
       return
     }
 
-    // Optimista: pintar el cambio YA y confirmar con el servidor por
-    // detras. Esperar el round-trip para recien ahi actualizar la pantalla
-    // hacia sentir lento cada +/- (reportado por un negocio real); con esto
-    // el numero cambia al instante y clics rapidos se acumulan sin esperar.
-    const snapshot = activeSale.value
-    activeSale.value = optimisticAdjust(activeSale.value, itemId, newQuantity)
-
-    pendingSyncs++
-    try {
-      const updated = await mutations.syncItemsMutation.mutateAsync({
-        saleId: snapshot.id,
-        payload: { items: itemsWithOverride(activeSale.value, itemId, newQuantity) },
-      })
-      // Solo el sync MAS RECIENTE reconcilia con la verdad del servidor -
-      // una respuesta vieja llegando tarde no debe pisar el estado
-      // optimista de un clic posterior.
-      if (pendingSyncs === 1) {
-        activeSale.value = updated
-      }
-    } catch (error) {
-      // Rollback solo si no hay un sync mas nuevo en el aire (ese va a
-      // reconciliar el estado real al resolver; restaurar aca pisaria su
-      // estado optimista con uno mas viejo todavia).
-      if (pendingSyncs === 1) {
-        activeSale.value = snapshot
-      }
-      onError(extractErrorMessage(error, 'No pudimos actualizar la cantidad.'))
-    } finally {
-      pendingSyncs--
+    if (newQuantity === item.quantity) {
+      // Volvio al valor guardado: fuera del borrador, no es un cambio.
+      const rest = { ...draft.value }
+      delete rest[itemId]
+      draft.value = rest
+    } else {
+      draft.value = { ...draft.value, [itemId]: newQuantity }
     }
   }
 
-  return { adjustItemQuantity, destroyActiveTab, confirmDestroyActiveTab }
+  /**
+   * Persiste el borrador completo en un solo sync (replace de la lista,
+   * igual que "Guardar cambios" del legacy) y reconcilia con la respuesta
+   * real del servidor. Si falla (ej. sin stock), el borrador queda intacto
+   * para corregir o descartar - nada quedo escrito.
+   */
+  async function confirmDraftChanges(): Promise<void> {
+    const sale = activeSale.value
+    if (!sale || !hasDraftChanges.value) {
+      return
+    }
+    try {
+      const updated = await mutations.syncItemsMutation.mutateAsync({
+        saleId: sale.id,
+        payload: {
+          items: draftItems.value.map((item) => ({
+            product_id: item.product.id,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+          })),
+        },
+      })
+      activeSale.value = updated
+      draft.value = {}
+    } catch (error) {
+      onError(extractErrorMessage(error, 'No pudimos guardar los cambios de la cuenta.'))
+    }
+  }
+
+  /** Vuelve la cuenta a como estaba guardada, sin tocar el backend. */
+  function discardDraftChanges(): void {
+    draft.value = {}
+  }
+
+  return {
+    draftItems,
+    hasDraftChanges,
+    draftTotalDelta,
+    adjustItemQuantity,
+    confirmDraftChanges,
+    discardDraftChanges,
+    destroyActiveTab,
+    confirmDestroyActiveTab,
+  }
 }
