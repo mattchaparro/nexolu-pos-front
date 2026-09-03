@@ -10,6 +10,7 @@ import { useRouter } from 'vue-router'
 import { NxCard, NxColumn, NxDataTable, NxPageHeader } from '@/ui'
 import type { DashboardBusinessRow, DashboardTopBusinessRow } from '@/types/superAdminDashboard'
 import { formatCop } from '@/utils/formatCop'
+import { remainingClass, remainingLabel } from '@/utils/subscriptionRemaining'
 
 import { useSuperAdminDashboard } from '../composables/useSuperAdminDashboard'
 
@@ -20,22 +21,6 @@ function openBusiness(id: number): void {
   router.push({ name: 'superadmin.businesses.show', params: { id } })
 }
 
-/**
- * Rojo solo cuando ya no hay margen para reaccionar. Pintar de rojo algo que
- * vence en 6 dias hace que el color deje de significar urgencia.
- */
-function remainingClass(days: number | null): string {
-  if (days === null) {
-    return 'text-slate-400'
-  }
-  if (days <= 1) {
-    return 'text-red-600 font-semibold'
-  }
-  if (days <= 3) {
-    return 'text-amber-600 font-semibold'
-  }
-  return 'text-slate-600'
-}
 </script>
 
 <template>
@@ -108,8 +93,8 @@ function remainingClass(days: number | null): string {
           </NxColumn>
           <NxColumn header="Le quedan">
             <template #body="{ data }: { data: DashboardBusinessRow }">
-              <span class="text-sm" :class="remainingClass(data.days_remaining)">
-                {{ data.days_remaining === null ? '—' : `${data.days_remaining} día(s)` }}
+              <span class="text-sm" :class="remainingClass(data.days_remaining, data.status)">
+                {{ remainingLabel(data.days_remaining, data.status) }}
               </span>
             </template>
           </NxColumn>

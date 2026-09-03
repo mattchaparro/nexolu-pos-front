@@ -9,6 +9,7 @@ import { useRouter } from 'vue-router'
 import type { SuperAdminBusiness } from '@/types/superadmin/business'
 import { NxButton, NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
+import { remainingClass, remainingLabel } from '@/utils/subscriptionRemaining'
 
 import BusinessFormModal from '../components/BusinessFormModal.vue'
 import { useBusinesses } from '../composables/useBusinesses'
@@ -56,6 +57,21 @@ function openBusiness(business: SuperAdminBusiness): void {
 // se ajusta lo que haya quedado pendiente del alta.
 const createModalOpen = ref(false)
 
+/**
+ * Hasta cuando esta cubierto: `paid_until` si esta pagando, `trial_ends_at`
+ * si esta en prueba. Se muestra junto a los dias restantes porque son dos
+ * preguntas distintas: cuanta urgencia hay, y que dia hay que cobrar.
+ */
+function renewalDate(business: SuperAdminBusiness): string | null {
+  const iso = business.subscription_status === 'paid' ? business.paid_until : business.trial_ends_at
+
+  if (!iso) {
+    return null
+  }
+
+  return new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
 function statusBadge(business: SuperAdminBusiness): { label: string; class: string } {
   if (!business.active) {
     return { label: 'Inactivo', class: 'bg-slate-100 text-slate-500' }
@@ -63,7 +79,7 @@ function statusBadge(business: SuperAdminBusiness): { label: string; class: stri
   return (
     {
       paid: { label: 'Pagando', class: 'bg-emerald-100 text-emerald-700' },
-      trial: { label: `Prueba (${business.days_remaining}d)`, class: 'bg-sky-100 text-sky-700' },
+      trial: { label: 'Prueba', class: 'bg-sky-100 text-sky-700' },
       expired: { label: 'Vencido', class: 'bg-red-100 text-red-700' },
       inactive: { label: 'Inactivo', class: 'bg-slate-100 text-slate-500' },
     } as const
@@ -139,6 +155,18 @@ function statusBadge(business: SuperAdminBusiness): { label: string; class: stri
             <span class="rounded-full px-2 py-0.5 text-xs font-semibold" :class="statusBadge(data).class">
               {{ statusBadge(data).label }}
             </span>
+          </template>
+        </NxColumn>
+        <NxColumn header="Le queda">
+          <template #body="{ data }: { data: SuperAdminBusiness }">
+            <p class="text-sm" :class="remainingClass(data.days_remaining, data.subscription_status)">
+              {{ remainingLabel(data.days_remaining, data.subscription_status) }}
+            </p>
+            <!-- La fecha exacta debajo: "12 dias" contesta la urgencia, pero
+                 para llamar a cobrar hace falta el dia concreto. -->
+            <p v-if="renewalDate(data)" class="text-xs text-slate-400">
+              {{ renewalDate(data) }}
+            </p>
           </template>
         </NxColumn>
         <NxColumn header="Usuarios">
