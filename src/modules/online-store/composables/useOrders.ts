@@ -10,10 +10,15 @@ import {
   updateOrderStatus,
 } from '../services/orderService'
 
-export function useOrders(status: Ref<string>, page: Ref<number>) {
+export function useOrders(status: Ref<string>, page: Ref<number>, search: Ref<string>) {
   return useQuery({
-    queryKey: computed(() => ['orders', 'list', status.value, page.value] as const),
-    queryFn: () => fetchOrders({ status: status.value || undefined, page: page.value }),
+    queryKey: computed(() => ['orders', 'list', status.value, page.value, search.value] as const),
+    queryFn: () =>
+      fetchOrders({
+        status: status.value || undefined,
+        page: page.value,
+        search: search.value.trim() || undefined,
+      }),
     placeholderData: keepPreviousData,
     // Un pedido entra sin que nadie toque el POS. Sin websockets en el stack
     // (BROADCAST_CONNECTION=log), la bandeja se refresca sola cada minuto -

@@ -5,13 +5,7 @@
  * en la API): aqui llegan telefono, correo, notas y la bitacora de estados.
  */
 export type OrderStatus =
-  | 'pending'
-  | 'confirmed'
-  | 'preparing'
-  | 'shipped'
-  | 'delivered'
-  | 'cancelled'
-  | 'expired'
+  'pending' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled' | 'expired'
 
 export interface OrderItem {
   id: number
@@ -46,6 +40,13 @@ export interface Order {
   shipping_address: string | null
   shipping_city: string | null
   shipping_notes: string | null
+  /** El cupón que redimió el comprador. Nulo si no usó ninguno. */
+  coupon_code: string | null
+  discount_amount: number
+  /** Con qué pagó ('bold', 'wompi'). Nulo si no pagó en línea. */
+  payment_provider: string | null
+  /** Cuándo entró la plata. Nulo = todavía no ha pagado. */
+  paid_at: string | null
   sale_id: number | null
   client_id: number | null
   confirmed_at: string | null

@@ -3,6 +3,7 @@
 //
 // Los botones salen de `available_transitions`, que manda el backend: la
 // maquina de estados vive en Order::TRANSITIONS y aqui solo se dibuja.
+import { useClipboard } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
 import { useBusiness } from '@/composables/useBusiness'
@@ -23,6 +24,24 @@ const orderQuery = useOrder(orderId)
 const order = computed<Order | undefined>(() => orderQuery.data.value)
 
 const { statusMutation } = useOrderMutations()
+const { copy, copied } = useClipboard()
+
+function formatDateTime(value: string | null): string {
+  if (!value) return '—'
+  return new Date(value).toLocaleString('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+/** Completa, para pasársela al domiciliario de un solo pegado. */
+function fullAddress(value: Order): string {
+  return [value.shipping_address, value.shipping_city, value.shipping_notes]
+    .filter(Boolean)
+    .join(', ')
+}
 const note = ref('')
 const errorMessage = ref<string | null>(null)
 
@@ -146,14 +165,48 @@ const customerMessage = computed(() =>
         <p v-if="order.shipping_notes" class="mt-1 text-sm italic text-slate-500">
           “{{ order.shipping_notes }}”
         </p>
-        <a
-          :href="whatsappLink(order.customer_phone, customerMessage)"
-          target="_blank"
-          rel="noopener"
-          class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:underline"
+        <div class="mt-2 flex flex-wrap items-center gap-3">
+          <a
+            :href="whatsappLink(order.customer_phone, customerMessage)"
+            target="_blank"
+            rel="noopener"
+            class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:underline"
+          >
+            <i class="pi pi-whatsapp" /> Escribir por WhatsApp
+          </a>
+          <!-- Para pasársela al domiciliario sin transcribirla a mano. -->
+          <button
+            v-if="!order.is_pickup && order.shipping_address"
+            type="button"
+            class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600"
+            @click="copy(fullAddress(order))"
+          >
+            <i class="pi pi-copy" /> {{ copied ? 'Dirección copiada' : 'Copiar dirección' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- "¿Este ya me pagó?" es lo primero que se pregunta al despachar. -->
+      <div
+        class="rounded-xl border p-3"
+        :class="order.paid_at ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200'"
+      >
+        <p
+          class="text-sm font-semibold"
+          :class="order.paid_at ? 'text-emerald-800' : 'text-slate-700'"
         >
-          <i class="pi pi-whatsapp" /> Escribir por WhatsApp
-        </a>
+          {{ order.paid_at ? 'Pagado en línea' : 'Sin pagar en línea' }}
+        </p>
+        <p class="text-[11px]" :class="order.paid_at ? 'text-emerald-700' : 'text-slate-400'">
+          <template v-if="order.paid_at">
+            <template v-if="order.payment_provider">{{ order.payment_provider }} · </template>
+            {{ formatDateTime(order.paid_at) }}
+          </template>
+          <template v-else>
+            El pago no ha entrado por la pasarela. Si le cobras por fuera, confirma el pedido a mano
+            y elige con qué te pagó.
+          </template>
+        </p>
       </div>
 
       <!-- Articulos: nombres y precios congelados al hacer el pedido -->
@@ -180,6 +233,14 @@ const customerMessage = computed(() =>
           <div class="flex justify-between text-slate-500">
             <span>Envío</span
             ><span>{{ order.shipping_fee > 0 ? formatCop(order.shipping_fee) : 'Gratis' }}</span>
+          </div>
+          <!-- Sin esta línea el total no cuadra contra subtotal + envío, y no
+               hay nada en pantalla que explique la diferencia. -->
+          <div v-if="order.discount_amount > 0" class="flex justify-between text-emerald-600">
+            <span>
+              Cupón<template v-if="order.coupon_code"> {{ order.coupon_code }}</template>
+            </span>
+            <span>−{{ formatCop(order.discount_amount) }}</span>
           </div>
           <div class="mt-1 flex justify-between text-base font-bold text-slate-900">
             <span>Total</span><span>{{ formatCop(order.total) }}</span>

@@ -5,6 +5,7 @@ import type { PaginatedResponse } from '@/types/pagination'
 export async function fetchOrders(params: {
   status?: string
   page?: number
+  search?: string
 }): Promise<PaginatedResponse<Order>> {
   const { data } = await httpClient.get<PaginatedResponse<Order>>('/orders', { params })
   return data
