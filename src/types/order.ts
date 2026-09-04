@@ -26,6 +26,30 @@ export interface OrderHistoryEntry {
   at: string | null
 }
 
+/** Por dónde se le puede escribir al comprador. */
+export type OrderContactChannel = 'whatsapp' | 'email'
+
+export interface OrderNoteDelivery {
+  status: 'sent' | 'failed' | string
+  error: string | null
+}
+
+export interface OrderNote {
+  id: number
+  /** internal = solo el equipo. customer = se le mandó al comprador. */
+  visibility: 'internal' | 'customer'
+  body: string
+  channels: OrderContactChannel[]
+  /**
+   * Qué dijo cada canal. WhatsApp con texto libre solo se entrega dentro de
+   * la ventana de 24h de Meta, así que un fallo aquí es lo normal, no la
+   * excepción: hay que mostrarlo.
+   */
+  delivery: Partial<Record<OrderContactChannel, OrderNoteDelivery>>
+  user: string | null
+  at: string | null
+}
+
 export interface Order {
   id: number
   number: number
@@ -60,4 +84,10 @@ export interface Order {
   available_transitions: OrderStatus[]
   items?: OrderItem[]
   history?: OrderHistoryEntry[]
+  notes?: OrderNote[]
+  /**
+   * Por dónde se le puede escribir HOY: compró como invitado y pudo dejar
+   * solo el teléfono. Solo viene en el detalle.
+   */
+  contact_channels?: OrderContactChannel[]
 }

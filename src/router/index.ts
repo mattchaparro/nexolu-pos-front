@@ -313,6 +313,16 @@ const router = createRouter({
           meta: { requiresFeature: 'online_store' },
         },
         {
+          // Pantalla propia y no una modal: atender un pedido es leer al
+          // cliente, revisar la compra, ver el pago, moverlo de estado,
+          // anotar y escribirle. Ademas asi el pedido tiene enlace propio
+          // para pasarselo a alguien.
+          path: 'pedidos-online/:id',
+          name: 'online-store.order',
+          component: () => import('@/modules/online-store/views/OrderDetailView.vue'),
+          meta: { requiresFeature: 'online_store' },
+        },
+        {
           // Moderar opiniones es decision editorial del negocio, no trabajo
           // de mostrador: como la configuracion de la tienda, lleva
           // requiresAdmin (el backend lo exige igual con business-admin).

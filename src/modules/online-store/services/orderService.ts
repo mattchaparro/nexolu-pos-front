@@ -1,5 +1,5 @@
 import { httpClient } from '@/services/http/client'
-import type { Order, OrderStatus } from '@/types/order'
+import type { Order, OrderContactChannel, OrderStatus } from '@/types/order'
 import type { PaginatedResponse } from '@/types/pagination'
 
 export async function fetchOrders(params: {
@@ -28,6 +28,25 @@ export async function updateOrderStatus(
     status,
     note,
     payment_method: paymentMethod,
+  })
+  return data
+}
+
+/**
+ * Anota algo sobre el pedido. Con `visibility: 'customer'` y canales, además
+ * se lo manda al comprador. Devuelve el pedido completo: la nota trae el
+ * resultado de cada canal y hay que mostrarlo.
+ */
+export async function addOrderNote(
+  id: number,
+  body: string,
+  visibility: 'internal' | 'customer',
+  channels: OrderContactChannel[] = [],
+): Promise<Order> {
+  const { data } = await httpClient.post<Order>(`/orders/${id}/notes`, {
+    body,
+    visibility,
+    channels,
   })
   return data
 }

@@ -9,9 +9,8 @@ import type { Order } from '@/types/order'
 import { NxColumn, NxDataTable, NxInput, NxPageHeader } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
-import OrderDetailModal from '../components/OrderDetailModal.vue'
 import { useOrders } from '../composables/useOrders'
-import { ORDER_STATUS_FILTERS, statusMeta } from '../support/orderStatus'
+import { ORDER_STATUS_FILTERS, statusMeta, whatsappLink } from '../support/orderStatus'
 
 const status = ref('')
 const page = ref(1)
@@ -78,14 +77,6 @@ function onPage(event: { page: number }): void {
   page.value = event.page + 1
 }
 
-const detailOpen = ref(false)
-const selectedId = ref<number | null>(null)
-
-function openOrder(order: Order): void {
-  selectedId.value = order.id
-  detailOpen.value = true
-}
-
 function formatDate(value: string | null): string {
   if (!value) {
     return '—'
@@ -112,14 +103,11 @@ function isExpired(order: Order): boolean {
 }
 
 /** Escribirle al comprador: es lo primero que uno hace si falta la dirección. */
-function whatsappLink(order: Order): string {
-  const phone = order.customer_phone.replace(/\D/g, '')
-  const withCode = phone.length === 10 ? `57${phone}` : phone
-  const text = encodeURIComponent(
+function whatsappFor(order: Order): string {
+  return whatsappLink(
+    order.customer_phone,
     `Hola ${order.customer_name}, te escribo por tu pedido #${order.number}.`,
   )
-
-  return `https://wa.me/${withCode}?text=${text}`
 }
 </script>
 
@@ -186,7 +174,12 @@ function whatsappLink(order: Order): string {
 
         <NxColumn header="Pedido">
           <template #body="{ data }: { data: Order }">
-            <p class="text-sm font-semibold text-slate-900">#{{ data.number }}</p>
+            <RouterLink
+              :to="{ name: 'online-store.order', params: { id: data.id } }"
+              class="text-sm font-semibold text-indigo-600 hover:underline"
+            >
+              #{{ data.number }}
+            </RouterLink>
             <p class="text-xs text-slate-400">{{ formatDate(data.created_at) }}</p>
             <span
               v-if="isExpired(data)"
@@ -259,7 +252,7 @@ function whatsappLink(order: Order): string {
           <template #body="{ data }: { data: Order }">
             <div class="flex justify-end gap-3">
               <a
-                :href="whatsappLink(data)"
+                :href="whatsappFor(data)"
                 target="_blank"
                 rel="noopener"
                 class="text-slate-400 hover:text-emerald-600"
@@ -267,20 +260,17 @@ function whatsappLink(order: Order): string {
               >
                 <i class="pi pi-whatsapp text-sm" />
               </a>
-              <button
-                type="button"
+              <RouterLink
+                :to="{ name: 'online-store.order', params: { id: data.id } }"
                 class="text-slate-400 hover:text-indigo-600"
                 title="Ver pedido"
-                @click="openOrder(data)"
               >
                 <i class="pi pi-eye text-sm" />
-              </button>
+              </RouterLink>
             </div>
           </template>
         </NxColumn>
       </NxDataTable>
     </div>
-
-    <OrderDetailModal v-model="detailOpen" :order-id="selectedId" />
   </div>
 </template>

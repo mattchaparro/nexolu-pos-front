@@ -1,9 +1,10 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, type Ref } from 'vue'
 
-import type { OrderStatus } from '@/types/order'
+import type { OrderContactChannel, OrderStatus } from '@/types/order'
 
 import {
+  addOrderNote,
   fetchOrder,
   fetchOrders,
   fetchPendingOrderCount,
@@ -57,7 +58,24 @@ export function useOrderMutations() {
     },
   })
 
-  return { statusMutation }
+  /**
+   * Anotar no cambia el estado ni mueve stock: solo invalida el detalle.
+   * Se guarda la respuesta completa porque trae la nota recién creada con el
+   * resultado de cada canal.
+   */
+  const noteMutation = useMutation({
+    mutationFn: (params: {
+      id: number
+      body: string
+      visibility: 'internal' | 'customer'
+      channels?: OrderContactChannel[]
+    }) => addOrderNote(params.id, params.body, params.visibility, params.channels ?? []),
+    onSuccess: (order) => {
+      queryClient.setQueryData(['orders', 'detail', order.id], order)
+    },
+  })
+
+  return { statusMutation, noteMutation }
 }
 
 export function usePendingOrderCount(enabled: Ref<boolean>) {
