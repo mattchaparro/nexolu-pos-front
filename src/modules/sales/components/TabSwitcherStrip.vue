@@ -35,6 +35,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
+  quick: []
   'new-name': []
   'select-table': [table: BusinessTable]
   'select-tab': [tab: Sale]
@@ -126,6 +127,25 @@ function tabTotal(tab: Sale): number {
 
     <div class="flex items-center gap-2">
       <div class="flex flex-1 gap-2 overflow-x-auto pb-1">
+      <!-- Salir de una cuenta cuesta UN tap, igual que entrar: sin este
+           chip, la unica salida era la X chiquita del panel (reporte real:
+           "para salir de la cuenta abierta para vender es muy complicado").
+           Va primero porque venta rapida es el modo por defecto de la
+           pantalla. -->
+      <button
+        type="button"
+        class="flex min-w-[64px] shrink-0 flex-col items-center gap-0.5 rounded-xl border px-3 py-2 text-center transition-colors active:scale-95"
+        :class="
+          activeMode === 'quick'
+            ? 'border-indigo-600 bg-indigo-600 text-white'
+            : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+        "
+        @click="emit('quick')"
+      >
+        <i class="pi pi-bolt text-lg" :class="activeMode === 'quick' ? 'text-white' : 'text-slate-400'" />
+        <p class="text-[10px] font-medium">Venta rápida</p>
+      </button>
+
       <button
         type="button"
         class="flex min-w-[64px] shrink-0 flex-col items-center gap-0.5 rounded-xl border px-3 py-2 text-center transition-colors active:scale-95"

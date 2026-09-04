@@ -150,7 +150,38 @@ const openSaleByTable = computed(() => {
 })
 const openTabsByName = computed(() => (openTabsQuery.data.value ?? []).filter((s) => !s.table_id))
 
+/**
+ * Salir o cambiar de cuenta descarta lo no persistido (el borrador de items
+ * guardados y el carrito "por agregar") - es la semantica legacy, pero no
+ * debe pasar por un dedazo: se pide confirmacion SOLO cuando hay algo que
+ * perder. Con la cuenta limpia, salir es un tap sin friccion.
+ */
+function confirmLeaveTab(): boolean {
+  if (mode.value === 'quick') {
+    return true
+  }
+  if (tabCart.lines.value.length === 0 && !hasDraftChanges.value) {
+    return true
+  }
+  return window.confirm('¿Salir de la cuenta? Los cambios sin confirmar y los productos sin agregar se descartan.')
+}
+
+/** El chip "Venta rapida" y la X del panel: volver al mostrador en un tap. */
+function goQuickSale(): void {
+  if (confirmLeaveTab()) {
+    cancelTab()
+  }
+}
+
 function selectNewNamedTab(): void {
+  // Re-tocar "+ Cuenta" ya estando en cuenta nueva no debe borrar el nombre
+  // que se esta escribiendo.
+  if (mode.value === 'new-tab' && !pendingTable.value) {
+    return
+  }
+  if (!confirmLeaveTab()) {
+    return
+  }
   submitError.value = null
   mode.value = 'new-tab'
   activeSale.value = null
@@ -162,8 +193,19 @@ function selectNewNamedTab(): void {
 }
 
 function selectTable(table: BusinessTable): void {
-  submitError.value = null
   const openSale = openSaleByTable.value.get(table.id)
+  // Re-tocar la mesa que ya esta activa es un no-op: antes reseteaba el
+  // carrito de la propia cuenta que se estaba editando.
+  if (openSale && mode.value === 'tab' && activeSale.value?.id === openSale.id) {
+    return
+  }
+  if (!openSale && mode.value === 'new-tab' && pendingTable.value?.id === table.id) {
+    return
+  }
+  if (!confirmLeaveTab()) {
+    return
+  }
+  submitError.value = null
   if (openSale) {
     mode.value = 'tab'
     activeSale.value = openSale
@@ -180,6 +222,13 @@ function selectTable(table: BusinessTable): void {
 }
 
 function selectOpenTab(sale: Sale): void {
+  // Mismo no-op que selectTable: re-tocar la cuenta activa no resetea nada.
+  if (mode.value === 'tab' && activeSale.value?.id === sale.id) {
+    return
+  }
+  if (!confirmLeaveTab()) {
+    return
+  }
   submitError.value = null
   mode.value = 'tab'
   activeSale.value = sale
@@ -400,6 +449,7 @@ function handleNewSale(): void {
         :active-sale-id="activeSale?.id ?? null"
         :pending-table-id="pendingTable?.id ?? null"
         :pending-cart-total="tabCart.total.value"
+        @quick="goQuickSale"
         @new-name="selectNewNamedTab"
         @select-table="selectTable"
         @select-tab="selectOpenTab"
@@ -450,7 +500,7 @@ function handleNewSale(): void {
           :draft-items="draftItems"
           :has-draft-changes="hasDraftChanges"
           :draft-total-delta="draftTotalDelta"
-          @cancel="cancelTab"
+          @cancel="goQuickSale"
           @submit="submitTabCart"
           @close="openPaymentModal"
           @increment-item="adjustItemQuantity($event.id, 1)"
@@ -508,7 +558,7 @@ function handleNewSale(): void {
         :draft-items="draftItems"
         :has-draft-changes="hasDraftChanges"
         :draft-total-delta="draftTotalDelta"
-        @cancel="cancelTab"
+        @cancel="goQuickSale"
         @submit="submitTabCart"
         @close="
           mobileTabSheetOpen = false;
