@@ -139,7 +139,7 @@ export const adminNavItems: NavItem[] = [
 export const superadminNavItems: NavItem[] = [
   { label: 'Dashboard', icon: 'pi pi-th-large', routeName: 'superadmin.dashboard' },
   { label: 'Negocios', icon: 'pi pi-building', routeName: 'superadmin.businesses.index' },
-  { label: 'Finanzas', icon: 'pi pi-wallet', disabled: true },
+  { label: 'Finanzas', icon: 'pi pi-wallet', routeName: 'superadmin.finance.index' },
   { label: 'Uso y costos IA', icon: 'pi pi-comments', routeName: 'superadmin.ai-usage.index' },
   { label: 'Ajustes de IA', icon: 'pi pi-comments', disabled: true },
   { label: 'Usuarios (plataforma)', icon: 'pi pi-users', routeName: 'superadmin.users.index' },
