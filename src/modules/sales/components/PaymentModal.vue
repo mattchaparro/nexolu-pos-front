@@ -449,7 +449,10 @@ function applyClient(client: { id: number; name: string; phone: string | null })
       </div>
 
       <NxTabs v-if="!isCourtesy" v-model:value="activeTab">
-        <NxTabList v-if="!receivableMode">
+        <!-- wrap: en un telefono las 4 pestañas no caben y "Abonar" quedaba
+             cortada tras el scroll horizontal, invisible sin señas (reporte
+             real del negocio). Envueltas a dos filas se ven todas siempre. -->
+        <NxTabList v-if="!receivableMode" wrap>
           <NxTab value="single" icon="pi pi-wallet">Pago único</NxTab>
           <NxTab value="multi" icon="pi pi-credit-card">Varios medios</NxTab>
           <NxTab value="split" icon="pi pi-users">Dividir</NxTab>
