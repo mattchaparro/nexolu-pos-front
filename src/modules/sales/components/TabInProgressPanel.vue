@@ -11,6 +11,8 @@ import type { Sale, SaleItem } from '@/types/sale'
 import type { BusinessTable } from '@/types/table'
 import { NxButton, NxInput } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
+import { formatShortDateTime } from '@/utils/formatShortDateTime'
+import { salePartialPaid, saleRemaining } from '@/utils/saleBalance'
 
 import type { useNewItemsCart } from '../../open-tabs/composables/useNewItemsCart'
 import NewItemsCartList from '../../open-tabs/components/NewItemsCartList.vue'
@@ -63,8 +65,10 @@ function title(): string {
         <h2 class="truncate text-sm font-semibold text-slate-900">{{ title() }}</h2>
       </div>
       <div class="flex shrink-0 items-center gap-1">
+        <!-- Saldo pendiente (total - abonos), no el total: es lo que de
+             verdad falta cobrar - ver utils/saleBalance. -->
         <p v-if="activeSale" class="text-sm font-bold text-slate-900">
-          {{ formatCop(Number(activeSale.total) + draftTotalDelta + cart.total.value) }}
+          {{ formatCop(saleRemaining(activeSale) + draftTotalDelta + cart.total.value) }}
         </p>
         <button type="button" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100" @click="emit('cancel')">
           <i class="pi pi-times" />
@@ -96,6 +100,36 @@ function title(): string {
           @remove-item="emit('remove-item', $event)"
         />
       </template>
+      <!-- Detalle de abonos: cuanto y cuando ("no es claro cuando ni cuanto
+           abono"). El pie deja explicito por que el numero del header es
+           menor a la suma de los items. -->
+      <div
+        v-if="activeSale && (activeSale.partial_payments?.length ?? 0) > 0"
+        class="mb-3 rounded-lg bg-emerald-50 px-3 py-2"
+      >
+        <p class="mb-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700">Abonos</p>
+        <div
+          v-for="payment in activeSale.partial_payments"
+          :key="payment.id"
+          class="flex items-center justify-between text-xs text-emerald-800"
+        >
+          <span>
+            {{ formatShortDateTime(payment.created_at) || 'Abono' }}
+            <template v-if="payment.payer_label"> · {{ payment.payer_label }}</template>
+          </span>
+          <span class="font-semibold">{{ formatCop(Number(payment.amount)) }}</span>
+        </div>
+        <div class="mt-1.5 flex items-center justify-between border-t border-emerald-200 pt-1.5 text-xs">
+          <span class="text-emerald-800">
+            Total {{ formatCop(Number(activeSale.total) + draftTotalDelta) }} · Abonado
+            {{ formatCop(salePartialPaid(activeSale)) }}
+          </span>
+          <span class="font-bold text-emerald-900">
+            Falta {{ formatCop(saleRemaining(activeSale) + draftTotalDelta) }}
+          </span>
+        </div>
+      </div>
+
       <p v-if="cart.lines.value.length > 0" class="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">
         Por agregar
       </p>

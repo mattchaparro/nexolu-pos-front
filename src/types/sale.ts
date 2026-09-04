@@ -61,6 +61,8 @@ export interface SalePartialPayment {
   payment_method: string
   payer_label: string | null
   user_id: number
+  /** Cuando se registro el abono - se muestra en el detalle de la cuenta. */
+  created_at?: string
 }
 
 export interface Sale {

@@ -21,6 +21,7 @@ import type { BusinessTable } from '@/types/table'
 import { NxPageHeader } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
+import { saleRemaining } from '@/utils/saleBalance'
 import { hasFeature } from '@/utils/hasFeature'
 
 import TabClosedDialog from '../../open-tabs/components/TabClosedDialog.vue'
@@ -480,7 +481,8 @@ function handleNewSale(): void {
       <span class="text-sm font-medium">
         {{ mobileTabLabel() }}
       </span>
-      <span class="font-bold">{{ formatCop(Number(activeSale?.total ?? 0) + draftTotalDelta + tabCart.total.value) }}</span>
+      <!-- Saldo pendiente, no el total - coherente con el chip y el panel. -->
+      <span class="font-bold">{{ formatCop((activeSale ? saleRemaining(activeSale) : 0) + draftTotalDelta + tabCart.total.value) }}</span>
     </button>
 
     <Teleport to="body">

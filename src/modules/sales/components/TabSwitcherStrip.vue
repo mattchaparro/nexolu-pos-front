@@ -18,6 +18,7 @@ import { NxInput } from '@/ui'
 import type { Sale } from '@/types/sale'
 import type { BusinessTable } from '@/types/table'
 import { formatCop } from '@/utils/formatCop'
+import { saleHasPartialPayments, saleRemaining } from '@/utils/saleBalance'
 
 const props = defineProps<{
   tables: BusinessTable[]
@@ -90,53 +91,20 @@ const noResults = computed(
     filteredOpenTabsByName.value.length === 0,
 )
 
-// Number(): sale.total llega como string desde el backend (cast decimal:2
-// de Laravel se serializa como string en JSON) - sumarlo directo con "+"
-// concatenaria texto en vez de sumar.
-
-/**
- * Lo que FALTA cobrar de la cuenta (total - abonos), no el total. Mejora
- * deliberada sobre el legacy (decision del usuario, 2026-09-03): alla el
- * chip mostraba el total y el saldo solo aparecia al entrar al modal de
- * cobro; con abonos registrados eso le mostraba al cajero una deuda que el
- * cliente ya no tiene. balance_due lo calcula el backend cuando la lista
- * carga los abonos; el fallback resta localmente por si llegara una Sale
- * sin esa relacion cargada.
- */
-function remainingOf(sale: Sale): number {
-  if (sale.balance_due !== null && sale.balance_due !== undefined) {
-    return Number(sale.balance_due)
-  }
-  const paid = (sale.partial_payments ?? []).reduce((sum, p) => sum + Number(p.amount || 0), 0)
-  return Number(sale.total) - paid
-}
-
+// El chip muestra lo que FALTA cobrar (saleRemaining, no el total) y señala
+// "abonó" cuando hay pagos parciales - ver el docblock de utils/saleBalance.
 function tableTotal(table: BusinessTable): number {
   const sale = props.openSaleByTable.get(table.id)
   if (!sale) {
     return 0
   }
   const isActive = props.activeMode === 'tab' && props.activeSaleId === sale.id
-  return remainingOf(sale) + (isActive ? props.pendingCartTotal : 0)
+  return saleRemaining(sale) + (isActive ? props.pendingCartTotal : 0)
 }
 
 function tabTotal(tab: Sale): number {
   const isActive = props.activeMode === 'tab' && props.activeSaleId === tab.id
-  return remainingOf(tab) + (isActive ? props.pendingCartTotal : 0)
-}
-
-/**
- * Si la cuenta tiene abonos, el chip lo señala ("abonó"): asi se entiende
- * que el monto mostrado es el saldo y no el total de lo consumido.
- */
-function hasPartialPayments(sale: Sale | undefined): boolean {
-  if (!sale) {
-    return false
-  }
-  if (sale.amount_paid !== null && sale.amount_paid !== undefined) {
-    return Number(sale.amount_paid) > 0
-  }
-  return (sale.partial_payments?.length ?? 0) > 0
+  return saleRemaining(tab) + (isActive ? props.pendingCartTotal : 0)
 }
 </script>
 
@@ -206,7 +174,7 @@ function hasPartialPayments(sale: Sale | undefined): boolean {
           {{ formatCop(tableTotal(table)) }}
         </p>
         <p
-          v-if="hasPartialPayments(openSaleByTable.get(table.id))"
+          v-if="saleHasPartialPayments(openSaleByTable.get(table.id))"
           class="text-[9px] font-semibold leading-none"
           :class="
             (activeMode === 'tab' && activeSaleId === openSaleByTable.get(table.id)?.id) ||
@@ -238,7 +206,7 @@ function hasPartialPayments(sale: Sale | undefined): boolean {
         <p class="max-w-[70px] truncate text-xs font-semibold">{{ tab.customer_name || `#${tab.id}` }}</p>
         <p class="text-[10px] font-bold">{{ formatCop(tabTotal(tab)) }}</p>
         <p
-          v-if="hasPartialPayments(tab)"
+          v-if="saleHasPartialPayments(tab)"
           class="text-[9px] font-semibold leading-none"
           :class="activeMode === 'tab' && activeSaleId === tab.id ? 'text-white/80' : 'text-emerald-600'"
         >
