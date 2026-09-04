@@ -186,6 +186,12 @@ async function uploadPendingImages(created: Product): Promise<void> {
   )
 
   let failed = 0
+  // El motivo del PRIMER fallo. Un contador a secas deja al comerciante sin
+  // nada que hacer ni que reportar: pasó de verdad que el servidor rechazaba
+  // todas las fotos por un problema suyo y el aviso solo decía "no se
+  // pudieron subir", así que nadie se enteró de que había algo roto.
+  let reason: string | null = null
+
   // Secuencial: el orden de las fotos es el orden en que llegan.
   for (const image of pendingImages.value) {
     try {
@@ -193,8 +199,9 @@ async function uploadPendingImages(created: Product): Promise<void> {
         variantId:
           image.variantKey === null ? null : (variantIdByCombo.get(image.variantKey) ?? null),
       })
-    } catch {
+    } catch (error) {
       failed += 1
+      reason ??= extractErrorMessage(error, '')
     }
   }
 
@@ -202,7 +209,10 @@ async function uploadPendingImages(created: Product): Promise<void> {
   pendingImages.value = []
 
   if (failed > 0) {
-    notify(`El producto se creó, pero ${failed} foto(s) no se pudieron subir.`)
+    notify(
+      `El producto se creó, pero ${failed} foto(s) no se pudieron subir.` +
+        (reason ? ` ${reason}` : ''),
+    )
   }
 }
 
