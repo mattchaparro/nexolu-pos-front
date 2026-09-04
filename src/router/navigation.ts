@@ -145,7 +145,7 @@ export const superadminNavItems: NavItem[] = [
   { label: 'Usuarios (plataforma)', icon: 'pi pi-users', routeName: 'superadmin.users.index' },
   { label: 'Auditoría', icon: 'pi pi-history', routeName: 'superadmin.audit-logs.index' },
   { label: 'Sistema', icon: 'pi pi-server', routeName: 'superadmin.system.index' },
-  { label: 'Guías ayuda', icon: 'pi pi-book', disabled: true },
+  { label: 'Guías de la app', icon: 'pi pi-book', routeName: 'superadmin.guides.index' },
   { label: 'Ajustes globales', icon: 'pi pi-cog', disabled: true },
   {
     label: 'Transacciones suscripción',

@@ -539,6 +539,11 @@ const router = createRouter({
           component: () => import('@/modules/superadmin-dashboard/views/SuperAdminDashboardView.vue'),
         },
         {
+          path: 'guias',
+          name: 'superadmin.guides.index',
+          component: () => import('@/modules/superadmin-guides/views/SuperAdminGuidesView.vue'),
+        },
+        {
           path: 'finanzas',
           name: 'superadmin.finance.index',
           component: () => import('@/modules/superadmin-finance/views/SuperAdminFinanceView.vue'),

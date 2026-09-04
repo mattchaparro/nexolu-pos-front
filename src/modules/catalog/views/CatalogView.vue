@@ -6,7 +6,10 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
+import GuidedTour from '@/components/GuidedTour.vue'
 import { useBusiness } from '@/composables/useBusiness'
+import { useGuidedTour } from '@/composables/useGuidedTour'
+import { CATALOG_TOUR } from '@/tours/catalog'
 import { usePermissions } from '@/composables/usePermissions'
 import type { IngredientStockFilter, ProductStockFilter } from '@/types/catalogSummary'
 import type { StockMovementType } from '@/types/inventory'
@@ -44,6 +47,21 @@ import { ingredientStockBadge, productStockBadge } from '../support/stockBadge'
 
 const router = useRouter()
 const { data: business } = useBusiness()
+
+// El recorrido de la primera vez. Arranca solo cuando el negocio ya cargo
+// (hasta ahi no se sabe con que llave recordarlo) y se puede relanzar con el
+// signo de pregunta del encabezado - nadie retiene seis pasos a la primera.
+const tour = useGuidedTour(CATALOG_TOUR.key, CATALOG_TOUR.steps, () => business.value?.id ?? null)
+
+watch(
+  business,
+  (value) => {
+    if (value) {
+      void tour.start()
+    }
+  },
+  { once: true },
+)
 const { hasPermission } = usePermissions()
 const ingredientsEnabled = computed(() => business.value?.feature_flags?.ingredients === true)
 const canAdd = computed(() => hasPermission('inventory.add'))
@@ -80,7 +98,9 @@ const categoryOptions = computed(() => {
     { id: null, label: 'Todas las categorías' },
     ...all.map((c) => ({
       id: c.id,
-      label: c.parent_id ? `${all.find((p) => p.id === c.parent_id)?.name ?? ''} › ${c.name}` : c.name,
+      label: c.parent_id
+        ? `${all.find((p) => p.id === c.parent_id)?.name ?? ''} › ${c.name}`
+        : c.name,
     })),
   ]
 })
@@ -301,7 +321,18 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
 <template>
   <div class="flex flex-col pb-20 lg:pb-0">
     <div class="flex items-center justify-between gap-3">
-      <NxPageHeader title="Catálogo" icon="pi pi-shop" compact />
+      <div class="flex items-center gap-1">
+        <NxPageHeader title="Catálogo" icon="pi pi-shop" compact />
+        <button
+          type="button"
+          class="rounded-lg px-2 py-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+          title="Ver el recorrido guiado"
+          aria-label="Ver el recorrido guiado"
+          @click="tour.start(true)"
+        >
+          <i class="pi pi-question-circle text-sm" />
+        </button>
+      </div>
       <div class="flex items-center gap-2">
         <NxButton
           v-if="canAdjust"
@@ -313,6 +344,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
         </NxButton>
         <NxButton
           v-if="canAdd && activeArticleTab === 'productos'"
+          data-tour="new-product"
           icon="pi pi-plus"
           @click="router.push({ name: 'catalog.products.create' })"
         >
@@ -322,9 +354,9 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
       </div>
     </div>
 
-    <CatalogHubTabs class="mt-3" />
+    <CatalogHubTabs class="mt-3" data-tour="catalog-hub" />
 
-    <NxTabs v-model:value="activeArticleTab" class="mt-4">
+    <NxTabs v-model:value="activeArticleTab" class="mt-4" data-tour="article-tabs">
       <NxTabList>
         <NxTab value="productos" icon="pi pi-box">Productos</NxTab>
         <NxTab v-if="ingredientsEnabled" value="ingredientes" icon="pi pi-shopping-bag"
@@ -344,7 +376,10 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                 {{ showProductsSummary ? 'Ocultar' : 'Mostrar' }}
               </button>
             </div>
-            <div v-if="showProductsSummary" class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+            <div
+              v-if="showProductsSummary"
+              class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4"
+            >
               <NxStatCard
                 v-if="productMeta"
                 label="Total de productos"
@@ -402,7 +437,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
               </template>
             </div>
 
-            <div class="flex flex-col gap-3 sm:flex-row">
+            <div class="flex flex-col gap-3 sm:flex-row" data-tour="product-search">
               <NxInput
                 v-model="productSearchInput"
                 label="Buscar producto o SKU"
@@ -493,7 +528,9 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                             <p class="truncate text-xs text-slate-400">
                               {{ data.category?.name ?? 'Sin categoría' }}
                               {{ data.price_varies_at_sale ? 'Variable' : formatCop(data.price) }}
-                              <span v-if="data.cost_price">· costo: {{ formatCop(data.cost_price) }}</span>
+                              <span v-if="data.cost_price"
+                                >· costo: {{ formatCop(data.cost_price) }}</span
+                              >
                             </p>
                           </div>
                         </div>
@@ -504,21 +541,33 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                           >
                             {{ productStockBadge(data).label }}
                           </span>
-                          <p v-if="data.low_stock_alert_threshold" class="mt-0.5 text-[10px] whitespace-nowrap text-slate-400">
+                          <p
+                            v-if="data.low_stock_alert_threshold"
+                            class="mt-0.5 text-[10px] whitespace-nowrap text-slate-400"
+                          >
                             umbral: {{ data.low_stock_alert_threshold }}
                           </p>
                         </div>
                       </div>
 
-                      <div class="flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-slate-100 pt-2 sm:gap-x-8">
-                        <template v-if="data.track_stock && !data.is_service && data.can_manage_stock">
+                      <div
+                        class="flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-slate-100 pt-2 sm:gap-x-8"
+                      >
+                        <template
+                          v-if="data.track_stock && !data.is_service && data.can_manage_stock"
+                        >
                           <button
                             v-if="canAdjust"
                             type="button"
                             class="flex flex-col items-center gap-0.5 px-1 text-emerald-600 hover:text-emerald-700"
                             @click="
                               openStockModal(
-                                { kind: 'product', id: data.id, name: data.name, stock: data.stock },
+                                {
+                                  kind: 'product',
+                                  id: data.id,
+                                  name: data.name,
+                                  stock: data.stock,
+                                },
                                 'entry',
                               )
                             "
@@ -532,7 +581,12 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                             class="flex flex-col items-center gap-0.5 px-1 text-red-500 hover:text-red-700"
                             @click="
                               openStockModal(
-                                { kind: 'product', id: data.id, name: data.name, stock: data.stock },
+                                {
+                                  kind: 'product',
+                                  id: data.id,
+                                  name: data.name,
+                                  stock: data.stock,
+                                },
                                 'exit',
                               )
                             "
@@ -546,7 +600,12 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                             class="flex flex-col items-center gap-0.5 px-1 text-indigo-600 hover:text-indigo-700"
                             @click="
                               openStockModal(
-                                { kind: 'product', id: data.id, name: data.name, stock: data.stock },
+                                {
+                                  kind: 'product',
+                                  id: data.id,
+                                  name: data.name,
+                                  stock: data.stock,
+                                },
                                 'adjustment',
                               )
                             "
@@ -555,7 +614,10 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                             <span class="text-[11px] font-medium">Ajustar</span>
                           </button>
                           <RouterLink
-                            :to="{ name: 'catalog.products.stock-history', params: { id: data.id } }"
+                            :to="{
+                              name: 'catalog.products.stock-history',
+                              params: { id: data.id },
+                            }"
                             class="flex flex-col items-center gap-0.5 px-1 text-slate-400 hover:text-indigo-600"
                           >
                             <i class="pi pi-history" style="font-size: 1.125rem" />
@@ -594,24 +656,46 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                           v-if="canAdd && onlineStoreEnabled && !data.is_service"
                           type="button"
                           class="flex flex-col items-center gap-0.5 px-1"
-                          :class="data.is_published ? 'text-emerald-600 hover:text-emerald-700' : 'text-slate-400 hover:text-indigo-600'"
+                          :class="
+                            data.is_published
+                              ? 'text-emerald-600 hover:text-emerald-700'
+                              : 'text-slate-400 hover:text-indigo-600'
+                          "
                           :disabled="togglePublishedMutation.isPending.value"
-                          :title="data.is_published ? 'Quitar de la tienda online' : 'Publicar en la tienda online'"
+                          :title="
+                            data.is_published
+                              ? 'Quitar de la tienda online'
+                              : 'Publicar en la tienda online'
+                          "
                           @click="togglePublished(data)"
                         >
-                          <i :class="data.is_published ? 'pi pi-globe' : 'pi pi-eye-slash'" style="font-size: 1.125rem" />
-                          <span class="text-[11px] font-medium">{{ data.is_published ? 'En tienda' : 'Publicar' }}</span>
+                          <i
+                            :class="data.is_published ? 'pi pi-globe' : 'pi pi-eye-slash'"
+                            style="font-size: 1.125rem"
+                          />
+                          <span class="text-[11px] font-medium">{{
+                            data.is_published ? 'En tienda' : 'Publicar'
+                          }}</span>
                         </button>
                         <button
                           v-if="canAdd"
                           type="button"
                           class="flex flex-col items-center gap-0.5 px-1"
-                          :class="data.is_active ? 'text-slate-400 hover:text-amber-600' : 'text-emerald-600 hover:text-emerald-700'"
+                          :class="
+                            data.is_active
+                              ? 'text-slate-400 hover:text-amber-600'
+                              : 'text-emerald-600 hover:text-emerald-700'
+                          "
                           :disabled="toggleProductActiveMutation.isPending.value"
                           @click="toggleProductActive(data)"
                         >
-                          <i :class="data.is_active ? 'pi pi-pause-circle' : 'pi pi-play-circle'" style="font-size: 1.125rem" />
-                          <span class="text-[11px] font-medium">{{ data.is_active ? 'Pausar' : 'Activar' }}</span>
+                          <i
+                            :class="data.is_active ? 'pi pi-pause-circle' : 'pi pi-play-circle'"
+                            style="font-size: 1.125rem"
+                          />
+                          <span class="text-[11px] font-medium">{{
+                            data.is_active ? 'Pausar' : 'Activar'
+                          }}</span>
                         </button>
                         <button
                           v-if="canAdd"
@@ -635,13 +719,20 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                           @click="toggleVariants(data.id)"
                         >
                           <i
-                            :class="expandedProductIds.has(data.id) ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+                            :class="
+                              expandedProductIds.has(data.id)
+                                ? 'pi pi-chevron-down'
+                                : 'pi pi-chevron-right'
+                            "
                             style="font-size: 0.7rem"
                           />
                           {{ data.variants.length }} variaciones
                         </button>
 
-                        <ul v-if="expandedProductIds.has(data.id)" class="flex flex-col gap-1.5 border-t border-slate-100 pt-2">
+                        <ul
+                          v-if="expandedProductIds.has(data.id)"
+                          class="flex flex-col gap-1.5 border-t border-slate-100 pt-2"
+                        >
                           <li
                             v-for="variant in data.variants"
                             :key="variant.id"
@@ -649,7 +740,9 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                             :class="variant.is_active ? '' : 'opacity-60'"
                           >
                             <div class="min-w-0">
-                              <p class="flex items-center gap-1.5 text-sm font-medium text-slate-800">
+                              <p
+                                class="flex items-center gap-1.5 text-sm font-medium text-slate-800"
+                              >
                                 <span class="truncate">{{ variantLabel(variant) }}</span>
                                 <span
                                   v-if="!variant.is_active"
@@ -666,7 +759,11 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                             <div class="flex items-center gap-3">
                               <span
                                 class="rounded-md px-2 py-1 text-xs font-semibold"
-                                :class="variant.stock > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'"
+                                :class="
+                                  variant.stock > 0
+                                    ? 'bg-emerald-50 text-emerald-700'
+                                    : 'bg-red-50 text-red-600'
+                                "
                               >
                                 {{ variant.stock }}
                               </span>
@@ -677,7 +774,13 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                                 title="Agregar stock"
                                 @click="
                                   openStockModal(
-                                    { kind: 'variant', id: variant.id, productId: data.id, name: `${data.name} · ${variantLabel(variant)}`, stock: variant.stock },
+                                    {
+                                      kind: 'variant',
+                                      id: variant.id,
+                                      productId: data.id,
+                                      name: `${data.name} · ${variantLabel(variant)}`,
+                                      stock: variant.stock,
+                                    },
                                     'entry',
                                   )
                                 "
@@ -691,7 +794,13 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                                 title="Ajustar stock"
                                 @click="
                                   openStockModal(
-                                    { kind: 'variant', id: variant.id, productId: data.id, name: `${data.name} · ${variantLabel(variant)}`, stock: variant.stock },
+                                    {
+                                      kind: 'variant',
+                                      id: variant.id,
+                                      productId: data.id,
+                                      name: `${data.name} · ${variantLabel(variant)}`,
+                                      stock: variant.stock,
+                                    },
                                     'adjustment',
                                   )
                                 "
@@ -701,12 +810,22 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                               <button
                                 v-if="canAdd"
                                 type="button"
-                                :title="variant.is_active ? 'Pausar variación' : 'Activar variación'"
-                                :class="variant.is_active ? 'text-slate-400 hover:text-amber-600' : 'text-emerald-600'"
+                                :title="
+                                  variant.is_active ? 'Pausar variación' : 'Activar variación'
+                                "
+                                :class="
+                                  variant.is_active
+                                    ? 'text-slate-400 hover:text-amber-600'
+                                    : 'text-emerald-600'
+                                "
                                 :disabled="toggleVariantMutation.isPending.value"
                                 @click="toggleVariantActive(data, variant)"
                               >
-                                <i :class="variant.is_active ? 'pi pi-pause-circle' : 'pi pi-play-circle'" />
+                                <i
+                                  :class="
+                                    variant.is_active ? 'pi pi-pause-circle' : 'pi pi-play-circle'
+                                  "
+                                />
                               </button>
                             </div>
                           </li>
@@ -830,7 +949,9 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                           </p>
                           <p class="truncate text-xs text-slate-400">
                             {{ data.unit }}
-                            <span v-if="data.cost_price != null"> · costo: {{ formatCop(Number(data.cost_price)) }}</span>
+                            <span v-if="data.cost_price != null">
+                              · costo: {{ formatCop(Number(data.cost_price)) }}</span
+                            >
                           </p>
                         </div>
                         <div class="shrink-0 text-right">
@@ -840,13 +961,18 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                           >
                             {{ ingredientStockBadge(data).label }}
                           </span>
-                          <p v-if="data.min_stock" class="mt-0.5 text-[10px] whitespace-nowrap text-slate-400">
+                          <p
+                            v-if="data.min_stock"
+                            class="mt-0.5 text-[10px] whitespace-nowrap text-slate-400"
+                          >
                             umbral: {{ data.min_stock }}
                           </p>
                         </div>
                       </div>
 
-                      <div class="flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-slate-100 pt-2 sm:gap-x-8">
+                      <div
+                        class="flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-slate-100 pt-2 sm:gap-x-8"
+                      >
                         <button
                           v-if="canAdjust"
                           type="button"
@@ -908,7 +1034,10 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                           <span class="text-[11px] font-medium">Ajustar</span>
                         </button>
                         <RouterLink
-                          :to="{ name: 'catalog.ingredients.stock-history', params: { id: data.id } }"
+                          :to="{
+                            name: 'catalog.ingredients.stock-history',
+                            params: { id: data.id },
+                          }"
                           class="flex flex-col items-center gap-0.5 px-1 text-slate-400 hover:text-indigo-600"
                         >
                           <i class="pi pi-history" style="font-size: 1.125rem" />
@@ -1004,5 +1133,15 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
         Este ingrediente no está en ninguna receta todavía.
       </p>
     </NxModal>
+
+    <GuidedTour
+      :step="tour.step.value"
+      :index="tour.stepIndex.value"
+      :total="tour.total"
+      :is-last="tour.isLast.value"
+      @next="tour.next"
+      @back="tour.back"
+      @skip="tour.finish"
+    />
   </div>
 </template>

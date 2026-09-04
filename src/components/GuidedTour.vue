@@ -19,7 +19,7 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { NxButton } from '@/ui'
 
-import type { TourStep } from '../composables/useEditorTour'
+import type { TourStep } from '@/types/tour'
 
 const props = defineProps<{
   step: TourStep | null

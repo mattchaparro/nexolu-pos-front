@@ -482,11 +482,14 @@ async function submit(): Promise<void> {
             <NxToggleButton v-model="showHowToUse" label="Cómo usarlo" icon="pi pi-info-circle" />
             <NxTextarea v-if="showHowToUse" v-model="howToUse" label="Cómo usarlo" :rows="2" />
 
-            <div class="mt-4 border-t border-slate-100 pt-4">
+            <!-- Solo con tienda online: desde 2026-09-04 las ventas cruzadas
+                 son exclusivas de la tienda (antes tambien alimentaban las
+                 sugerencias del cajero en Vender). Sin tienda no hay donde se
+                 muestren, asi que configurarlas seria trabajo perdido. -->
+            <div v-if="onlineStoreEnabled" class="mt-4 border-t border-slate-100 pt-4">
               <p class="text-sm font-semibold text-slate-700">Se vende bien con</p>
               <p class="mb-2 text-xs text-slate-400">
-                Lo que el cajero va a ver sugerido al vender esto, y lo que aparece como “Va bien
-                con” en tu tienda online.
+                Lo que aparece como “Va bien con” en la ficha de este producto en tu tienda online.
               </p>
               <CrossSellPicker
                 v-model="crossSellIds"

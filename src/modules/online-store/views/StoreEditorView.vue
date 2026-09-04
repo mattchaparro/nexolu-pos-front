@@ -23,15 +23,16 @@ import {
   NxSwitch,
   NxTextarea,
 } from '@/ui'
+import GuidedTour from '@/components/GuidedTour.vue'
 import { useBusiness } from '@/composables/useBusiness'
+import { useGuidedTour } from '@/composables/useGuidedTour'
+import { STORE_EDITOR_TOUR } from '@/tours/storeEditor'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
 import HomePresetPicker from '../components/HomePresetPicker.vue'
 import { useEditorHistory, useUndoShortcuts } from '../composables/useEditorHistory'
 import { useStoreDraft, type StoreDraft } from '../composables/useStoreDraft'
-import { useEditorTour } from '../composables/useEditorTour'
 import { usePublishChecklist } from '../composables/usePublishChecklist'
-import EditorTour from '../components/EditorTour.vue'
 import PublishChecklist from '../components/PublishChecklist.vue'
 import StoreCategoryPicker from '../components/StoreCategoryPicker.vue'
 import StoreFontPicker from '../components/StoreFontPicker.vue'
@@ -194,7 +195,12 @@ function goToSection(section: string): void {
 // La llave del recorrido es por NEGOCIO: el dueño con dos negocios lo ve en
 // cada uno, y en un POS compartido dos usuarios no se lo pisan.
 const { data: currentBusiness } = useBusiness()
-const tour = useEditorTour(() => currentBusiness.value?.id ?? null, goToSection)
+const tour = useGuidedTour(
+  STORE_EDITOR_TOUR.key,
+  STORE_EDITOR_TOUR.steps,
+  () => currentBusiness.value?.id ?? null,
+  goToSection,
+)
 
 // Arranca al abrir el editor, una sola vez por negocio. Espera a que haya
 // ajustes cargados: sin eso no se sabe de que negocio es la llave.
@@ -667,7 +673,7 @@ async function save(): Promise<void> {
       </aside>
     </div>
 
-    <EditorTour
+    <GuidedTour
       :step="tour.step.value"
       :index="tour.stepIndex.value"
       :total="tour.total"
