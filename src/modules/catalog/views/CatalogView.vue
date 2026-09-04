@@ -321,18 +321,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
 <template>
   <div class="flex flex-col pb-20 lg:pb-0">
     <div class="flex items-center justify-between gap-3">
-      <div class="flex items-center gap-1">
-        <NxPageHeader title="Catálogo" icon="pi pi-shop" compact />
-        <button
-          type="button"
-          class="rounded-lg px-2 py-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-          title="Ver el recorrido guiado"
-          aria-label="Ver el recorrido guiado"
-          @click="tour.start(true)"
-        >
-          <i class="pi pi-question-circle text-sm" />
-        </button>
-      </div>
+      <NxPageHeader title="Catálogo" icon="pi pi-shop" compact />
       <div class="flex items-center gap-2">
         <NxButton
           v-if="canAdjust"
@@ -1141,7 +1130,8 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
       :is-last="tour.isLast.value"
       @next="tour.next"
       @back="tour.back"
-      @skip="tour.finish"
+      @dismiss="tour.dismiss"
+      @close="tour.close"
     />
   </div>
 </template>

@@ -1,12 +1,16 @@
 <script setup lang="ts">
 // Compras - listado con filtro de fechas + estado de pago. Puerto de
 // Admin/Purchases/Index.vue del legacy.
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import type { Purchase, PurchasePaymentStatus } from '@/types/purchase'
 import { NxButton, NxColumn, NxDataTable, NxDatePicker, NxPageHeader } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
+import GuidedTour from '@/components/GuidedTour.vue'
+import { useBusiness } from '@/composables/useBusiness'
+import { useGuidedTour } from '@/composables/useGuidedTour'
+import { PURCHASES_TOUR } from '@/tours/purchases'
 
 import CatalogHubTabs from '../../catalog/components/CatalogHubTabs.vue'
 import PayPurchaseModal from '../components/PayPurchaseModal.vue'
@@ -37,18 +41,23 @@ function openPay(purchase: Purchase): void {
 function formatDate(value: string): string {
   return new Date(`${value}T00:00:00`).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
 }
+// Recorrido de la primera vez; se relanza desde el signo de pregunta de la
+// barra superior (ver useGuidedTour / NxNavbar).
+const { data: business } = useBusiness()
+const tour = useGuidedTour(PURCHASES_TOUR.key, PURCHASES_TOUR.steps, () => business.value?.id ?? null)
+watch(business, (value) => { if (value) { void tour.start() } }, { once: true })
 </script>
 
 <template>
   <div class="flex flex-col gap-4 pb-20 lg:pb-0">
     <div class="flex items-center justify-between gap-3">
       <NxPageHeader title="Compras" icon="pi pi-shopping-cart" compact />
-      <NxButton icon="pi pi-plus" @click="router.push({ name: 'purchases.create' })">Registrar compra</NxButton>
+      <NxButton data-tour="new-purchase" icon="pi pi-plus" @click="router.push({ name: 'purchases.create' })">Registrar compra</NxButton>
     </div>
 
-    <CatalogHubTabs />
+    <CatalogHubTabs data-tour="catalog-hub" />
 
-    <div class="flex flex-wrap gap-3">
+    <div class="flex flex-wrap gap-3" data-tour="purchase-dates">
       <NxDatePicker v-model="from" label="Desde" class="min-w-[160px]" />
       <NxDatePicker v-model="to" label="Hasta" class="min-w-[160px]" />
     </div>
@@ -121,5 +130,15 @@ function formatDate(value: string): string {
     </div>
 
     <PayPurchaseModal v-model="payModalOpen" :purchase="payingPurchase" />
+      <GuidedTour
+      :step="tour.step.value"
+      :index="tour.stepIndex.value"
+      :total="tour.total"
+      :is-last="tour.isLast.value"
+      @next="tour.next"
+      @back="tour.back"
+      @dismiss="tour.dismiss"
+      @close="tour.close"
+    />
   </div>
 </template>

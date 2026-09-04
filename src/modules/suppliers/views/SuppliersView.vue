@@ -8,6 +8,10 @@ import { computed, ref, watch } from 'vue'
 import type { Supplier } from '@/types/supplier'
 import { NxButton, NxColumn, NxDataTable, NxInput, NxPageHeader } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
+import GuidedTour from '@/components/GuidedTour.vue'
+import { useBusiness } from '@/composables/useBusiness'
+import { useGuidedTour } from '@/composables/useGuidedTour'
+import { SUPPLIERS_TOUR } from '@/tours/suppliers'
 
 import CatalogHubTabs from '../../catalog/components/CatalogHubTabs.vue'
 import RemindVisitModal from '../components/RemindVisitModal.vue'
@@ -71,13 +75,18 @@ async function removeSupplier(supplier: Supplier): Promise<void> {
 function formatDate(value: string): string {
   return new Date(`${value}T00:00:00`).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })
 }
+// Recorrido de la primera vez; se relanza desde el signo de pregunta de la
+// barra superior (ver useGuidedTour / NxNavbar).
+const { data: business } = useBusiness()
+const tour = useGuidedTour(SUPPLIERS_TOUR.key, SUPPLIERS_TOUR.steps, () => business.value?.id ?? null)
+watch(business, (value) => { if (value) { void tour.start() } }, { once: true })
 </script>
 
 <template>
   <div class="flex flex-col gap-4 pb-20 lg:pb-0">
     <div class="flex items-center justify-between gap-3">
       <NxPageHeader title="Proveedores" icon="pi pi-truck" compact />
-      <NxButton icon="pi pi-plus" @click="openNewSupplier">Proveedor</NxButton>
+      <NxButton data-tour="new-supplier" icon="pi pi-plus" @click="openNewSupplier">Proveedor</NxButton>
     </div>
 
     <CatalogHubTabs />
@@ -160,5 +169,15 @@ function formatDate(value: string): string {
 
     <SupplierFormModal v-model="formModalOpen" :supplier="editingSupplier" />
     <RemindVisitModal v-model="remindModalOpen" :supplier="remindingSupplier" />
+      <GuidedTour
+      :step="tour.step.value"
+      :index="tour.stepIndex.value"
+      :total="tour.total"
+      :is-last="tour.isLast.value"
+      @next="tour.next"
+      @back="tour.back"
+      @dismiss="tour.dismiss"
+      @close="tour.close"
+    />
   </div>
 </template>

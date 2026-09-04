@@ -28,7 +28,14 @@ const props = defineProps<{
   isLast: boolean
 }>()
 
-const emit = defineEmits<{ next: []; back: []; skip: [] }>()
+const emit = defineEmits<{
+  next: []
+  back: []
+  /** Omitir: no vuelve a aparecer. */
+  dismiss: []
+  /** Cerrar por ahora (toque fuera del globo): vuelve la proxima vez. */
+  close: []
+}>()
 
 interface Spot {
   top: number
@@ -51,6 +58,14 @@ function measure(): void {
 
   const el = document.querySelector(selector)
   if (!el) {
+    // El paso se muestra centrado y el texto sigue sirviendo, pero un ancla
+    // que ya no existe (porque alguien renombró o quitó el `data-tour` al
+    // rediseñar) no se nota mirando la pantalla: el recorrido "funciona", solo
+    // que deja de señalar. En desarrollo se avisa; en producción no, que el
+    // comerciante no tiene nada que hacer con eso.
+    if (import.meta.env.DEV) {
+      console.warn(`[GuidedTour] el paso apunta a "${selector}" y ese elemento no existe en la pantalla.`)
+    }
     spot.value = null
     return
   }
@@ -127,12 +142,12 @@ onUnmounted(() => {
         height: `${spot.height}px`,
         boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.55)',
       }"
-      @click="emit('skip')"
+      @click="emit('close')"
     />
     <div
       v-else
       class="pointer-events-auto absolute inset-0 bg-slate-900/55"
-      @click="emit('skip')"
+      @click="emit('close')"
     />
 
     <div
@@ -149,9 +164,9 @@ onUnmounted(() => {
         <button
           type="button"
           class="text-xs text-slate-400 underline hover:text-slate-600"
-          @click="emit('skip')"
+          @click="emit('dismiss')"
         >
-          Saltar
+          Omitir
         </button>
 
         <div class="flex gap-2">

@@ -31,16 +31,23 @@ const props = withDefaults(
      * resolver: el item no se muestra, mejor eso que un enlace roto.
      */
     supportWhatsappUrl?: string | null
+    /**
+     * Hay un recorrido guiado para la pantalla actual. Cuando no lo hay el
+     * boton no se dibuja: un signo de pregunta que no hace nada es peor que
+     * no tenerlo.
+     */
+    hasTour?: boolean
   }>(),
   {
     showProfileLink: false,
     showSettingsLink: false,
     showSubscriptionLink: false,
     supportWhatsappUrl: null,
+    hasTour: false,
   },
 )
 
-const emit = defineEmits<{ logout: [] }>()
+const emit = defineEmits<{ logout: []; 'start-tour': [] }>()
 
 const menuOpen = ref(false)
 const menuRef = useTemplateRef<HTMLElement>('menuRef')
@@ -76,6 +83,21 @@ const initials = computed(() => {
     <img :src="logo" alt="Nexolú POS" class="h-9 w-auto rounded-lg bg-white px-2 py-1 lg:hidden" />
     <div class="ml-auto flex items-center gap-3">
       <slot name="actions" />
+
+      <!-- Un solo lugar para el recorrido de CUALQUIER pantalla. Antes cada
+           modulo ponia su propio boton, que es como terminan tres botones
+           distintos en tres esquinas distintas. Si la pantalla actual no
+           tiene recorrido, no se dibuja. -->
+      <button
+        v-if="hasTour"
+        type="button"
+        class="rounded-lg p-1.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+        title="Ver el recorrido guiado de esta pantalla"
+        aria-label="Ver el recorrido guiado de esta pantalla"
+        @click="emit('start-tour')"
+      >
+        <i class="pi pi-question-circle" />
+      </button>
 
       <div ref="menuRef" class="relative">
         <button

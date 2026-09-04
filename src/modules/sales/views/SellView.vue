@@ -10,7 +10,9 @@
 import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 
+import GuidedTour from '@/components/GuidedTour.vue'
 import { useBusiness } from '@/composables/useBusiness'
+import { useGuidedTour } from '@/composables/useGuidedTour'
 import { usePermissions } from '@/composables/usePermissions'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import { useCurrentShift } from '@/modules/cash-shifts/composables/useCurrentShift'
@@ -23,6 +25,7 @@ import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 import { saleRemaining } from '@/utils/saleBalance'
 import { hasFeature } from '@/utils/hasFeature'
+import { SELL_TOUR } from '@/tours/sell'
 
 import TabClosedDialog from '../../open-tabs/components/TabClosedDialog.vue'
 import { useActiveTabItemActions } from '../../open-tabs/composables/useActiveTabItemActions'
@@ -47,6 +50,12 @@ import { useProductCatalog } from '../composables/useProductCatalog'
 import { useSaleCheckout } from '../composables/useSaleCheckout'
 
 const { data: business } = useBusiness()
+
+// Recorrido de la primera vez; se relanza desde el signo de pregunta de la
+// barra superior (ver useGuidedTour / NxNavbar).
+const tour = useGuidedTour(SELL_TOUR.key, SELL_TOUR.steps, () => business.value?.id ?? null)
+watch(business, (value) => { if (value) { void tour.start() } }, { once: true })
+
 const { productsQuery, categoriesQuery } = useProductCatalog()
 const { hasPermission } = usePermissions()
 // Sin esto, un negocio sin el feature discounts (o un cajero sin
@@ -440,7 +449,7 @@ function handleNewSale(): void {
       {{ submitError }}
     </p>
 
-    <div v-if="openTabsEnabled" class="mt-2">
+    <div v-if="openTabsEnabled" class="mt-2" data-tour="tab-switcher">
       <TabSwitcherStrip
         :tables="tablesQuery.data.value ?? []"
         :open-tabs-by-name="openTabsByName"
@@ -457,7 +466,7 @@ function handleNewSale(): void {
     </div>
 
     <div class="mt-2 flex min-h-0 flex-1 gap-4">
-      <div class="min-h-0 min-w-0 flex-1 pb-20 lg:pb-0">
+      <div class="min-h-0 min-w-0 flex-1 pb-20 lg:pb-0" data-tour="product-grid">
         <template v-if="productsQuery.isPending.value || categoriesQuery.isPending.value">
           <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             <div v-for="n in 10" :key="n" class="h-28 animate-pulse rounded-xl bg-slate-200" />
@@ -478,6 +487,7 @@ function handleNewSale(): void {
       <div
         v-if="business"
         class="hidden w-[380px] shrink-0 rounded-xl border border-slate-200 bg-white p-4 lg:block"
+        data-tour="cart"
       >
         <CartPanel
           v-if="mode === 'quick'"
@@ -608,5 +618,15 @@ function handleNewSale(): void {
     />
 
     <TabClosedDialog v-model="tabClosedOpen" :sale="lastClosedSale" />
+      <GuidedTour
+      :step="tour.step.value"
+      :index="tour.stepIndex.value"
+      :total="tour.total"
+      :is-last="tour.isLast.value"
+      @next="tour.next"
+      @back="tour.back"
+      @dismiss="tour.dismiss"
+      @close="tour.close"
+    />
   </div>
 </template>

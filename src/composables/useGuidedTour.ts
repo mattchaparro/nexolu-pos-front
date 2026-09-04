@@ -1,4 +1,4 @@
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onUnmounted, ref, shallowRef } from 'vue'
 
 import type { TourStep } from '@/types/tour'
 
@@ -8,23 +8,36 @@ import type { TourStep } from '@/types/tour'
  * Nació dentro del editor de la tienda (un editor con ocho secciones no se
  * explica solo, y el comerciante promedio no toca botones "a ver qué pasa" en
  * la pantalla que publica su tienda a internet). Se extrajo al necesitarlo el
- * segundo módulo: es exactamente el camino por el que, si no, terminan dos
+ * segundo módulo: es exactamente el camino por el que, si no, terminan varias
  * copias que se desincronizan.
  *
- * Tres decisiones que lo hacen usable y no molesto, heredadas del original:
- *
- * 1. **Se puede saltar en cualquier paso**, y saltarlo cuenta como visto. Un
- *    recorrido que vuelve a aparecer porque no lo terminaste es un castigo.
- * 2. **Se recuerda por NEGOCIO y por recorrido**, no por navegador a secas. El
- *    dueño con dos negocios lo ve en cada uno; y haber visto el de la tienda
- *    no debe saltarse el del catálogo.
- * 3. **Se puede relanzar a mano.** Nadie retiene ocho pasos a la primera, y sin
- *    forma de repetirlo la única salida es adivinar.
+ * Se recuerda por NEGOCIO y por recorrido: el dueño con dos negocios lo ve en
+ * cada uno, y haber visto el de la tienda no debe saltarse el del catálogo.
  *
  * Cada paso apunta a un selector real: si el elemento no existe (la sección no
  * está montada), el globo se muestra centrado en vez de quedar apuntando al
  * vacío.
  */
+export interface TourController {
+  start: (force?: boolean) => Promise<void>
+  running: ReturnType<typeof ref<boolean>>
+}
+
+/**
+ * El recorrido de la pantalla que está montada ahora mismo, si tiene uno.
+ *
+ * Vive a nivel de módulo para que la barra superior pueda ofrecer el signo de
+ * pregunta sin saber nada de cada módulo, y para que NO aparezca donde no hay
+ * recorrido: si nadie se registró, el botón no se dibuja. Antes cada pantalla
+ * ponía su propio botón, que es como terminan tres botones distintos en tres
+ * lugares distintos.
+ */
+const activeTour = shallowRef<TourController | null>(null)
+
+export function useActiveTour() {
+  return activeTour
+}
+
 export function useGuidedTour(
   tourKey: string,
   steps: TourStep[],
@@ -44,10 +57,10 @@ export function useGuidedTour(
   // La llave lleva el recorrido Y el negocio: sin el recorrido, ver el de la
   // tienda marcaria como visto el del catalogo.
   function storageKey(): string {
-    return `nexolu_tour_${tourKey}_seen_${businessId() ?? 'anon'}`
+    return `nexolu_tour_${tourKey}_dismissed_${businessId() ?? 'anon'}`
   }
 
-  function seen(): boolean {
+  function dismissed(): boolean {
     try {
       return localStorage.getItem(storageKey()) === '1'
     } catch {
@@ -57,7 +70,7 @@ export function useGuidedTour(
     }
   }
 
-  function markSeen(): void {
+  function markDismissed(): void {
     try {
       localStorage.setItem(storageKey(), '1')
     } catch {
@@ -76,7 +89,7 @@ export function useGuidedTour(
   }
 
   async function start(force = false): Promise<void> {
-    if (steps.length === 0 || (!force && seen())) {
+    if (steps.length === 0 || (!force && dismissed())) {
       return
     }
     stepIndex.value = 0
@@ -86,7 +99,7 @@ export function useGuidedTour(
 
   async function next(): Promise<void> {
     if (isLast.value) {
-      finish()
+      dismiss()
       return
     }
     stepIndex.value += 1
@@ -101,11 +114,33 @@ export function useGuidedTour(
     await applyStep()
   }
 
-  /** Saltar cuenta como visto: repetirlo sería un castigo por salirse. */
-  function finish(): void {
+  /**
+   * Lo cierra para siempre. Son las dos salidas deliberadas: "Omitir" y
+   * "Entendido" del último paso. Llegar al final es una señal aún más fuerte
+   * que omitirlo, así que también cuenta.
+   */
+  function dismiss(): void {
     running.value = false
-    markSeen()
+    markDismissed()
   }
 
-  return { step, stepIndex, total, isLast, running, start, next, back, finish }
+  /**
+   * Lo cierra SOLO por ahora: vuelve la próxima vez que entre a la pantalla.
+   *
+   * Es lo que pasa al tocar fuera del globo. Antes eso lo marcaba como visto,
+   * así que un clic al aire de alguien que ni lo leyó lo hacía desaparecer
+   * para siempre.
+   */
+  function close(): void {
+    running.value = false
+  }
+
+  activeTour.value = { start, running }
+  onUnmounted(() => {
+    if (activeTour.value?.start === start) {
+      activeTour.value = null
+    }
+  })
+
+  return { step, stepIndex, total, isLast, running, start, next, back, dismiss, close }
 }

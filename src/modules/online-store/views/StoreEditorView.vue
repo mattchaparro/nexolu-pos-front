@@ -337,18 +337,6 @@ async function save(): Promise<void> {
       <div class="flex items-center gap-2">
         <p v-if="errorMessage" class="max-w-xs truncate text-xs text-red-600">{{ errorMessage }}</p>
 
-        <!-- Relanzar el recorrido. Nadie retiene seis pasos a la primera, y
-             sin esto quien lo salta no lo recupera nunca. -->
-        <button
-          type="button"
-          class="rounded-lg px-2 py-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-          title="Ver el recorrido guiado"
-          aria-label="Ver el recorrido guiado"
-          @click="tour.start(true)"
-        >
-          <i class="pi pi-question-circle text-sm" />
-        </button>
-
         <!-- Deshacer/rehacer de lo no guardado. Iconos sin texto: la barra
              tiene que dejarle el ancho al nombre de la tienda. -->
         <div class="flex items-center">
@@ -438,6 +426,7 @@ async function save(): Promise<void> {
           v-model:width="previewWidth"
           v-model:maximized="maximized"
           v-model:panel-open="panelOpen"
+          data-tour="preview"
           class="h-full min-h-0 flex-1"
           :blocks="homeBlocks"
           :settings="previewSettings"
@@ -680,7 +669,8 @@ async function save(): Promise<void> {
       :is-last="tour.isLast.value"
       @next="tour.next"
       @back="tour.back"
-      @skip="tour.finish"
+      @dismiss="tour.dismiss"
+      @close="tour.close"
     />
 
     <!-- Salir con cambios sin guardar perdía el trabajo sin decir nada. -->

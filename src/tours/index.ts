@@ -1,7 +1,10 @@
 import type { TourDefinition } from '@/types/tour'
 
 import { CATALOG_TOUR } from './catalog'
+import { PURCHASES_TOUR } from './purchases'
+import { SELL_TOUR } from './sell'
 import { STORE_EDITOR_TOUR } from './storeEditor'
+import { SUPPLIERS_TOUR } from './suppliers'
 
 /**
  * Catálogo de recorridos guiados de la app.
@@ -15,6 +18,14 @@ import { STORE_EDITOR_TOUR } from './storeEditor'
  * lista, y llamar a useGuidedTour() desde su pantalla con las anclas
  * `data-tour` puestas en el marcado.
  */
-export const TOURS: TourDefinition[] = [CATALOG_TOUR, STORE_EDITOR_TOUR]
+// El orden es el del recorrido de un negocio nuevo: primero carga lo que
+// vende, después a quién se lo compra, después vende, y al final publica.
+export const TOURS: TourDefinition[] = [
+  CATALOG_TOUR,
+  SUPPLIERS_TOUR,
+  PURCHASES_TOUR,
+  SELL_TOUR,
+  STORE_EDITOR_TOUR,
+]
 
-export { CATALOG_TOUR, STORE_EDITOR_TOUR }
+export { CATALOG_TOUR, PURCHASES_TOUR, SELL_TOUR, STORE_EDITOR_TOUR, SUPPLIERS_TOUR }
