@@ -176,6 +176,19 @@ function confirmLeaveTab(): boolean {
 }
 
 /**
+ * Un fallo de una ACCION (guardar items, cobrar, abonar) se muestra como
+ * toast ademas del banner: el banner vive arriba de la pantalla y el cajero
+ * esta mirando el panel de la cuenta - o la hoja movil, que lo tapa entero.
+ * Un "no hay stock" que no se ve se siente como que el boton no hace nada
+ * (reportado en produccion). El banner se conserva para que el detalle siga
+ * a la vista cuando el toast ya se fue.
+ */
+function showActionError(message: string): void {
+  submitError.value = message
+  notify(message, 'error')
+}
+
+/**
  * Irse a una mesa/cuenta ABANDONA la venta rapida en curso.
  *
  * Antes el carrito del mostrador sobrevivia el cambio de contexto: el cajero
@@ -288,7 +301,7 @@ const { adjustItemQuantity, draftItems, hasDraftChanges, draftTotalDelta, confir
     activeSale,
     tabMutations,
     (message) => {
-      submitError.value = message
+      showActionError(message)
     },
     cancelTab,
   )
@@ -337,7 +350,7 @@ async function submitTabCart(): Promise<void> {
       cancelTab()
     }
   } catch (error) {
-    submitError.value = extractErrorMessage(error, 'No pudimos guardar los productos. Intenta de nuevo.')
+    showActionError(extractErrorMessage(error, 'No pudimos guardar los productos. Intenta de nuevo.'))
   }
 }
 
@@ -351,7 +364,7 @@ async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Prom
       payload,
     })
   } catch (error) {
-    submitError.value = extractErrorMessage(error, 'No pudimos registrar el abono.')
+    showActionError(extractErrorMessage(error, 'No pudimos registrar el abono.'))
   }
 }
 
@@ -444,7 +457,7 @@ async function handlePaymentConfirm(payload: CloseOpenTabPayload): Promise<void>
       mobileCartOpen.value = false
       successOpen.value = true
     } catch (error) {
-      submitError.value = extractErrorMessage(error, 'No pudimos registrar la venta. Intenta de nuevo.')
+      showActionError(extractErrorMessage(error, 'No pudimos registrar la venta. Intenta de nuevo.'))
     }
     return
   }
@@ -459,7 +472,7 @@ async function handlePaymentConfirm(payload: CloseOpenTabPayload): Promise<void>
     tabClosedOpen.value = true
     cancelTab()
   } catch (error) {
-    submitError.value = extractErrorMessage(error, 'No pudimos cerrar la cuenta.')
+    showActionError(extractErrorMessage(error, 'No pudimos cerrar la cuenta.'))
   }
 }
 

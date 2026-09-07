@@ -6,6 +6,7 @@
 import { computed, ref, watch } from 'vue'
 
 import { useBusiness } from '@/composables/useBusiness'
+import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { Product } from '@/types/product'
 import type { Sale } from '@/types/sale'
 import type { BusinessTable } from '@/types/table'
@@ -50,6 +51,18 @@ const tabClosedOpen = ref(false)
 const lastClosedSale = ref<Sale | null>(null)
 const priceVariesProduct = ref<Product | null>(null)
 const submitError = ref<string | null>(null)
+
+/**
+ * Los fallos de una accion tambien van por toast: el banner de submitError
+ * queda arriba de la pantalla y el cajero mira el panel de la cuenta, asi
+ * que un "no hay stock" pasaba desapercibido - ver SellView.showActionError.
+ */
+const { notify } = useSystemAlert()
+
+function showActionError(message: string): void {
+  submitError.value = message
+  notify(message, 'error')
+}
 
 const cart = useNewItemsCart()
 
@@ -197,7 +210,7 @@ async function submitCart(): Promise<void> {
       goBack()
     }
   } catch (error) {
-    submitError.value = extractErrorMessage(error, 'No pudimos guardar los productos. Intenta de nuevo.')
+    showActionError(extractErrorMessage(error, 'No pudimos guardar los productos. Intenta de nuevo.'))
   }
 }
 
@@ -213,7 +226,7 @@ const {
   activeSale,
   mutations,
   (message) => {
-    submitError.value = message
+    showActionError(message)
   },
   goBack,
 )
@@ -230,7 +243,7 @@ async function handleCloseSubmit(payload: CloseOpenTabPayload): Promise<void> {
     tabClosedOpen.value = true
     goBack()
   } catch (error) {
-    submitError.value = extractErrorMessage(error, 'No pudimos cerrar la cuenta.')
+    showActionError(extractErrorMessage(error, 'No pudimos cerrar la cuenta.'))
   }
 }
 
@@ -241,7 +254,7 @@ async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Prom
   try {
     await mutations.partialPaymentMutation.mutateAsync({ saleId: activeSale.value.id, payload })
   } catch (error) {
-    submitError.value = extractErrorMessage(error, 'No pudimos registrar el abono.')
+    showActionError(extractErrorMessage(error, 'No pudimos registrar el abono.'))
   }
 }
 </script>
