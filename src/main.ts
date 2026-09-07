@@ -4,11 +4,22 @@
 // manda a /iniciar-sesion, que NO preserva query params, asi que el flag
 // se perderia si no se guarda ahora mismo, antes de cualquier navegacion
 // (ver useWelcomeExperience.ts para donde se consume, ya autenticado).
+import { stashSsoAssertionFromUrl } from '@/services/http/ssoAssertion'
 import { stashSsoTokenFromUrl } from '@/services/http/tokenStorage'
 
 import { stashPendingWelcomeFromUrl } from '@/composables/useWelcomeExperience'
 
 stashPendingWelcomeFromUrl()
+// ANTES de stashSsoTokenFromUrl(), y el orden NO es indiferente: ese helper
+// llama a history.replaceState() para limpiar el fragmento en cuanto hay
+// uno, tenga o no un `token` dentro. Corriendo despues, la asercion ya no
+// existe y el sintoma es "el SSO no hace nada", sin error en ningun lado
+// (visto en vivo el 2026-09-07).
+//
+// Al reves es seguro: este solo toca el fragmento si empieza por
+// `#auth_token=`, asi que el `#token=` del SSO del monolito legacy le pasa
+// de largo intacto.
+stashSsoAssertionFromUrl()
 stashSsoTokenFromUrl()
 
 // Lato self-hosted via @fontsource - igual que el legacy (resources/js

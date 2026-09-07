@@ -7,6 +7,17 @@ import { branchStorage } from './branchStorage'
 import { handleExpiredSession } from './session'
 import { tokenStorage } from './tokenStorage'
 
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    /**
+     * Deja que quien llama maneje el error sin que el interceptor navegue
+     * por su cuenta. Lo usa el canje SSO, que corre dentro del guard del
+     * router.
+     */
+    skipAuthRedirect?: boolean
+  }
+}
+
 export const httpClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   // Sin timeout, una peticion que se queda colgada (wifi que cae justo al
@@ -51,6 +62,13 @@ httpClient.interceptors.request.use((config) => {
 httpClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    // El canje SSO corre DENTRO del guard del router: dejar que
+    // handleExpiredSession() navegue por su cuenta abortaria la navegacion
+    // en curso, y ademas el guard ya decide a donde ir.
+    if (error.config?.skipAuthRedirect) {
+      return Promise.reject(error)
+    }
+
     const status = error.response?.status
     const onLogin = router.currentRoute.value.name === 'login'
 

@@ -12,11 +12,12 @@
 // solo maneja el estado del form (touched/values) y errors via setErrors.
 import { isAxiosError } from 'axios'
 import { useForm } from 'vee-validate'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { z } from 'zod'
 
 import { homeRouteFor } from '@/router'
+import { redirectToSso, ssoError, ssoIsConfigured } from '@/services/http/ssoAssertion'
 import { useAuthStore } from '@/stores/auth.store'
 import { NxButton, NxInput } from '@/ui'
 
@@ -36,6 +37,23 @@ const authStore = useAuthStore()
 const router = useRouter()
 const submitError = ref<string | null>(null)
 const isSubmitting = ref(false)
+
+// El correo y la contrasena siguen siendo EL camino de esta pantalla: por
+// aca entran todos los negocios, y nada de lo de abajo cambia eso. El
+// acceso con Nexolu es un enlace discreto al pie, para el personal interno
+// -- la API rechaza con 403 a cualquiera que no sea superadmin.
+const ssoAvailable = ssoIsConfigured()
+const displayError = computed(() => submitError.value ?? ssoError.value)
+
+function entrarConNexolu(): void {
+  submitError.value = null
+  ssoError.value = null
+  try {
+    redirectToSso()
+  } catch {
+    submitError.value = 'El acceso con Nexolú no está configurado en esta instalación.'
+  }
+}
 
 const onSubmit = handleSubmit(async (values) => {
   const result = loginSchema.safeParse(values)
@@ -84,8 +102,8 @@ const onSubmit = handleSubmit(async (values) => {
     </div>
 
     <form class="space-y-5" novalidate @submit.prevent="onSubmit">
-      <p v-if="submitError" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-        {{ submitError }}
+      <p v-if="displayError" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+        {{ displayError }}
       </p>
 
       <NxInput
@@ -123,6 +141,21 @@ const onSubmit = handleSubmit(async (values) => {
         <RouterLink :to="{ name: 'register' }" class="font-semibold text-indigo-600 hover:text-indigo-800">Regístrate</RouterLink>
       </p>
     </form>
+
+    <!--
+      Fuera del formulario y al pie, a proposito: esta pantalla es la de los
+      negocios y su camino es el de arriba. Esto es solo para el equipo de
+      Nexolu, y la API rechaza con 403 a cualquier otro.
+    -->
+    <p v-if="ssoAvailable" class="mt-8 border-t border-slate-200 pt-5 text-center">
+      <button
+        type="button"
+        class="text-sm text-slate-400 underline-offset-2 hover:text-slate-600 hover:underline"
+        @click="entrarConNexolu"
+      >
+        Soy del equipo Nexolú
+      </button>
+    </p>
   </div>
 </template>
 

@@ -1,6 +1,8 @@
+import { isAxiosError } from 'axios'
 import { createRouter, createWebHistory } from 'vue-router'
 
 import { fetchBusiness } from '@/services/business'
+import { ssoAssertion, ssoError } from '@/services/http/ssoAssertion'
 import { queryClient } from '@/services/query/queryClient'
 import { useAuthStore } from '@/stores/auth.store'
 import { useFlashStore } from '@/stores/flash.store'
@@ -617,6 +619,32 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
+
+  // Antes de la rehidratacion: si volvemos de nexolu-auth hay una asercion
+  // esperando (la recogio main.ts del fragmento). Solo la trae el personal
+  // interno de Nexolu; para los negocios esta rama nunca se ejecuta.
+  const assertion = ssoAssertion.take()
+  if (assertion) {
+    try {
+      await auth.exchangeAssertion(assertion)
+      const pendingRoute = ssoAssertion.takePendingRoute()
+
+      return pendingRoute && pendingRoute !== to.fullPath
+        ? pendingRoute
+        : homeRouteFor(auth.user)
+    } catch (error) {
+      // NO se rebota a nexolu-auth: alla la cookie sigue viva, emitiria otra
+      // asercion, volveria a fallar igual, y el usuario quedaria en un bucle
+      // infinito sin ver nunca el formulario.
+      auth.clearSession()
+      ssoError.value =
+        isAxiosError<{ message?: string }>(error) && error.response?.status === 403
+          ? (error.response.data?.message ?? 'Esa identidad no puede entrar por aca.')
+          : 'No pudimos validar tu acceso con Nexolú. Intenta de nuevo.'
+
+      return to.name === 'login' ? undefined : { name: 'login' }
+    }
+  }
 
   // auth.user solo se llena en memoria al hacer login() - una recarga de
   // pagina conserva el token (localStorage) pero pierde el store de Pinia,

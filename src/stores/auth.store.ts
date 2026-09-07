@@ -57,6 +57,27 @@ export const useAuthStore = defineStore('auth', () => {
     setSession(data)
   }
 
+  /**
+   * Canjea una asercion de nexolu-auth por un token de Sanctum normal.
+   *
+   * Solo lo usa el personal interno de Nexolu: la API rechaza con 403 a
+   * cualquiera que no sea superadmin (ver SsoExchangeController), asi que
+   * el acceso de los negocios no pasa por aca ni cambia en nada.
+   *
+   * El 403 es TERMINAL: reintentar el SSO devolveria lo mismo. Quien llama
+   * no debe rebotar a nexolu-auth o el usuario queda en un bucle.
+   */
+  async function exchangeAssertion(assertion: string): Promise<void> {
+    const { data } = await httpClient.post<AuthResponse>(
+      '/auth/sso/exchange',
+      { assertion },
+      // Corre dentro del guard del router: el interceptor no puede navegar
+      // por su cuenta o abortaria la navegacion en curso.
+      { skipAuthRedirect: true },
+    )
+    setSession(data)
+  }
+
   // Responde igual que login() (token + user) - deja al dueño autenticado
   // de una vez, sin pedirle iniciar sesion despues de registrarse.
   async function register(payload: RegisterPayload): Promise<void> {
@@ -148,6 +169,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     isImpersonating,
     login,
+    exchangeAssertion,
     register,
     logout,
     forgotPassword,
