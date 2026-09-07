@@ -6,10 +6,13 @@
 // antes esos items se mostraban ahi como chips de solo lectura y para
 // editarlos había que salir a la pantalla completa de Cuentas abiertas -
 // el cajero no debería tener que salir de Vender para eso.
+import { computed, ref } from 'vue'
+
 import type { SaleItem } from '@/types/sale'
+import { NxInput } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
-defineProps<{
+const props = defineProps<{
   items: SaleItem[]
   syncing: boolean
 }>()
@@ -19,11 +22,62 @@ const emit = defineEmits<{
   'decrement-item': [item: SaleItem]
   'remove-item': [item: SaleItem]
 }>()
+
+// Buscador client-side sobre los items YA guardados: en una cuenta larga
+// (una mesa de varias horas junta decenas de lineas) encontrar "esa"
+// cerveza para sumarle una obligaba a scrollear toda la lista. Filtra en
+// memoria lo que ya esta en pantalla, sin pedir nada al backend.
+const search = ref('')
+
+// Solo con lista larga: con pocos items se ven todos de un vistazo y el
+// input seria ruido en un panel angosto.
+const showSearch = computed(() => props.items.length > 6)
+
+const visibleItems = computed<SaleItem[]>(() => {
+  const q = search.value.trim().toLowerCase()
+  // showSearch en la condicion: si la lista se achica por debajo del umbral
+  // (se quitaron items) el buscador desaparece, y sin esto un filtro viejo
+  // seguiria escondiendo filas sin caja de texto que lo explique.
+  if (!showSearch.value || !q) {
+    return props.items
+  }
+  return props.items.filter((item) => {
+    if (item.product.name.toLowerCase().includes(q)) {
+      return true
+    }
+    // Tambien por variante ("Talla M", "Roja") y por SKU, que es como
+    // varios negocios identifican el articulo.
+    const variant = item.product_variant
+    if (!variant) {
+      return false
+    }
+    return (
+      variant.sku.toLowerCase().includes(q) ||
+      variant.attribute_values.some((value) => value.value.toLowerCase().includes(q))
+    )
+  })
+})
 </script>
 
 <template>
-  <div class="divide-y divide-slate-100">
-    <div v-for="item in items" :key="item.id" class="flex items-center gap-2 py-2 text-sm">
+  <div>
+    <NxInput
+      v-if="showSearch"
+      v-model="search"
+      class="mb-2"
+      size="sm"
+      icon="pi pi-search"
+      placeholder="Buscar en la cuenta…"
+      clearable
+      blur-after-typing
+    />
+
+    <p v-if="showSearch && visibleItems.length === 0" class="py-2 text-center text-xs text-amber-700">
+      Ningún ítem de la cuenta coincide con "{{ search.trim() }}".
+    </p>
+
+    <div class="divide-y divide-slate-100">
+      <div v-for="item in visibleItems" :key="item.id" class="flex items-center gap-2 py-2 text-sm">
       <span class="min-w-0 flex-1 truncate text-slate-700">{{ item.product.name }}</span>
       <!-- Los +/- editan un BORRADOR local (instantaneo, sin red - ver
            useActiveTabItemActions); `syncing` solo es verdadero durante el
@@ -59,6 +113,7 @@ const emit = defineEmits<{
       >
         <i class="pi pi-trash text-sm" />
       </button>
+      </div>
     </div>
   </div>
 </template>

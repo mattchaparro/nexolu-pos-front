@@ -110,6 +110,7 @@ function title(): string {
       <template v-if="activeSale && draftItems.length > 0">
         <p class="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">Ítems guardados</p>
         <SavedTabItemsList
+          :key="activeSale?.id"
           class="mb-3"
           :items="draftItems"
           :syncing="syncingItems"

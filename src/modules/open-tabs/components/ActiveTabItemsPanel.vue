@@ -43,6 +43,7 @@ const emit = defineEmits<{
     </h3>
 
     <SavedTabItemsList
+      :key="sale.id"
       :items="draftItems"
       :syncing="syncing"
       @increment-item="emit('increment-item', $event)"
