@@ -15,6 +15,17 @@ export async function fetchSellableProducts(): Promise<Product[]> {
   return data
 }
 
+/**
+ * Ids de los productos que mas rotan (ultimos 30 dias), ordenados de mayor a
+ * menor - para el chip "Frecuentes" de Vender. Solo ids: la grilla los cruza
+ * contra el catalogo que ya tiene cargado, en vez de recibir los productos
+ * dos veces por dos endpoints distintos.
+ */
+export async function fetchFrequentProductIds(): Promise<number[]> {
+  const { data } = await httpClient.get<{ product_ids: number[] }>('/products/frequent')
+  return data.product_ids
+}
+
 // Reexport: la llamada es identica a la que usa el modulo Catalogo (misma
 // URL sin paginar, mismos datos) - una sola implementacion en
 // catalog/services/catalogService.ts en vez de duplicarla aca.

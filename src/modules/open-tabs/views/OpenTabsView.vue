@@ -33,7 +33,7 @@ import type { CloseOpenTabPayload, RecordPartialPaymentPayload } from '../types'
 const { data: business } = useBusiness()
 const tablesQuery = useTables()
 const openTabsQuery = useOpenTabsList()
-const { productsQuery, categoriesQuery } = useProductCatalog()
+const { productsQuery, categoriesQuery, frequentQuery } = useProductCatalog()
 const mutations = useOpenTabMutations()
 
 const search = ref('')
@@ -359,6 +359,7 @@ async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Prom
             v-else
             :products="productsQuery.data.value ?? []"
             :categories="categoriesQuery.data.value ?? []"
+            :frequent-ids="frequentQuery.data.value ?? []"
             @select="handleSelectProduct"
           />
         </div>

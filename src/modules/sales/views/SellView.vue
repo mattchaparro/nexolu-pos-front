@@ -56,7 +56,7 @@ const { data: business } = useBusiness()
 const tour = useGuidedTour(SELL_TOUR.key, SELL_TOUR.steps, () => business.value?.id ?? null)
 watch(business, (value) => { if (value) { void tour.start() } }, { once: true })
 
-const { productsQuery, categoriesQuery } = useProductCatalog()
+const { productsQuery, categoriesQuery, frequentQuery } = useProductCatalog()
 const { hasPermission } = usePermissions()
 // Sin esto, un negocio sin el feature discounts (o un cajero sin
 // discounts.apply/discounts.manage) disparaba igual la consulta y recibia
@@ -533,6 +533,7 @@ function handleNewSale(): void {
           v-else
           :products="productsQuery.data.value ?? []"
           :categories="categoriesQuery.data.value ?? []"
+          :frequent-ids="frequentQuery.data.value ?? []"
           @select="handleSelectProduct"
         />
       </div>
