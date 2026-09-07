@@ -175,6 +175,28 @@ function confirmLeaveTab(): boolean {
   return window.confirm('¿Salir de la cuenta? Los cambios sin confirmar y los productos sin agregar se descartan.')
 }
 
+/**
+ * Irse a una mesa/cuenta ABANDONA la venta rapida en curso.
+ *
+ * Antes el carrito del mostrador sobrevivia el cambio de contexto: el cajero
+ * volvia de atender una mesa y se encontraba productos de hace rato, que muy
+ * probablemente ya no se van a vender - tenia que borrarlos uno por uno
+ * antes de empezar la venta nueva (reportado por el negocio). Una venta
+ * rapida que no se cobro no es un borrador que valga la pena guardar.
+ *
+ * Se avisa con un toast (no un confirm) para no meter friccion en el camino
+ * comun: el cajero esta yendo a atender a alguien, no quiere responder una
+ * pregunta. reset() limpia tambien el borrador de localStorage, asi que no
+ * revive al recargar.
+ */
+function discardQuickSaleOnSwitch(): void {
+  if (mode.value !== 'quick' || checkout.lines.value.length === 0) {
+    return
+  }
+  checkout.reset()
+  notify('Se descartó la venta rápida que tenías sin cobrar')
+}
+
 /** El chip "Venta rapida" y la X del panel: volver al mostrador en un tap. */
 function goQuickSale(): void {
   if (confirmLeaveTab()) {
@@ -191,6 +213,7 @@ function selectNewNamedTab(): void {
   if (!confirmLeaveTab()) {
     return
   }
+  discardQuickSaleOnSwitch()
   submitError.value = null
   mode.value = 'new-tab'
   activeSale.value = null
@@ -214,6 +237,7 @@ function selectTable(table: BusinessTable): void {
   if (!confirmLeaveTab()) {
     return
   }
+  discardQuickSaleOnSwitch()
   submitError.value = null
   if (openSale) {
     mode.value = 'tab'
@@ -238,6 +262,7 @@ function selectOpenTab(sale: Sale): void {
   if (!confirmLeaveTab()) {
     return
   }
+  discardQuickSaleOnSwitch()
   submitError.value = null
   mode.value = 'tab'
   activeSale.value = sale
