@@ -32,7 +32,6 @@ const emit = defineEmits<{
   'increment-item': [item: SaleItem]
   'decrement-item': [item: SaleItem]
   'remove-item': [item: SaleItem]
-  'confirm-draft': []
   'discard-draft': []
 }>()
 
@@ -70,7 +69,6 @@ const newTabIsDelivery = defineModel<boolean>('newTabIsDelivery', { default: fal
         @increment-item="emit('increment-item', $event)"
         @decrement-item="emit('decrement-item', $event)"
         @remove-item="emit('remove-item', $event)"
-        @confirm-draft="emit('confirm-draft')"
         @discard-draft="emit('discard-draft')"
       />
     </div>

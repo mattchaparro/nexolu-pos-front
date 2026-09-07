@@ -162,10 +162,22 @@ function handlePriceConfirmed(price: number): void {
 }
 
 async function submitCart(): Promise<void> {
+  submitError.value = null
+
+  // El borrador va PRIMERO: confirmDraftChanges hace un sync que REEMPLAZA
+  // la lista con las cantidades ajustadas, calculadas sobre los items que
+  // habia al abrir la cuenta. Si se agregaran los items nuevos antes, ese
+  // sync posterior los borraria. Mismo orden que en Vender.
+  if (hasDraftChanges.value) {
+    await confirmDraftChanges()
+    if (hasDraftChanges.value) {
+      return // fallo el sync (ya publico el error): no encadenar sobre un estado a medias
+    }
+  }
+
   if (cart.lines.value.length === 0) {
     return
   }
-  submitError.value = null
 
   try {
     if (activeSale.value) {

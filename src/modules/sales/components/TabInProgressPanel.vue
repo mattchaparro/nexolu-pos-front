@@ -6,6 +6,8 @@
 // Cuentas abiertas; el cajero no debería tener que salir de Vender para
 // eso. Los items nuevos (todavia sin guardar) siguen en NewItemsCartList
 // aparte, mismo patron que antes.
+import { computed } from 'vue'
+
 import type { Business } from '@/types/business'
 import type { Sale, SaleItem } from '@/types/sale'
 import type { BusinessTable } from '@/types/table'
@@ -39,13 +41,29 @@ const emit = defineEmits<{
   'increment-item': [item: SaleItem]
   'decrement-item': [item: SaleItem]
   'remove-item': [item: SaleItem]
-  'confirm-draft': []
   'discard-draft': []
 }>()
 
 const newTabName = defineModel<string>('newTabName', { default: '' })
 const newTabPhone = defineModel<string>('newTabPhone', { default: '' })
 const newTabIsDelivery = defineModel<boolean>('newTabIsDelivery', { default: false })
+
+/** Hay algo sin guardar: cantidades tocadas, productos nuevos, o ambos. */
+const hasPendingChanges = computed(() => props.hasDraftChanges || props.cart.lines.value.length > 0)
+
+/**
+ * La etiqueta dice lo que el boton VA a hacer, para que el cajero no tenga
+ * que deducirlo del estado de la pantalla.
+ */
+const saveLabel = computed(() => {
+  if (!props.activeSale) {
+    return 'Abrir cuenta'
+  }
+  if (props.hasDraftChanges && props.cart.lines.value.length > 0) {
+    return 'Guardar cambios y agregar'
+  }
+  return props.hasDraftChanges ? 'Guardar cambios' : 'Agregar a la cuenta'
+})
 
 function title(): string {
   if (props.activeSale) {
@@ -137,42 +155,35 @@ function title(): string {
     </div>
 
     <div class="flex flex-col gap-2 border-t border-slate-200 pt-3">
-      <!-- Cambios sobre items YA guardados: confirmar (un solo sync) o
-           descartar (vuelve a lo guardado, sin red) - como el "Guardar
-           cambios" del legacy. -->
-      <div v-if="hasDraftChanges" class="flex gap-2">
-        <NxButton class="flex-1" variant="dark" :loading="syncingItems" @click="emit('confirm-draft')">
-          Confirmar cambios
-        </NxButton>
-        <NxButton variant="outline" :disabled="syncingItems" @click="emit('discard-draft')">
-          Descartar
-        </NxButton>
-      </div>
-      <!-- disabled con borrador pendiente: agregar items nuevos puede
-           fusionarse server-side con una linea que el borrador tambien
-           toca (mismo producto), y el confirmar posterior la pisaria. -->
+      <!-- UN solo boton guarda TODO lo pendiente (cambios de cantidad sobre
+           items guardados y productos nuevos del carrito), en vez de dos
+           botones que se deshabilitaban entre si. Antes, con las dos cosas
+           pendientes a la vez, "Agregar a la cuenta" quedaba disabled: el
+           cajero lo apretaba, no pasaba nada, y al cambiar de cuenta la
+           guarda de salida le descartaba el trabajo (reportado en
+           produccion). Un boton que no hace nada al tocarlo es peor que uno
+           que falla. -->
       <NxButton
-        v-if="cart.lines.value.length > 0"
+        v-if="hasPendingChanges"
         :variant="activeSale ? 'dark' : 'primary'"
-        :loading="submittingCart"
-        :disabled="hasDraftChanges"
+        :loading="submittingCart || syncingItems"
         @click="emit('submit')"
       >
-        {{ activeSale ? 'Agregar a la cuenta' : 'Abrir cuenta' }}
+        {{ saveLabel }}
+      </NxButton>
+      <NxButton v-if="hasDraftChanges" variant="outline" :disabled="syncingItems" @click="emit('discard-draft')">
+        Descartar cambios
       </NxButton>
       <NxButton
         v-if="activeSale"
         icon="pi pi-money-bill"
-        :disabled="cart.lines.value.length > 0 || hasDraftChanges"
+        :disabled="hasPendingChanges"
         @click="emit('close')"
       >
         Cobrar
       </NxButton>
-      <p v-if="activeSale && cart.lines.value.length > 0" class="text-center text-xs text-amber-700">
-        Agrega los nuevos productos a la cuenta antes de cobrar.
-      </p>
-      <p v-else-if="activeSale && hasDraftChanges" class="text-center text-xs text-amber-700">
-        Confirma o descarta los cambios antes de cobrar.
+      <p v-if="activeSale && hasPendingChanges" class="text-center text-xs text-amber-700">
+        Guarda los cambios antes de cobrar.
       </p>
     </div>
   </div>

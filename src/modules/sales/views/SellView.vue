@@ -269,10 +269,26 @@ const { adjustItemQuantity, draftItems, hasDraftChanges, draftTotalDelta, confir
   )
 
 async function submitTabCart(): Promise<void> {
+  submitError.value = null
+
+  // Un solo boton guarda TODO lo pendiente. El borrador va PRIMERO y el
+  // carrito despues, y el orden importa: confirmDraftChanges hace un sync
+  // (reemplaza la lista con las cantidades ajustadas) y addItems fusiona
+  // server-side sobre esa lista ya corregida. Al reves, el sync pisaria los
+  // items recien agregados.
+  if (hasDraftChanges.value) {
+    await confirmDraftChanges()
+    // confirmDraftChanges deja el borrador intacto si el backend rechazo
+    // (ej. sin stock) y ya publico el error - no se sigue con el carrito
+    // para no encadenar un segundo fallo sobre un estado a medias.
+    if (hasDraftChanges.value) {
+      return
+    }
+  }
+
   if (tabCart.lines.value.length === 0) {
     return
   }
-  submitError.value = null
 
   try {
     if (activeSale.value) {
@@ -516,7 +532,6 @@ function handleNewSale(): void {
           @increment-item="adjustItemQuantity($event.id, 1)"
           @decrement-item="adjustItemQuantity($event.id, -1)"
           @remove-item="adjustItemQuantity($event.id, -$event.quantity)"
-          @confirm-draft="confirmDraftChanges"
           @discard-draft="discardDraftChanges"
         />
       </div>
@@ -577,7 +592,6 @@ function handleNewSale(): void {
         @increment-item="adjustItemQuantity($event.id, 1)"
         @decrement-item="adjustItemQuantity($event.id, -1)"
         @remove-item="adjustItemQuantity($event.id, -$event.quantity)"
-        @confirm-draft="confirmDraftChanges"
         @discard-draft="discardDraftChanges"
       />
     </Teleport>
