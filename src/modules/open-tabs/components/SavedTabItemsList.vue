@@ -82,8 +82,12 @@ const visibleItems = computed<SaleItem[]>(() => {
       <!-- Los +/- editan un BORRADOR local (instantaneo, sin red - ver
            useActiveTabItemActions); `syncing` solo es verdadero durante el
            breve "Confirmar cambios", donde si conviene congelar la edicion
-           hasta reconciliar con el servidor. -->
-      <div class="flex shrink-0 items-center gap-1">
+           hasta reconciliar con el servidor.
+           select-none + touch-manipulation: tocar +/- rapido cuenta como
+           doble tap, y el navegador respondia seleccionando la cifra de al
+           lado y abriendo el menu de "Buscar en Google". En la caja, con
+           afan, eso tapaba la pantalla a mitad de una venta. -->
+      <div class="flex shrink-0 select-none touch-manipulation items-center gap-1">
         <button
           type="button"
           class="flex h-6 w-6 items-center justify-center rounded bg-slate-100 disabled:opacity-40"
@@ -102,7 +106,8 @@ const visibleItems = computed<SaleItem[]>(() => {
           <i class="pi pi-plus text-xs" />
         </button>
       </div>
-      <span class="min-w-[64px] shrink-0 text-right font-semibold text-slate-900">
+      <!-- pl-2: separacion real con el boton "+", que quedaba a un pelo. -->
+      <span class="min-w-[64px] shrink-0 select-none pl-2 text-right font-semibold text-slate-900">
         {{ formatCop(item.subtotal) }}
       </span>
       <button

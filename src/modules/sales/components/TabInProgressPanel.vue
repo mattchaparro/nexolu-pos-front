@@ -82,14 +82,22 @@ function title(): string {
         </p>
         <h2 class="truncate text-sm font-semibold text-slate-900">{{ title() }}</h2>
       </div>
-      <div class="flex shrink-0 items-center gap-1">
+      <div class="flex shrink-0 items-center gap-2">
         <!-- Saldo pendiente (total - abonos), no el total: es lo que de
              verdad falta cobrar - ver utils/saleBalance. -->
-        <p v-if="activeSale" class="text-sm font-bold text-slate-900">
+        <p v-if="activeSale" class="select-none text-sm font-bold text-slate-900">
           {{ formatCop(saleRemaining(activeSale) + draftTotalDelta + cart.total.value) }}
         </p>
-        <button type="button" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100" @click="emit('cancel')">
-          <i class="pi pi-times" />
+        <!-- h-9 w-9: el area tactil de antes (p-1.5 sobre un icono de 16px)
+             era de ~28px, por debajo de lo que un dedo acierta a la primera
+             al lado de una cifra. -->
+        <button
+          type="button"
+          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+          title="Cerrar"
+          @click="emit('cancel')"
+        >
+          <i class="pi pi-times text-base" />
         </button>
       </div>
     </div>

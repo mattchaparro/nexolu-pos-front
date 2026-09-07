@@ -25,10 +25,13 @@ const emit = defineEmits<{
           {{ line.variant.attribute_values.map((av) => av.value).join(' / ') }}
         </span>
       </div>
-      <p class="shrink-0 text-sm font-semibold text-slate-900">{{ formatCop(line.unitPrice * line.quantity) }}</p>
+      <p class="shrink-0 select-none text-sm font-semibold text-slate-900">{{ formatCop(line.unitPrice * line.quantity) }}</p>
     </div>
     <div class="flex items-center gap-2">
-      <div class="inline-flex items-center rounded-lg border border-slate-200">
+      <!-- select-none + touch-manipulation: tocar +/- rapido cuenta como
+           doble tap, y el navegador respondia seleccionando la cifra de al
+           lado y abriendo el menu de "Buscar en Google". -->
+      <div class="inline-flex select-none touch-manipulation items-center rounded-lg border border-slate-200">
         <button
           type="button"
           class="flex h-7 w-7 items-center justify-center rounded-l-lg text-slate-500 hover:bg-slate-50"

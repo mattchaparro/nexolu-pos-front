@@ -71,21 +71,23 @@ function close(): void {
           >
             Vaciar
           </button>
+          <!-- h-9 w-9: el area tactil de antes (p-1.5 sobre un icono de 16px)
+               era de ~28px, por debajo de lo que un dedo acierta a la primera. -->
           <button
             type="button"
-            class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+            class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
             :title="expanded ? 'Reducir' : 'Expandir'"
             @click="expanded = !expanded"
           >
-            <i :class="expanded ? 'pi pi-angle-double-down' : 'pi pi-angle-double-up'" />
+            <i :class="expanded ? 'pi pi-angle-double-down text-base' : 'pi pi-angle-double-up text-base'" />
           </button>
           <button
             type="button"
-            class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+            class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
             title="Cerrar"
             @click="close"
           >
-            <i class="pi pi-times" />
+            <i class="pi pi-times text-base" />
           </button>
         </div>
       </div>

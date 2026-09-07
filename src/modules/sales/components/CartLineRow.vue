@@ -44,8 +44,11 @@ function applicableDiscounts(): Discount[] {
       </button>
     </div>
 
-    <div class="flex items-center justify-between gap-2">
-      <div class="flex items-center gap-1.5">
+    <div class="flex items-center justify-between gap-3">
+      <!-- select-none + touch-manipulation: tocar +/- rapido cuenta como
+           doble tap, y el navegador respondia seleccionando la cifra de al
+           lado y abriendo el menu de "Buscar en Google" encima del carrito. -->
+      <div class="flex select-none touch-manipulation items-center gap-1.5">
         <button
           type="button"
           class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -75,7 +78,7 @@ function applicableDiscounts(): Discount[] {
         @update:model-value="emit('update:unitPrice', $event ?? 0)"
       />
 
-      <p class="text-sm font-semibold text-slate-900">
+      <p class="select-none pl-1 text-sm font-semibold text-slate-900">
         {{ formatCop(line.total) }}
         <span
           v-if="line.discountAmount > 0"
