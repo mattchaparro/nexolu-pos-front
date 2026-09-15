@@ -9,7 +9,7 @@
 import { computed, ref } from 'vue'
 
 import type { SaleItem } from '@/types/sale'
-import { NxInput } from '@/ui'
+import { NxInput, NxQuantityStepper } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
 const props = defineProps<{
@@ -82,30 +82,15 @@ const visibleItems = computed<SaleItem[]>(() => {
       <!-- Los +/- editan un BORRADOR local (instantaneo, sin red - ver
            useActiveTabItemActions); `syncing` solo es verdadero durante el
            breve "Confirmar cambios", donde si conviene congelar la edicion
-           hasta reconciliar con el servidor.
-           select-none + touch-manipulation: tocar +/- rapido cuenta como
-           doble tap, y el navegador respondia seleccionando la cifra de al
-           lado y abriendo el menu de "Buscar en Google". En la caja, con
-           afan, eso tapaba la pantalla a mitad de una venta. -->
-      <div class="flex shrink-0 select-none touch-manipulation items-center gap-1">
-        <button
-          type="button"
-          class="flex h-6 w-6 items-center justify-center rounded bg-slate-100 disabled:opacity-40"
-          :disabled="syncing"
-          @click="emit('decrement-item', item)"
-        >
-          <i class="pi pi-minus text-xs" />
-        </button>
-        <span class="w-5 text-center text-xs font-bold">{{ item.quantity }}</span>
-        <button
-          type="button"
-          class="flex h-6 w-6 items-center justify-center rounded bg-slate-100 disabled:opacity-40"
-          :disabled="syncing || (item.product.track_stock && item.product.stock <= 0)"
-          @click="emit('increment-item', item)"
-        >
-          <i class="pi pi-plus text-xs" />
-        </button>
-      </div>
+           hasta reconciliar con el servidor. -->
+      <NxQuantityStepper
+        class="shrink-0"
+        :quantity="item.quantity"
+        :disable-decrement="syncing"
+        :disable-increment="syncing || (item.product.track_stock && item.product.stock <= 0)"
+        @decrement="emit('decrement-item', item)"
+        @increment="emit('increment-item', item)"
+      />
       <!-- pl-2: separacion real con el boton "+", que quedaba a un pelo. -->
       <span class="min-w-[64px] shrink-0 select-none pl-2 text-right font-semibold text-slate-900">
         {{ formatCop(item.subtotal) }}
