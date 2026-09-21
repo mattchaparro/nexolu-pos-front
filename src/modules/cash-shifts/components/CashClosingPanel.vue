@@ -79,6 +79,13 @@ watch(previewQuery.data, (preview) => {
 
 const existingClosing = computed(() => previewQuery.data.value?.existing_closing ?? null)
 const shiftsToAutoClose = computed(() => previewQuery.data.value?.shifts_to_auto_close ?? [])
+// El primer turno del dia abrio con una base distinta a la que dejo el cierre
+// anterior: la diferencia no es de hoy, paso entre ese cierre y la apertura.
+const openingMismatch = computed(() => previewQuery.data.value?.opening_mismatch ?? null)
+
+function formatDay(isoDate: string): string {
+  return new Date(`${isoDate}T00:00:00`).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })
+}
 // Nulo si el negocio no tiene pasarela conectada: mostrarle un cuadre en
 // ceros a quien solo cobra en efectivo sería ruido.
 const gatewayReconciliation = computed(
@@ -198,6 +205,23 @@ async function submit(): Promise<void> {
         class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
       >
         <GatewayReconciliationCard :data="gatewayReconciliation" />
+      </div>
+
+      <div
+        v-if="openingMismatch"
+        class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 shadow-sm"
+      >
+        <p class="font-semibold">
+          {{ openingMismatch.difference < 0 ? 'Faltaron' : 'Sobraron' }}
+          {{ formatCop(Math.abs(openingMismatch.difference)) }} antes de empezar el día
+        </p>
+        <p class="mt-1 text-amber-800">
+          El turno de {{ openingMismatch.user_name }} abrió con
+          <strong>{{ formatCop(openingMismatch.shift_opening_cash) }}</strong>, pero el cierre del
+          {{ formatDay(openingMismatch.previous_closing_date) }} dejó
+          <strong>{{ formatCop(openingMismatch.expected_opening_cash) }}</strong>. Esa diferencia no es
+          del día: pasó entre ese cierre y la apertura del turno.
+        </p>
       </div>
 
       <div

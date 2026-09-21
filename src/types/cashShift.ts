@@ -70,9 +70,30 @@ export interface CashClosing {
   created_at: string
 }
 
+/**
+ * La base que dejó el último cierre de esta caja, para prellenar la apertura.
+ * Nula cuando no se puede saber (ya abrió otro turno desde ese cierre, faltó
+ * un cierre de por medio, o nunca hubo uno).
+ */
+export interface ExpectedOpening {
+  amount: number
+  closing_date: string
+}
+
 export interface CurrentShiftResponse {
   shift: CashShift | null
   preview_totals: CashTotals | null
+  /** Solo viene cuando no hay turno abierto. */
+  expected_opening?: ExpectedOpening | null
+}
+
+/** El primer turno del día abrió con una base distinta a la que dejó el cierre anterior. */
+export interface OpeningMismatch {
+  user_name: string
+  shift_opening_cash: number
+  expected_opening_cash: number
+  difference: number
+  previous_closing_date: string
 }
 
 /**
@@ -105,6 +126,7 @@ export interface CashClosingPreview {
   date: string
   totals: CashTotals
   suggested_opening_cash: number
+  opening_mismatch: OpeningMismatch | null
   existing_closing: CashClosing | null
   shifts_to_auto_close: CashShift[]
   gateway_reconciliation: GatewayReconciliation | null

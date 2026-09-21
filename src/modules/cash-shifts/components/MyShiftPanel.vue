@@ -20,12 +20,13 @@ const closeModalOpen = ref(false)
 
 const shift = computed(() => currentShiftQuery.data.value?.shift ?? null)
 const totals = computed(() => currentShiftQuery.data.value?.preview_totals ?? null)
+const expectedOpening = computed(() => currentShiftQuery.data.value?.expected_opening ?? null)
 </script>
 
 <template>
   <div v-if="currentShiftQuery.isPending.value" class="h-64 animate-pulse rounded-xl bg-slate-100" />
 
-  <OpenShiftForm v-else-if="!shift" />
+  <OpenShiftForm v-else-if="!shift" :expected-opening="expectedOpening" />
 
   <div v-else class="flex flex-col gap-4">
     <StaleShiftBanner v-if="shift.is_from_a_previous_day" :shift="shift" />
