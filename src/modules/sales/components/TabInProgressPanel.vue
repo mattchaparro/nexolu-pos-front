@@ -17,6 +17,8 @@ import { formatShortDateTime } from '@/utils/formatShortDateTime'
 import { salePartialPaid, saleRemaining } from '@/utils/saleBalance'
 
 import type { useNewItemsCart } from '../../open-tabs/composables/useNewItemsCart'
+import type { Discount } from '@/types/discount'
+
 import NewItemsCartList from '../../open-tabs/components/NewItemsCartList.vue'
 import SavedTabItemsList from '../../open-tabs/components/SavedTabItemsList.vue'
 
@@ -32,6 +34,8 @@ const props = defineProps<{
   draftItems: SaleItem[]
   hasDraftChanges: boolean
   draftTotalDelta: number
+  /** Vacio cuando el negocio no tiene el feature o el cajero no puede aplicar descuentos. */
+  itemDiscounts?: Discount[]
 }>()
 
 const emit = defineEmits<{
@@ -160,7 +164,7 @@ function title(): string {
       <p v-if="cart.lines.value.length > 0" class="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">
         Por agregar
       </p>
-      <NewItemsCartList :cart="cart" />
+      <NewItemsCartList :cart="cart" :item-discounts="itemDiscounts" />
     </div>
 
     <div class="flex flex-col gap-2 border-t border-slate-200 pt-3">

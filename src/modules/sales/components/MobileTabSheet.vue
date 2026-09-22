@@ -9,6 +9,8 @@ import type { Sale, SaleItem } from '@/types/sale'
 import type { BusinessTable } from '@/types/table'
 
 import type { useNewItemsCart } from '../../open-tabs/composables/useNewItemsCart'
+import type { Discount } from '@/types/discount'
+
 import TabInProgressPanel from './TabInProgressPanel.vue'
 
 defineProps<{
@@ -22,6 +24,7 @@ defineProps<{
   draftItems: SaleItem[]
   hasDraftChanges: boolean
   draftTotalDelta: number
+  itemDiscounts?: Discount[]
 }>()
 
 const emit = defineEmits<{
@@ -60,6 +63,7 @@ const newTabIsDelivery = defineModel<boolean>('newTabIsDelivery', { default: fal
         :draft-items="draftItems"
         :has-draft-changes="hasDraftChanges"
         :draft-total-delta="draftTotalDelta"
+        :item-discounts="itemDiscounts"
         @cancel="
           emit('cancel');
           emit('update:modelValue', false)

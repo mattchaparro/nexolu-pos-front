@@ -3,16 +3,22 @@ import { computed, ref } from 'vue'
 import type { Product, ProductVariant } from '@/types/product'
 import type { SaleItemInput } from '@/types/sale'
 
-// Carrito simple para los items NUEVOS que se van a abrir/agregar a una
-// cuenta - sin descuentos (a diferencia de useSaleCheckout de Vender): la
-// vista simple de OpenTabs.vue del legacy tampoco los tiene aca, los
-// descuentos de cuentas abiertas quedan fuera de este primer corte.
+// Carrito para los items NUEVOS que se van a abrir/agregar a una cuenta.
+//
+// Los descuentos por linea se quedaron fuera del primer corte, y eso dejo un
+// hueco caro: el API SIEMPRE acepto discount_id en los items de una cuenta
+// abierta (ver ValidatesSaleItems y OpenTabService en nexolu-pos-api), pero
+// como aca no se mandaba, en Las Banquitas el descuento "Cigarrillo Media"
+// se aplico en 8 de 13 ventas directas y en 0 de 92 lineas cobradas por
+// cuenta abierta - que es como venden casi todos los cigarrillos.
 export interface NewCartLine {
   product: Product
   /** Presente cuando product.has_variants - la variante concreta elegida. */
   variant?: ProductVariant | null
   quantity: number
   unitPrice: number
+  /** Descuento de linea elegido por el cajero (scope 'item'), o null. */
+  discountId: number | null
 }
 
 export function useNewItemsCart() {
@@ -41,7 +47,7 @@ export function useNewItemsCart() {
     if (maxStock <= 0) {
       return
     }
-    lines.value.push({ product, quantity: 1, unitPrice: unitPrice ?? Number(product.price) })
+    lines.value.push({ product, quantity: 1, unitPrice: unitPrice ?? Number(product.price), discountId: null })
   }
 
   /**
@@ -61,7 +67,7 @@ export function useNewItemsCart() {
     if (maxStock <= 0) {
       return
     }
-    lines.value.push({ product, variant, quantity: 1, unitPrice: Number(variant.price) })
+    lines.value.push({ product, variant, quantity: 1, unitPrice: Number(variant.price), discountId: null })
   }
 
   function setQuantity(productId: number, quantity: number, variantId: number | null = null): void {
@@ -74,6 +80,14 @@ export function useNewItemsCart() {
       return
     }
     line.quantity = Math.min(quantity, maxStockFor(line.product, line.variant))
+  }
+
+  function setDiscount(productId: number, discountId: number | null, variantId: number | null = null): void {
+    const line = findLine(productId, variantId)
+    if (!line) {
+      return
+    }
+    line.discountId = discountId
   }
 
   function removeLine(productId: number, variantId: number | null = null): void {
@@ -95,8 +109,9 @@ export function useNewItemsCart() {
       product_variant_id: l.variant?.id ?? null,
       quantity: l.quantity,
       ...(!l.variant && l.product.price_varies_at_sale ? { unit_price: l.unitPrice } : {}),
+      discount_id: l.discountId,
     }))
   }
 
-  return { lines, addProduct, addVariant, setQuantity, removeLine, reset, itemCount, total, toItemsPayload }
+  return { lines, addProduct, addVariant, setQuantity, setDiscount, removeLine, reset, itemCount, total, toItemsPayload }
 }

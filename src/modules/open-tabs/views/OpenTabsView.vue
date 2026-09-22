@@ -6,12 +6,14 @@
 import { computed, ref, watch } from 'vue'
 
 import { useBusiness } from '@/composables/useBusiness'
+import { usePermissions } from '@/composables/usePermissions'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { Product } from '@/types/product'
 import type { Sale } from '@/types/sale'
 import type { BusinessTable } from '@/types/table'
 import { NxButton, NxInput, NxPageHeader } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
+import { hasFeature } from '@/utils/hasFeature'
 
 import PriceVariesModal from '../../sales/components/PriceVariesModal.vue'
 import ProductGrid from '../../sales/components/ProductGrid.vue'
@@ -24,6 +26,7 @@ import TabClosedDialog from '../components/TabClosedDialog.vue'
 import TableManagerModal from '../components/TableManagerModal.vue'
 import TablesGrid from '../components/TablesGrid.vue'
 import { useActiveTabItemActions } from '../composables/useActiveTabItemActions'
+import { useActiveDiscounts } from '../../sales/composables/useActiveDiscounts'
 import { useNewItemsCart } from '../composables/useNewItemsCart'
 import { useOpenTabMutations } from '../composables/useOpenTabMutations'
 import { useOpenTabsList } from '../composables/useOpenTabsList'
@@ -65,6 +68,16 @@ function showActionError(message: string): void {
 }
 
 const cart = useNewItemsCart()
+// Mismo gating que Vender: sin el feature del negocio o sin permiso para
+// aplicar descuentos, ni se consulta (evita el toast de "no tienes permiso").
+const { hasPermission } = usePermissions()
+const discountsEnabled = computed(
+  () =>
+    hasFeature(business.value, 'discounts') &&
+    (hasPermission('discounts.apply') || hasPermission('discounts.manage')),
+)
+const { data: discounts } = useActiveDiscounts(discountsEnabled)
+const itemDiscounts = computed(() => (discounts.value ?? []).filter((d) => d.scope === 'item'))
 
 const openSaleByTable = computed(() => {
   const map = new Map<number, Sale>()
@@ -370,7 +383,7 @@ async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Prom
           Nuevos ítems
           <span v-if="cart.itemCount.value > 0" class="text-xs font-medium text-slate-400">{{ cart.itemCount.value }}</span>
         </h3>
-        <NewItemsCartList :cart="cart" />
+        <NewItemsCartList :cart="cart" :item-discounts="itemDiscounts" />
         <NxButton
           v-if="cart.lines.value.length > 0"
           class="mt-3 w-full"

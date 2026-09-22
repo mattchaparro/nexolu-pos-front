@@ -5,6 +5,7 @@ import type { Sale, SaleItem } from '@/types/sale'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
 import type { useOpenTabMutations } from './useOpenTabMutations'
+import { toSyncItemsPayload } from '../support/tabItemsPayload'
 
 /**
  * Edicion de los items YA guardados de una cuenta abierta, con la semantica
@@ -146,13 +147,7 @@ export function useActiveTabItemActions(
     try {
       const updated = await mutations.syncItemsMutation.mutateAsync({
         saleId: sale.id,
-        payload: {
-          items: draftItems.value.map((item) => ({
-            product_id: item.product.id,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-          })),
-        },
+        payload: { items: toSyncItemsPayload(draftItems.value) },
       })
       activeSale.value = updated
       draft.value = {}

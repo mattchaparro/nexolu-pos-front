@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import type { Discount } from '@/types/discount'
+
 import type { useNewItemsCart } from '../composables/useNewItemsCart'
 import NewItemsCartLineRow from './NewItemsCartLineRow.vue'
 
 defineProps<{
   cart: ReturnType<typeof useNewItemsCart>
+  /** Vacio cuando el negocio no tiene el feature o el cajero no puede aplicar descuentos. */
+  itemDiscounts?: Discount[]
 }>()
 </script>
 
@@ -17,7 +21,9 @@ defineProps<{
       v-for="line in cart.lines.value"
       :key="`${line.product.id}-${line.variant?.id ?? 0}`"
       :line="line"
+      :item-discounts="itemDiscounts"
       @update:quantity="cart.setQuantity(line.product.id, $event, line.variant?.id ?? null)"
+      @update:discount-id="cart.setDiscount(line.product.id, $event, line.variant?.id ?? null)"
       @remove="cart.removeLine(line.product.id, line.variant?.id ?? null)"
     />
   </div>
