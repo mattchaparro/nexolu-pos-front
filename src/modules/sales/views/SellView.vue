@@ -296,7 +296,7 @@ function cancelTab(): void {
 // legacy): los +/- se acumulan local y solo persisten con "Confirmar
 // cambios"; salir de la cuenta descarta - misma logica que la pantalla
 // completa de Cuentas abiertas (ver useActiveTabItemActions).
-const { adjustItemQuantity, draftItems, hasDraftChanges, draftTotalDelta, confirmDraftChanges, discardDraftChanges } =
+const { adjustItemQuantity, setItemDiscount, draftItems, hasDraftChanges, draftTotalDelta, confirmDraftChanges, discardDraftChanges } =
   useActiveTabItemActions(
     activeSale,
     tabMutations,
@@ -572,6 +572,7 @@ function handleNewSale(): void {
           @increment-item="adjustItemQuantity($event.id, 1)"
           @decrement-item="adjustItemQuantity($event.id, -1)"
           @remove-item="adjustItemQuantity($event.id, -$event.quantity)"
+          @update-item-discount="(item, discountId) => setItemDiscount(item.id, discountId)"
           @discard-draft="discardDraftChanges"
         />
       </div>
@@ -633,6 +634,7 @@ function handleNewSale(): void {
         @increment-item="adjustItemQuantity($event.id, 1)"
         @decrement-item="adjustItemQuantity($event.id, -1)"
         @remove-item="adjustItemQuantity($event.id, -$event.quantity)"
+        @update-item-discount="(item, discountId) => setItemDiscount(item.id, discountId)"
         @discard-draft="discardDraftChanges"
       />
     </Teleport>

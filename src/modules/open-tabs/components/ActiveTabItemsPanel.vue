@@ -5,6 +5,7 @@ import { formatCop } from '@/utils/formatCop'
 import { formatShortDateTime } from '@/utils/formatShortDateTime'
 import { salePartialPaid, saleRemaining } from '@/utils/saleBalance'
 
+import type { Discount } from '@/types/discount'
 import SavedTabItemsList from './SavedTabItemsList.vue'
 
 const props = defineProps<{
@@ -16,6 +17,7 @@ const props = defineProps<{
   // persisten al confirmar) - ver useActiveTabItemActions.
   draftItems: SaleItem[]
   hasDraftChanges: boolean
+  itemDiscounts?: Discount[]
   draftTotalDelta: number
 }>()
 
@@ -23,6 +25,7 @@ const emit = defineEmits<{
   'increment-item': [item: SaleItem]
   'decrement-item': [item: SaleItem]
   'remove-item': [item: SaleItem]
+  'update-item-discount': [item: SaleItem, discountId: number | null]
   'confirm-draft': []
   'discard-draft': []
   close: []
@@ -46,9 +49,11 @@ const emit = defineEmits<{
       :key="sale.id"
       :items="draftItems"
       :syncing="syncing"
+      :item-discounts="itemDiscounts"
       @increment-item="emit('increment-item', $event)"
       @decrement-item="emit('decrement-item', $event)"
       @remove-item="emit('remove-item', $event)"
+      @update-item-discount="(item, discountId) => emit('update-item-discount', item, discountId)"
     />
 
     <!-- Cuanto y cuando abono, con el desglose Total/Abonado/Falta. -->

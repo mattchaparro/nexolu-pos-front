@@ -5,6 +5,12 @@ import type { Sale, SaleItem } from '@/types/sale'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
 import type { useOpenTabMutations } from './useOpenTabMutations'
+import type { DiscountDraft, QuantityDraft } from '../support/tabDraft'
+import {
+  applyDraftToItems,
+  draftQuantityOf as draftQuantity,
+  hasDraftChanges as draftHasChanges,
+} from '../support/tabDraft'
 import { toSyncItemsPayload } from '../support/tabItemsPayload'
 
 /**
@@ -29,7 +35,13 @@ export function useActiveTabItemActions(
   onDestroyed: () => void,
 ) {
   /** itemId -> cantidad deseada. Solo guarda los items tocados. */
-  const draft = ref<Record<number, number>>({})
+  const draft = ref<QuantityDraft>({})
+  /**
+   * itemId -> descuento deseado. Va aparte de las cantidades porque su
+   * "sin cambios" no es un numero sino la ausencia de la clave (null es un
+   * valor valido: "quitale el descuento").
+   */
+  const discountDraft = ref<DiscountDraft>({})
 
   // Cambiar de cuenta (o salir: id -> undefined) descarta el borrador -
   // exactamente el comportamiento del legacy que protege del dedazo.
@@ -37,11 +49,12 @@ export function useActiveTabItemActions(
     () => activeSale.value?.id,
     () => {
       draft.value = {}
+      discountDraft.value = {}
     },
   )
 
   function draftQuantityOf(item: SaleItem): number {
-    return draft.value[item.id] ?? item.quantity
+    return draftQuantity(item, draft.value)
   }
 
   /**
@@ -49,26 +62,13 @@ export function useActiveTabItemActions(
    * pintar. Un item llevado a 0 desaparece de la lista (y reaparece si se
    * descarta el borrador).
    */
-  const draftItems = computed<SaleItem[]>(() => {
-    if (!activeSale.value) {
-      return []
-    }
-    return activeSale.value.items
-      .map((item) => {
-        const quantity = draftQuantityOf(item)
-        return quantity === item.quantity
-          ? item
-          : { ...item, quantity, subtotal: quantity * Number(item.unit_price) }
-      })
-      .filter((item) => item.quantity > 0)
-  })
+  const draftItems = computed<SaleItem[]>(() =>
+    activeSale.value ? applyDraftToItems(activeSale.value.items, draft.value, discountDraft.value) : [],
+  )
 
-  const hasDraftChanges = computed(() => {
-    if (!activeSale.value) {
-      return false
-    }
-    return activeSale.value.items.some((item) => draftQuantityOf(item) !== item.quantity)
-  })
+  const hasDraftChanges = computed(() =>
+    activeSale.value ? draftHasChanges(activeSale.value.items, draft.value, discountDraft.value) : false,
+  )
 
   /** Cuanto sube/baja el total de la cuenta con el borrador aplicado. */
   const draftTotalDelta = computed(() => {
@@ -139,6 +139,29 @@ export function useActiveTabItemActions(
    * real del servidor. Si falla (ej. sin stock), el borrador queda intacto
    * para corregir o descartar - nada quedo escrito.
    */
+  /**
+   * Elige (o quita) el descuento de una linea YA guardada. Mismo borrador
+   * que las cantidades: instantaneo, sin red, y solo se persiste al
+   * confirmar. Sin esto, un cajero que ya guardo los 10 cigarrillos no tenia
+   * forma de aplicarles el descuento sin borrar la linea y volver a armarla.
+   */
+  function setItemDiscount(itemId: number, discountId: number | null): void {
+    const item = activeSale.value?.items.find((i) => i.id === itemId)
+    if (!item) {
+      return
+    }
+
+    if (discountId === item.discount_id) {
+      // Volvio al valor guardado: fuera del borrador, no es un cambio.
+      const rest = { ...discountDraft.value }
+      delete rest[itemId]
+      discountDraft.value = rest
+      return
+    }
+
+    discountDraft.value = { ...discountDraft.value, [itemId]: discountId }
+  }
+
   async function confirmDraftChanges(): Promise<void> {
     const sale = activeSale.value
     if (!sale || !hasDraftChanges.value) {
@@ -151,6 +174,7 @@ export function useActiveTabItemActions(
       })
       activeSale.value = updated
       draft.value = {}
+      discountDraft.value = {}
     } catch (error) {
       onError(extractErrorMessage(error, 'No pudimos guardar los cambios de la cuenta.'))
     }
@@ -159,6 +183,7 @@ export function useActiveTabItemActions(
   /** Vuelve la cuenta a como estaba guardada, sin tocar el backend. */
   function discardDraftChanges(): void {
     draft.value = {}
+    discountDraft.value = {}
   }
 
   return {
@@ -166,6 +191,7 @@ export function useActiveTabItemActions(
     hasDraftChanges,
     draftTotalDelta,
     adjustItemQuantity,
+    setItemDiscount,
     confirmDraftChanges,
     discardDraftChanges,
     destroyActiveTab,

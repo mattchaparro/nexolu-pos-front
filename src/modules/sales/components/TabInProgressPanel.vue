@@ -45,6 +45,7 @@ const emit = defineEmits<{
   'increment-item': [item: SaleItem]
   'decrement-item': [item: SaleItem]
   'remove-item': [item: SaleItem]
+  'update-item-discount': [item: SaleItem, discountId: number | null]
   'discard-draft': []
 }>()
 
@@ -126,9 +127,11 @@ function title(): string {
           class="mb-3"
           :items="draftItems"
           :syncing="syncingItems"
+          :item-discounts="itemDiscounts"
           @increment-item="emit('increment-item', $event)"
           @decrement-item="emit('decrement-item', $event)"
           @remove-item="emit('remove-item', $event)"
+          @update-item-discount="(item, discountId) => emit('update-item-discount', item, discountId)"
         />
       </template>
       <!-- Detalle de abonos: cuanto y cuando ("no es claro cuando ni cuanto

@@ -229,6 +229,7 @@ async function submitCart(): Promise<void> {
 
 const {
   adjustItemQuantity,
+  setItemDiscount,
   confirmDestroyActiveTab,
   draftItems,
   hasDraftChanges,
@@ -334,11 +335,13 @@ async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Prom
           :syncing="mutations.syncItemsMutation.isPending.value"
           :has-partial-payments="(activeSale.partial_payments?.length ?? 0) > 0"
           :draft-items="draftItems"
+          :item-discounts="itemDiscounts"
           :has-draft-changes="hasDraftChanges"
           :draft-total-delta="draftTotalDelta"
           @increment-item="adjustItemQuantity($event.id, 1)"
           @decrement-item="adjustItemQuantity($event.id, -1)"
           @remove-item="adjustItemQuantity($event.id, -$event.quantity)"
+          @update-item-discount="(item, discountId) => setItemDiscount(item.id, discountId)"
           @confirm-draft="confirmDraftChanges"
           @discard-draft="discardDraftChanges"
           @close="closeModalOpen = true"

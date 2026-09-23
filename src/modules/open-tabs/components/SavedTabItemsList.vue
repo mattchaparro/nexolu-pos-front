@@ -8,6 +8,7 @@
 // el cajero no debería tener que salir de Vender para eso.
 import { computed, ref } from 'vue'
 
+import type { Discount } from '@/types/discount'
 import type { SaleItem } from '@/types/sale'
 import { NxInput, NxQuantityStepper } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
@@ -15,13 +16,22 @@ import { formatCop } from '@/utils/formatCop'
 const props = defineProps<{
   items: SaleItem[]
   syncing: boolean
+  /** Vacio cuando el negocio no tiene el feature o el cajero no puede aplicar descuentos. */
+  itemDiscounts?: Discount[]
 }>()
 
 const emit = defineEmits<{
   'increment-item': [item: SaleItem]
   'decrement-item': [item: SaleItem]
   'remove-item': [item: SaleItem]
+  'update-item-discount': [item: SaleItem, discountId: number | null]
 }>()
+
+// Mismo criterio que en venta directa: un descuento sin producto aplica a
+// cualquier linea; uno atado a un producto, solo a ese.
+function applicableDiscounts(item: SaleItem): Discount[] {
+  return (props.itemDiscounts ?? []).filter((d) => !d.product || d.product.id === item.product.id)
+}
 
 // Buscador client-side sobre los items YA guardados: en una cuenta larga
 // (una mesa de varias horas junta decenas de lineas) encontrar "esa"
@@ -77,7 +87,8 @@ const visibleItems = computed<SaleItem[]>(() => {
     </p>
 
     <div class="divide-y divide-slate-100">
-      <div v-for="item in visibleItems" :key="item.id" class="flex items-center gap-2 py-2 text-sm">
+      <div v-for="item in visibleItems" :key="item.id" class="flex flex-col gap-1.5 py-2 text-sm">
+      <div class="flex items-center gap-2">
       <span class="min-w-0 flex-1 truncate text-slate-700">{{ item.product.name }}</span>
       <!-- Los +/- editan un BORRADOR local (instantaneo, sin red - ver
            useActiveTabItemActions); `syncing` solo es verdadero durante el
@@ -103,6 +114,28 @@ const visibleItems = computed<SaleItem[]>(() => {
       >
         <i class="pi pi-trash text-sm" />
       </button>
+      </div>
+
+      <select
+        v-if="applicableDiscounts(item).length > 0"
+        class="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-40"
+        :value="item.discount_id ?? ''"
+        :disabled="syncing"
+        @change="
+          emit(
+            'update-item-discount',
+            item,
+            ($event.target as HTMLSelectElement).value
+              ? Number(($event.target as HTMLSelectElement).value)
+              : null,
+          )
+        "
+      >
+        <option value="">Sin descuento</option>
+        <option v-for="discount in applicableDiscounts(item)" :key="discount.id" :value="discount.id">
+          {{ discount.name }}
+        </option>
+      </select>
       </div>
     </div>
   </div>
