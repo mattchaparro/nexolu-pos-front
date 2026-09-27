@@ -45,10 +45,13 @@ import { createApp } from 'vue'
 
 import App from './App.vue'
 import router from './router'
+import { reloadOnMissingChunks } from './services/appVersion'
 import { queryClient } from './services/query/queryClient'
 import { initSentry } from './sentry'
 import { useAuthStore } from './stores/auth.store'
 import { nexoluPreset } from './theme/nexoluPreset'
+
+reloadOnMissingChunks()
 
 const app = createApp(App)
 

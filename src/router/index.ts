@@ -1,6 +1,7 @@
 import { isAxiosError } from 'axios'
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, START_LOCATION } from 'vue-router'
 
+import { isNewerBuildDeployed } from '@/services/appVersion'
 import { fetchBusiness } from '@/services/business'
 import { ssoAssertion, ssoError } from '@/services/http/ssoAssertion'
 import { queryClient } from '@/services/query/queryClient'
@@ -617,7 +618,15 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach(async (to) => {
+router.beforeEach(async (to, from) => {
+  // Pestana con una version vieja (ver services/appVersion.ts): carga
+  // completa de la ruta destino en vez de navegar dentro de la SPA. No en la
+  // primera navegacion: esa acaba de bajar el index.html actual.
+  if (from !== START_LOCATION && (await isNewerBuildDeployed())) {
+    window.location.assign(router.resolve(to).href)
+    return false
+  }
+
   const auth = useAuthStore()
 
   // Antes de la rehidratacion: si volvemos de nexolu-auth hay una asercion
