@@ -1,17 +1,19 @@
 <script setup lang="ts">
 // Calcado de la tarjeta de producto de SalesTerminal.vue del legacy: mismo
 // alto/densidad (2 bloques via justify-between, no un stack uniforme) y
-// mismo stock SIEMPRE visible (no solo cuando esta bajo). Unica diferencia
-// deliberada: el acento de color es indigo fijo para todas las categorias,
-// no una paleta rotando por indice (ver README.md "Sistema de color") - el
-// legacy no tenia ningun criterio para asignarlos, y ya se decidio no
-// repetir esa falta de estandar en este frontend.
+// mismo stock SIEMPRE visible (no solo cuando esta bajo). El acento del
+// icono y la etiqueta es el tono de la categoria (ver utils/categoryTone.ts):
+// como en el legacy ayuda a ubicarse en la grilla, pero con una paleta
+// acordada en vez de colores al azar por id.
 import { computed, ref } from 'vue'
 
 import type { Product } from '@/types/product'
+import { NEUTRAL_CATEGORY_TONE, type CategoryTone } from '@/utils/categoryTone'
 import { formatCop } from '@/utils/formatCop'
 
-const props = defineProps<{ product: Product }>()
+const props = defineProps<{ product: Product; tone?: CategoryTone }>()
+
+const accent = computed(() => props.tone ?? NEUTRAL_CATEGORY_TONE)
 
 const emit = defineEmits<{ click: [] }>()
 
@@ -71,7 +73,7 @@ const isDisabled = computed(() => props.product.track_stock && props.product.sto
       <div v-if="justAdded" class="pointer-events-none absolute inset-0 rounded-xl bg-slate-900/15" />
     </Transition>
     <div class="flex min-w-0 items-start gap-2">
-      <span class="material-icons mt-0.5 shrink-0 rounded-lg bg-indigo-50 p-1.5 text-lg text-indigo-600">
+      <span class="material-icons mt-0.5 shrink-0 rounded-lg p-1.5 text-lg" :class="[accent.softBg, accent.iconText]">
         {{ product.category?.icon || 'inventory_2' }}
       </span>
       <div class="min-w-0 flex-1">
@@ -80,7 +82,8 @@ const isDisabled = computed(() => props.product.track_stock && props.product.sto
         </span>
         <span
           v-if="product.category"
-          class="mt-1 inline-block max-w-full truncate rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-indigo-600 capitalize"
+          class="mt-1 inline-block max-w-full truncate rounded-md px-2 py-0.5 text-[10px] font-semibold tracking-wide capitalize"
+          :class="[accent.softBg, accent.labelText]"
         >
           {{ product.category.name }}
         </span>

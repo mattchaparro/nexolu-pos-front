@@ -13,6 +13,9 @@
  *   - red     -> destructivo (eliminar, cancelar algo irreversible)
  *   - amber   -> advertencia
  *
+ * Excepcion acordada: tonos de categoria en Vender (sky, blue, indigo,
+ * violet, fuchsia, teal), solo via src/utils/categoryTone.ts.
+ *
  * Ningun otro color de Tailwind (purple, pink, cyan, etc.) sin decidirlo
  * explicitamente aca primero - ver README.md "Sistema de color".
  */

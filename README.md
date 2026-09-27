@@ -97,6 +97,12 @@ usar y para que (ver comentario en `src/style.css`):
 | `red` | Destructivo (eliminar, cancelar algo irreversible) |
 | `amber` | Advertencia |
 
+Excepcion acordada (2026-09-27): **tonos de categoria** en Vender -
+`sky`, `blue`, `indigo`, `violet`, `fuchsia`, `teal` (del degradado del
+logo), mas `slate` para productos sin categoria. Solo como acento suave del
+icono/etiqueta y el punto del chip, y solo via `src/utils/categoryTone.ts`;
+nunca emerald/amber/red, que ya significan algo.
+
 Ningun otro color de Tailwind sin decidirlo explicitamente primero. Los
 tokens salen del paquete de colores propio de Tailwind v4 (no se
 redefinen valores hex a mano), asi que cualquier variante (`indigo-600`,

@@ -70,6 +70,10 @@ comentario en `src/style.css`:
 | `red` | Destructivo (eliminar, cancelar algo irreversible) |
 | `amber` | Advertencia |
 
+Excepción acordada con el usuario (2026-09-27): los **tonos de categoría**
+de Vender (`sky`, `blue`, `indigo`, `violet`, `fuchsia`, `teal`, más
+`slate` sin categoría), solo a través de `src/utils/categoryTone.ts`.
+
 Ningún otro color de Tailwind sin decidirlo explícitamente primero con
 el usuario.
 

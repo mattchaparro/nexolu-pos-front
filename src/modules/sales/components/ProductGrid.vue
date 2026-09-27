@@ -10,6 +10,7 @@ import { computed, ref } from 'vue'
 import type { ProductCategory } from '@/types/product'
 import type { Product } from '@/types/product'
 import { NxInput } from '@/ui'
+import { buildCategoryToneMap } from '@/utils/categoryTone'
 
 import ProductCard from './ProductCard.vue'
 
@@ -36,6 +37,10 @@ const categoriesInUse = computed(() => {
   const idsWithProducts = new Set(props.products.map((p) => p.category?.id).filter(Boolean))
   return props.categories.filter((c) => idsWithProducts.has(c.id))
 })
+
+// Sobre TODAS las categorias del negocio, no solo las que tienen productos
+// activos: si no, el color de una categoria cambiaria al vaciarse otra.
+const categoryTones = computed(() => buildCategoryToneMap(props.categories))
 
 // Solo se ofrece si hay historial que respalde el atajo: un negocio recien
 // migrado (o recien abierto) no tiene "frecuentes" que mostrar.
@@ -130,7 +135,7 @@ function toggleFrequent(): void {
         v-for="category in categoriesInUse"
         :key="category.id"
         type="button"
-        class="shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors"
+        class="flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors"
         :class="
           selectedCategoryId === category.id
             ? 'bg-indigo-600 text-white'
@@ -138,6 +143,10 @@ function toggleFrequent(): void {
         "
         @click="selectCategory(category.id)"
       >
+        <span
+          class="h-2 w-2 shrink-0 rounded-full"
+          :class="[categoryTones.get(category.id)?.dot, selectedCategoryId === category.id ? 'ring-2 ring-white/70' : '']"
+        />
         {{ category.name }}
       </button>
     </div>
@@ -155,6 +164,7 @@ function toggleFrequent(): void {
           v-for="product in filteredProducts"
           :key="product.id"
           :product="product"
+          :tone="product.category ? categoryTones.get(product.category.id) : undefined"
           @click="emit('select', product)"
         />
       </div>
