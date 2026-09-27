@@ -475,7 +475,7 @@ function goBack(): void {
 
     <div class="flex flex-wrap items-end gap-3">
       <div class="min-w-[200px] max-w-sm flex-1">
-        <NxInput v-model="search" label="Buscar por nombre" icon="pi pi-search" clearable blur-after-typing />
+        <NxInput v-model="search" label="Buscar por nombre" icon="pi pi-search" clearable blur-on-enter />
       </div>
       <div v-if="activeEntity === 'products' && categoryOptions.length > 0" class="min-w-[180px]">
         <NxSelect

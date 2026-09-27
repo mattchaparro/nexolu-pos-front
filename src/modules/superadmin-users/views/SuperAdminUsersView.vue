@@ -107,7 +107,7 @@ function formatDateTime(iso: string | null): string {
         class="min-w-[240px] flex-1"
         icon="pi pi-search"
         clearable
-        blur-after-typing
+        blur-on-enter
       />
       <NxInput v-model="businessIdInput" label="ID de negocio" placeholder="Todos" class="w-32" />
     </div>

@@ -81,7 +81,7 @@ async function exportCsv(): Promise<void> {
     <NxPageHeader title="Auditoría" icon="pi pi-shield" compact />
 
     <div class="flex flex-wrap items-end gap-3">
-      <NxInput v-model="searchInput" label="Buscar por tipo de acción" class="min-w-[240px] flex-1" icon="pi pi-search" clearable blur-after-typing />
+      <NxInput v-model="searchInput" label="Buscar por tipo de acción" class="min-w-[240px] flex-1" icon="pi pi-search" clearable blur-on-enter />
       <NxButton variant="outline" icon="pi pi-download" :loading="exporting" @click="exportCsv">Exportar CSV</NxButton>
     </div>
 

@@ -136,7 +136,7 @@ function ordersOf(key: string): number {
         class="min-w-[220px] flex-1"
         icon="pi pi-search"
         clearable
-        blur-after-typing
+        blur-on-enter
       />
     </div>
 

@@ -294,7 +294,7 @@ async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Prom
 
     <!-- Vista general: mesas + cuentas por nombre -->
     <div v-if="mode === 'overview'" class="mt-4">
-      <NxInput v-model="search" label="Buscar mesa o cuenta" size="lg" icon="pi pi-search" clearable blur-after-typing />
+      <NxInput v-model="search" label="Buscar mesa o cuenta" size="lg" icon="pi pi-search" clearable blur-on-enter />
 
       <div v-if="filteredTables.length > 0" class="mt-5">
         <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">

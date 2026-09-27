@@ -126,7 +126,7 @@ async function exportCsv(): Promise<void> {
         class="min-w-[220px] flex-1"
         icon="pi pi-search"
         clearable
-        blur-after-typing
+        blur-on-enter
       />
       <NxButton variant="outline" icon="pi pi-download" :loading="exporting" @click="exportCsv">
         Exportar CSV

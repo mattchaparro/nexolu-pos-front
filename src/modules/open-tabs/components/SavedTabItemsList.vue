@@ -79,7 +79,7 @@ const visibleItems = computed<SaleItem[]>(() => {
       icon="pi pi-search"
       placeholder="Buscar en la cuenta…"
       clearable
-      blur-after-typing
+      blur-on-enter
     />
 
     <p v-if="showSearch && visibleItems.length === 0" class="py-2 text-center text-xs text-amber-700">

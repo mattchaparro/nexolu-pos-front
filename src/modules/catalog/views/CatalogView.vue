@@ -433,7 +433,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                 size="lg"
                 icon="pi pi-search"
                 clearable
-                blur-after-typing
+                blur-on-enter
                 class="flex-1"
               />
               <NxSelect
@@ -887,7 +887,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                 size="lg"
                 icon="pi pi-search"
                 clearable
-                blur-after-typing
+                blur-on-enter
                 class="flex-1"
               />
               <NxSelect

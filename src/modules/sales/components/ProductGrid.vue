@@ -95,7 +95,7 @@ function toggleFrequent(): void {
       size="lg"
       icon="pi pi-search"
       clearable
-      blur-after-typing
+      blur-on-enter
     />
 
     <div v-if="categoriesInUse.length > 0 || hasFrequent" class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">

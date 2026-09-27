@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, useId, useTemplateRef } from 'vue'
+import { computed, useId, useTemplateRef } from 'vue'
 import PrimeFloatLabel from 'primevue/floatlabel'
 import PrimeIconField from 'primevue/iconfield'
 import PrimeInputIcon from 'primevue/inputicon'
@@ -32,14 +32,15 @@ const props = withDefaults(
     icon?: string
     /** Muestra una X a la derecha para vaciar el campo cuando tiene texto. */
     clearable?: boolean
-    // Buscadores (Vender, Catalogo, etc): en movil, el teclado on-screen se
-    // queda tapando media pantalla de resultados hasta que el usuario lo
-    // cierra a mano. Con esto, el campo se auto-desenfoca solito un rato
-    // despues de la ultima tecla - el teclado se guarda sin que el usuario
-    // tenga que hacerlo. No usar en campos de formulario normales (nombre,
-    // telefono, etc.) donde perder el foco a mitad de escritura seria
-    // molesto - es opt-in a proposito, no el comportamiento por defecto.
-    blurAfterTyping?: boolean
+    // Buscadores (Vender, Catalogo, etc): el teclado movil muestra "Buscar"
+    // en vez de "Enter", y al tocarlo se guarda (el campo pierde el foco)
+    // para dejar ver los resultados. Antes se desenfocaba solo 1,2 s despues
+    // de la ultima tecla, y eso le cerraba el teclado en la cara a quien
+    // escribe despacio o se detiene a mirar (reporte de Central Cell al
+    // migrar del legacy, que nunca lo hizo). El teclado ya no tapa los
+    // resultados: el layout usa 100dvh y el viewport pide
+    // interactive-widget=resizes-content (index.html).
+    blurOnEnter?: boolean
   }>(),
   {
     modelValue: '',
@@ -56,23 +57,18 @@ const props = withDefaults(
     inputmode: undefined,
     icon: undefined,
     clearable: false,
-    blurAfterTyping: false,
+    blurOnEnter: false,
   },
 )
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
-let blurTimer: ReturnType<typeof window.setTimeout> | undefined
-function handleUpdate(value: string): void {
-  emit('update:modelValue', value)
-  if (props.blurAfterTyping) {
-    window.clearTimeout(blurTimer)
-    blurTimer = window.setTimeout(() => {
-      ;(document.activeElement as HTMLElement | null)?.blur()
-    }, 1200)
+function handleKeydown(event: KeyboardEvent): void {
+  // isComposing: el Enter que confirma una palabra del IME no es "buscar".
+  if (props.blurOnEnter && event.key === 'Enter' && !event.isComposing) {
+    ;(event.target as HTMLElement).blur()
   }
 }
-onBeforeUnmount(() => window.clearTimeout(blurTimer))
 
 const generatedId = useId()
 const inputId = computed(() => props.id ?? generatedId)
@@ -158,7 +154,9 @@ defineExpose({
           :size="primeSize"
           :style="fontSizeStyle"
           fluid
-          @update:model-value="(value) => handleUpdate(value as string)"
+          :enterkeyhint="blurOnEnter ? 'search' : undefined"
+          @update:model-value="(value) => emit('update:modelValue', value as string)"
+          @keydown="handleKeydown"
         />
         <PrimeInputIcon
           v-if="showClear"
@@ -182,7 +180,9 @@ defineExpose({
         :size="primeSize"
         :style="fontSizeStyle"
         fluid
-        @update:model-value="(value) => handleUpdate(value as string)"
+        :enterkeyhint="blurOnEnter ? 'search' : undefined"
+        @update:model-value="(value) => emit('update:modelValue', value as string)"
+        @keydown="handleKeydown"
       />
       <label v-if="label" :for="inputId"
         >{{ label }}<span v-if="required" class="text-red-600"> *</span></label

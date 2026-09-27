@@ -91,7 +91,7 @@ watch(business, (value) => { if (value) { void tour.start() } }, { once: true })
 
     <CatalogHubTabs />
 
-    <NxInput v-model="searchInput" label="Buscar por nombre, NIT o teléfono" size="lg" icon="pi pi-search" clearable blur-after-typing />
+    <NxInput v-model="searchInput" label="Buscar por nombre, NIT o teléfono" size="lg" icon="pi pi-search" clearable blur-on-enter />
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
       <NxDataTable

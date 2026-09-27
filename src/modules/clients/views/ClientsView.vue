@@ -72,7 +72,7 @@ async function removeClient(client: Client): Promise<void> {
       size="lg"
       icon="pi pi-search"
       clearable
-      blur-after-typing
+      blur-on-enter
     />
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">

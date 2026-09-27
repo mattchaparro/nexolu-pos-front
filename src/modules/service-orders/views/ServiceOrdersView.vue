@@ -103,7 +103,7 @@ function statusBadgeClass(order: ServiceOrder): string {
         class="col-span-2 lg:min-w-[220px] lg:flex-1"
         icon="pi pi-search"
         clearable
-        blur-after-typing
+        blur-on-enter
       />
       <NxSelect
         :model-value="status"

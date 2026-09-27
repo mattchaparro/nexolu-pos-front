@@ -240,7 +240,7 @@ async function removeTemplate(template: FixedExpenseTemplate): Promise<void> {
                 label="Buscar descripción"
                 icon="pi pi-search"
                 clearable
-                blur-after-typing
+                blur-on-enter
                 class="lg:flex-1"
               />
             </div>

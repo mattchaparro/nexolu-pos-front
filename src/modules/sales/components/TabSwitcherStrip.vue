@@ -118,7 +118,7 @@ function tabTotal(tab: Sale): number {
         icon="pi pi-search"
         placeholder="Buscar mesa, cliente o número de cuenta…"
         clearable
-        blur-after-typing
+        blur-on-enter
       />
       <p v-if="noResults" class="mt-1 text-xs text-amber-700">
         Ninguna mesa o cuenta coincide con "{{ search.trim() }}".

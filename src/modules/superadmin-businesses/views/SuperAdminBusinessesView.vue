@@ -103,7 +103,7 @@ function statusBadge(business: SuperAdminBusiness): { label: string; class: stri
         size="lg"
         icon="pi pi-search"
         clearable
-        blur-after-typing
+        blur-on-enter
         class="flex-1"
       />
       <NxSelect
