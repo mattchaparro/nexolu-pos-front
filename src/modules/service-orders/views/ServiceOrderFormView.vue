@@ -19,7 +19,6 @@ import { formatCop } from '@/utils/formatCop'
 import { isCreditPaymentMethodId } from '@/utils/paymentMethod'
 
 import PaymentMethodPicker from '@/components/PaymentMethodPicker.vue'
-import ClientPicker from '@/modules/clients/components/ClientPicker.vue'
 import ServiceOrderItemsEditor from '../components/ServiceOrderItemsEditor.vue'
 import { useServiceOrder } from '../composables/useServiceOrder'
 import { useServiceOrderMutations } from '../composables/useServiceOrderMutations'
@@ -41,7 +40,13 @@ const nonCreditPaymentMethods = computed(
   () => business.value?.payment_methods.filter((m) => !isCreditPaymentMethodId(m.id)) ?? [],
 )
 
-const clientId = ref<number | null>(null)
+// El cliente se escribe a mano, como en el legacy (Central Cell se quejo
+// del selector-buscador), y se guarda como texto de la orden: no crea ni
+// busca fichas en el directorio de clientes (ver la migracion
+// add_client_text_to_service_orders en nexolu-pos-api).
+const clientName = ref('')
+const clientPhone = ref('')
+const clientEmail = ref('')
 const productId = ref<number | null>(null)
 const serviceName = ref('')
 const notes = ref('')
@@ -78,7 +83,9 @@ watch(
     if (!order) {
       return
     }
-    clientId.value = order.client?.id ?? null
+    clientName.value = order.client_name ?? ''
+    clientPhone.value = order.client_phone ?? ''
+    clientEmail.value = order.client_email ?? ''
     productId.value = order.product_id
     serviceName.value = order.service_name
     notes.value = order.notes ?? ''
@@ -141,7 +148,9 @@ async function submit(): Promise<void> {
     : undefined
 
   const payload: ServiceOrderPayload = {
-    client_id: clientId.value,
+    client_name: clientName.value.trim() || null,
+    client_phone: clientPhone.value.trim() || null,
+    client_email: clientEmail.value.trim() || null,
     product_id: productId.value,
     service_name: serviceName.value.trim(),
     notes: notes.value.trim() || null,
@@ -191,7 +200,35 @@ async function submit(): Promise<void> {
       <div class="rounded-xl border border-slate-200 bg-white p-4">
         <p class="mb-3 text-sm font-semibold text-slate-700">Datos de la orden</p>
         <div class="flex flex-col gap-3">
-          <ClientPicker v-model="clientId" :error="fieldErrors.client_id" />
+          <div>
+            <p class="mb-2 text-xs font-medium text-slate-500">Cliente (opcional)</p>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <NxInput
+                :model-value="clientName"
+                label="Nombre"
+                autocomplete="off"
+                :error="fieldErrors.client_name"
+                @update:model-value="clientName = $event"
+              />
+              <NxInput
+                :model-value="clientPhone"
+                label="Teléfono"
+                inputmode="tel"
+                autocomplete="off"
+                :error="fieldErrors.client_phone"
+                @update:model-value="clientPhone = $event"
+              />
+              <NxInput
+                :model-value="clientEmail"
+                label="Correo"
+                type="email"
+                inputmode="email"
+                autocomplete="off"
+                :error="fieldErrors.client_email"
+                @update:model-value="clientEmail = $event"
+              />
+            </div>
+          </div>
           <NxSelect
             v-if="(servicesQuery.data.value?.length ?? 0) > 0 && business?.service_orders_show_catalog !== false"
             :model-value="productId"

@@ -139,7 +139,10 @@ function formatDateTime(value: string): string {
           <span class="text-slate-500">Estado:</span>
           <span class="ml-1 rounded-full px-2 py-0.5 text-xs font-semibold" :class="statusBadgeClass()">{{ order.status_label }}</span>
         </p>
-        <p v-if="order.client?.id != null"><span class="text-slate-500">Cliente:</span> {{ order.client.name }}</p>
+        <p v-if="order.client_name">
+          <span class="text-slate-500">Cliente:</span> {{ order.client_name }}
+          <span v-if="order.client_phone" class="text-slate-400">· {{ order.client_phone }}</span>
+        </p>
         <p><span class="text-slate-500">Total:</span> {{ formatCop(order.total) }}</p>
         <p v-if="stageOptions.length"><span class="text-slate-500">Etapa:</span> <StageBadge :stage="order.stage" class="ml-1" /></p>
         <p v-if="order.notes" class="border-t border-slate-100 pt-2"><span class="text-slate-500">Notas:</span> {{ order.notes }}</p>
@@ -225,8 +228,8 @@ function formatDateTime(value: string): string {
         entity-type="service-order"
         :entity-id="order.id"
         document-title="Comprobante de orden de servicio"
-        :default-phone="order.client?.phone ?? null"
-        :default-email="order.client?.email ?? null"
+        :default-phone="order.client_phone"
+        :default-email="order.client_email"
       />
     </template>
   </div>

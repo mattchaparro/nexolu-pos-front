@@ -28,6 +28,14 @@ export interface ServiceOrder {
   id: number
   business_id: number
   client_id: number | null
+  /**
+   * Cliente como texto de la orden (lo que se escribio al crearla). En las
+   * migradas del legacy, que solo tienen ficha, el backend ya lo rellena
+   * con client.name/phone/email - usar estos, no client.
+   */
+  client_name: string | null
+  client_phone: string | null
+  client_email: string | null
   appointment_id: number | null
   product_id: number | null
   user_id: number
@@ -61,6 +69,10 @@ export interface ServiceOrderItemInput {
 
 export interface ServiceOrderPayload {
   client_id?: number | null
+  /** Texto de la orden - no crea ni busca fichas en el directorio de clientes. */
+  client_name?: string | null
+  client_phone?: string | null
+  client_email?: string | null
   product_id?: number | null
   service_name: string
   total?: number | null

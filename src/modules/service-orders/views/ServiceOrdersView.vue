@@ -155,16 +155,16 @@ function statusBadgeClass(order: ServiceOrder): string {
             </p>
             <!-- En celular la columna Cliente quedaba fuera de pantalla (scroll horizontal) y no se veia: va aca. -->
             <p class="mt-1 text-xs text-slate-700 lg:hidden">
-              <i class="pi pi-user text-[10px] text-slate-400" /> {{ data.client?.id != null ? data.client.name : 'Sin cliente' }}
-              <span v-if="data.client?.id != null && data.client.phone" class="text-slate-400">· {{ data.client.phone }}</span>
+              <i class="pi pi-user text-[10px] text-slate-400" /> {{ data.client_name || 'Sin cliente' }}
+              <span v-if="data.client_phone" class="text-slate-400">· {{ data.client_phone }}</span>
             </p>
           </template>
         </NxColumn>
         <NxColumn header="Cliente" header-class="hidden lg:table-cell" body-class="hidden lg:table-cell">
           <template #body="{ data }: { data: ServiceOrder }">
-            <template v-if="data.client?.id != null">
-              <p class="text-sm text-slate-700">{{ data.client.name }}</p>
-              <p v-if="data.client.phone" class="text-xs text-slate-400">{{ data.client.phone }}</p>
+            <template v-if="data.client_name">
+              <p class="text-sm text-slate-700">{{ data.client_name }}</p>
+              <p v-if="data.client_phone" class="text-xs text-slate-400">{{ data.client_phone }}</p>
             </template>
             <p v-else class="text-sm text-slate-400">Sin cliente</p>
           </template>
