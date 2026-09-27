@@ -11,6 +11,7 @@ import { useServiceWorkflow } from '@/composables/useServiceWorkflow'
 import type { ServiceOrder, ServiceOrderStatus } from '@/types/serviceOrder'
 import { NxButton, NxColumn, NxDataTable, NxDatePicker, NxInput, NxPageHeader, NxSelect, NxStatCard } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
+import { formatShortDateTime } from '@/utils/formatShortDateTime'
 
 import PayServiceOrderModal from '../components/PayServiceOrderModal.vue'
 import { useServiceOrders, useServiceOrdersSummary } from '../composables/useServiceOrders'
@@ -148,7 +149,24 @@ function statusBadgeClass(order: ServiceOrder): string {
         <NxColumn header="Servicio">
           <template #body="{ data }: { data: ServiceOrder }">
             <p class="text-sm font-semibold text-slate-900">{{ data.service_name }}</p>
-            <p class="text-xs text-slate-400">{{ data.client?.id != null ? data.client.name : 'Sin cliente' }}</p>
+            <p class="text-xs text-slate-400">{{ formatShortDateTime(data.created_at) }}</p>
+            <p v-if="data.notes" class="max-w-[180px] truncate text-xs text-slate-500 lg:max-w-[240px]" :title="data.notes">
+              {{ data.notes }}
+            </p>
+            <!-- En celular la columna Cliente quedaba fuera de pantalla (scroll horizontal) y no se veia: va aca. -->
+            <p class="mt-1 text-xs text-slate-700 lg:hidden">
+              <i class="pi pi-user text-[10px] text-slate-400" /> {{ data.client?.id != null ? data.client.name : 'Sin cliente' }}
+              <span v-if="data.client?.id != null && data.client.phone" class="text-slate-400">· {{ data.client.phone }}</span>
+            </p>
+          </template>
+        </NxColumn>
+        <NxColumn header="Cliente" header-class="hidden lg:table-cell" body-class="hidden lg:table-cell">
+          <template #body="{ data }: { data: ServiceOrder }">
+            <template v-if="data.client?.id != null">
+              <p class="text-sm text-slate-700">{{ data.client.name }}</p>
+              <p v-if="data.client.phone" class="text-xs text-slate-400">{{ data.client.phone }}</p>
+            </template>
+            <p v-else class="text-sm text-slate-400">Sin cliente</p>
           </template>
         </NxColumn>
         <NxColumn header="Total / Saldo">
@@ -171,21 +189,23 @@ function statusBadgeClass(order: ServiceOrder): string {
         </NxColumn>
         <NxColumn>
           <template #body="{ data }: { data: ServiceOrder }">
-            <div class="flex items-center justify-end gap-3">
-              <button
+            <div class="flex flex-col items-stretch gap-1.5 xl:flex-row xl:items-center xl:justify-end">
+              <NxButton
                 v-if="data.status === 'pending' || data.status === 'partial'"
-                type="button"
-                class="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                size="sm"
+                icon="pi pi-dollar"
                 @click="openPay(data)"
               >
                 Abonar
-              </button>
-              <RouterLink
-                :to="{ name: 'service-orders.show', params: { id: data.id } }"
-                class="text-sm font-medium text-slate-600 hover:text-slate-800"
+              </NxButton>
+              <NxButton
+                variant="outline"
+                size="sm"
+                icon="pi pi-eye"
+                @click="router.push({ name: 'service-orders.show', params: { id: data.id } })"
               >
                 Ver
-              </RouterLink>
+              </NxButton>
             </div>
           </template>
         </NxColumn>

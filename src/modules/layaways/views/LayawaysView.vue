@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router'
 import type { Layaway, LayawayStatus } from '@/types/layaway'
 import { NxButton, NxColumn, NxDataTable, NxDatePicker, NxInput, NxPageHeader, NxSelect } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
+import { formatShortDateTime } from '@/utils/formatShortDateTime'
 
 import AddLayawayPaymentModal from '../components/AddLayawayPaymentModal.vue'
 import { useLayaways } from '../composables/useLayaways'
@@ -129,9 +130,18 @@ function statusLabel(layaway: Layaway): string {
         <NxColumn header="Productos">
           <template #body="{ data }: { data: Layaway }">
             <p class="text-sm font-semibold text-slate-900">{{ firstItemsLabel(data) }}</p>
+            <p class="text-xs text-slate-400">{{ formatShortDateTime(data.created_at) }}</p>
+            <p v-if="data.notes" class="max-w-[180px] truncate text-xs text-slate-500 lg:max-w-[240px]" :title="data.notes">
+              {{ data.notes }}
+            </p>
+            <!-- En celular la columna Cliente quedaba fuera de pantalla (scroll horizontal) y no se veia: va aca. -->
+            <p class="mt-1 text-xs text-slate-700 lg:hidden">
+              <i class="pi pi-user text-[10px] text-slate-400" /> {{ data.customer_name || 'Sin nombre' }}
+              <span v-if="data.customer_phone" class="text-slate-400">· {{ data.customer_phone }}</span>
+            </p>
           </template>
         </NxColumn>
-        <NxColumn header="Cliente">
+        <NxColumn header="Cliente" header-class="hidden lg:table-cell" body-class="hidden lg:table-cell">
           <template #body="{ data }: { data: Layaway }">
             <p class="text-sm text-slate-700">{{ data.customer_name || 'Sin nombre' }}</p>
             <p v-if="data.customer_phone" class="text-xs text-slate-400">{{ data.customer_phone }}</p>
@@ -155,21 +165,18 @@ function statusLabel(layaway: Layaway): string {
         </NxColumn>
         <NxColumn>
           <template #body="{ data }: { data: Layaway }">
-            <div class="flex items-center justify-end gap-3">
-              <button
-                v-if="data.status === 'open' && data.balance > 0"
-                type="button"
-                class="text-sm font-medium text-indigo-600 hover:text-indigo-800"
-                @click="openPay(data)"
-              >
+            <div class="flex flex-col items-stretch gap-1.5 xl:flex-row xl:items-center xl:justify-end">
+              <NxButton v-if="data.status === 'open' && data.balance > 0" size="sm" icon="pi pi-dollar" @click="openPay(data)">
                 Abonar
-              </button>
-              <RouterLink
-                :to="{ name: 'layaways.show', params: { id: data.id } }"
-                class="text-sm font-medium text-slate-600 hover:text-slate-800"
+              </NxButton>
+              <NxButton
+                variant="outline"
+                size="sm"
+                icon="pi pi-eye"
+                @click="router.push({ name: 'layaways.show', params: { id: data.id } })"
               >
                 Ver
-              </RouterLink>
+              </NxButton>
             </div>
           </template>
         </NxColumn>
