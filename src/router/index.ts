@@ -54,6 +54,10 @@ export function homeRouteFor(user: User | null): { name: string } {
   return { name: user?.roles?.includes('superadmin') ? 'superadmin.dashboard' : 'dashboard' }
 }
 
+// Permiso propio del modulo, o el de citas que era el unico que lo abria
+// antes (mismo par que routes/api.php en nexolu-pos-api).
+const SERVICE_ORDERS_PERMISSIONS = ['service_orders.manage', 'appointments.manage']
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -250,25 +254,25 @@ const router = createRouter({
           path: 'ordenes-servicio',
           name: 'service-orders.index',
           component: () => import('@/modules/service-orders/views/ServiceOrdersView.vue'),
-          meta: { requiresFeature: 'services', requiresPermission: 'appointments.manage' },
+          meta: { requiresFeature: 'services', requiresPermission: SERVICE_ORDERS_PERMISSIONS },
         },
         {
           path: 'ordenes-servicio/nueva',
           name: 'service-orders.create',
           component: () => import('@/modules/service-orders/views/ServiceOrderFormView.vue'),
-          meta: { requiresFeature: 'services', requiresPermission: 'appointments.manage' },
+          meta: { requiresFeature: 'services', requiresPermission: SERVICE_ORDERS_PERMISSIONS },
         },
         {
           path: 'ordenes-servicio/:id',
           name: 'service-orders.show',
           component: () => import('@/modules/service-orders/views/ServiceOrderShowView.vue'),
-          meta: { requiresFeature: 'services', requiresPermission: 'appointments.manage' },
+          meta: { requiresFeature: 'services', requiresPermission: SERVICE_ORDERS_PERMISSIONS },
         },
         {
           path: 'ordenes-servicio/:id/editar',
           name: 'service-orders.edit',
           component: () => import('@/modules/service-orders/views/ServiceOrderFormView.vue'),
-          meta: { requiresFeature: 'services', requiresPermission: 'appointments.manage' },
+          meta: { requiresFeature: 'services', requiresPermission: SERVICE_ORDERS_PERMISSIONS },
         },
         {
           path: 'agenda',
