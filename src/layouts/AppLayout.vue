@@ -10,6 +10,7 @@ import { useRouter } from 'vue-router'
 import { homeRouteFor } from '@/router'
 import logo from '@/assets/nexolu-logo.png'
 import BranchSwitcher from '@/components/BranchSwitcher.vue'
+import SubscriptionRenewalBanner from '@/components/SubscriptionRenewalBanner.vue'
 import WelcomeExperienceModal from '@/components/WelcomeExperienceModal.vue'
 import { useNavItems } from '@/composables/useNavItems'
 import { useActiveTour } from '@/composables/useGuidedTour'
@@ -51,6 +52,7 @@ async function stopImpersonating(): Promise<void> {
         Dejar de impersonar
       </button>
     </div>
+    <SubscriptionRenewalBanner />
     <div class="flex min-h-0 flex-1">
       <NxSidebar :items="navItems" :logo="logo" />
       <div class="flex min-w-0 flex-1 flex-col">

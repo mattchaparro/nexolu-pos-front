@@ -96,4 +96,10 @@ export interface Business {
   // Ajustes) - ver ServiceOrderFormView.vue.
   service_orders_show_catalog: boolean
   service_orders_default_service_name: string | null
+  // Suscripcion - lo lee SubscriptionRenewalBanner. days_remaining es 0
+  // (nunca negativo) si ya vencio; subscription_warning_days es el umbral
+  // de aviso configurable (system_config billing.warning_days).
+  subscription_status: 'trial' | 'paid' | 'expired' | 'inactive'
+  days_remaining: number
+  subscription_warning_days: number
 }
