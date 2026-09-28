@@ -130,6 +130,8 @@ const total = computed(() =>
 
 const fieldErrors = ref<Record<string, string>>({})
 const formError = ref<string | null>(null)
+// Campos cuyo error ya se ve junto a su input (ver template).
+const SHOWN_FIELD_ERRORS = new Set(['client_name', 'client_phone', 'client_email', 'service_name', 'total', 'items'])
 const { createMutation, updateMutation } = useServiceOrderMutations()
 const isSaving = computed(() => createMutation.isPending.value || updateMutation.isPending.value)
 
@@ -172,10 +174,17 @@ async function submit(): Promise<void> {
     }
   } catch (error) {
     const fields = extractFieldErrors(error)
-    if (Object.keys(fields).length > 0) {
-      fieldErrors.value = fields
-    } else {
+    fieldErrors.value = fields
+    // Errores de campos que el formulario no pinta al lado de ningun input
+    // (abono inicial, metodo de pago, un item, el servicio del catalogo...)
+    // o un error sin campo (403, 500): sin esto el boton "no hacia nada".
+    const unshown = Object.entries(fields)
+      .filter(([key]) => !SHOWN_FIELD_ERRORS.has(key))
+      .map(([, message]) => message)
+    if (Object.keys(fields).length === 0) {
       formError.value = extractErrorMessage(error, 'No pudimos guardar la orden.')
+    } else if (unshown.length > 0) {
+      formError.value = unshown.join(' ')
     }
   }
 }
@@ -190,7 +199,6 @@ async function submit(): Promise<void> {
       <NxPageHeader :title="isEdit ? 'Editar orden' : 'Nueva orden de servicio'" icon="pi pi-wrench" compact />
     </div>
 
-    <p v-if="formError" class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{{ formError }}</p>
 
     <template v-if="isEdit && orderQuery.isPending.value">
       <div class="h-64 animate-pulse rounded-xl bg-slate-100" />
@@ -293,6 +301,10 @@ async function submit(): Promise<void> {
       </p>
     </div>
 
+    <!-- Junto al boton, no arriba: en una tablet el que toca "Guardar" esta
+         al fondo del formulario y un error arriba de todo queda fuera de la
+         pantalla (Central Cell reporto que el boton "no hacia nada"). -->
+    <p v-if="formError" class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{{ formError }}</p>
     <NxButton :loading="isSaving" @click="submit">{{ isEdit ? 'Guardar cambios' : 'Guardar orden' }}</NxButton>
   </div>
 </template>
