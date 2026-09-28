@@ -8,6 +8,13 @@
 // de CartCheckoutSection ("Cobrar $...") abre PaymentModal directo. `expanded`
 // deja crecer la hoja a pantalla completa cuando el listado de items es
 // largo, sin perder el gesto de "hoja" (no tapa todo de entrada como antes).
+//
+// Alto segun el contenido, con tope en 85dvh (antes era 3/4 de pantalla
+// fijo): una tienda de celulares vende 1-2 productos por venta y la hoja
+// tapaba la grilla con un blanco enorme (reporte de Central Cell), mientras
+// que una tienda o restaurante llena 8-10 items y ahi si necesita el alto.
+// Crecer con el contenido sirve a los dos sin configurar nada por negocio.
+// Pasado el tope, la lista de items es lo que hace scroll (min-h-0).
 import { ref, watch } from 'vue'
 
 import type { Business } from '@/types/business'
@@ -53,7 +60,7 @@ function close(): void {
     <div class="fixed inset-0 z-40 bg-slate-900/40 lg:hidden" @click="close" />
     <div
       class="fixed inset-x-0 bottom-0 z-40 flex flex-col rounded-t-2xl bg-white shadow-xl lg:hidden"
-      :class="expanded ? 'top-0 rounded-t-none' : 'h-[75vh]'"
+      :class="expanded ? 'top-0 rounded-t-none' : 'max-h-[85dvh]'"
     >
       <div class="flex justify-center pt-2" :class="expanded ? 'hidden' : ''">
         <span class="h-1 w-10 rounded-full bg-slate-200" />
@@ -92,7 +99,7 @@ function close(): void {
         </div>
       </div>
 
-      <div class="min-h-0 flex-1 overflow-y-auto p-4">
+      <div class="min-h-0 overflow-y-auto p-4" :class="expanded ? 'flex-1' : ''">
         <CartItemsList :checkout="checkout" />
       </div>
 
