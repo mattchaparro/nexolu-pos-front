@@ -71,6 +71,9 @@ function differenceClass(closing: CashClosing): string {
       <NxColumn header="Contado">
         <template #body="{ data }: { data: CashClosing }">{{ formatCop(data.actual_cash) }}</template>
       </NxColumn>
+      <NxColumn header="Base dejada">
+        <template #body="{ data }: { data: CashClosing }">{{ formatCop(data.base_for_next_day) }}</template>
+      </NxColumn>
       <NxColumn header="Diferencia">
         <template #body="{ data }: { data: CashClosing }">
           <span class="font-semibold" :class="differenceClass(data)">{{ formatCop(data.difference) }}</span>

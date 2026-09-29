@@ -14,7 +14,7 @@ import GatewayReconciliationCard from './GatewayReconciliationCard.vue'
 import { formatCop } from '@/utils/formatCop'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
-import { useCashClosingPreview, usePendingClosingDates } from '../composables/useCashClosing'
+import { useCashClosingHistory, useCashClosingPreview, usePendingClosingDates } from '../composables/useCashClosing'
 import { useCashClosingMutations } from '../composables/useCashClosingMutations'
 import { useCashDifference } from '../composables/useCashDifference'
 import DailySummaryDetailModal from './DailySummaryDetailModal.vue'
@@ -82,6 +82,18 @@ const shiftsToAutoClose = computed(() => previewQuery.data.value?.shifts_to_auto
 // El primer turno del dia abrio con una base distinta a la que dejo el cierre
 // anterior: la diferencia no es de hoy, paso entre ese cierre y la apertura.
 const openingMismatch = computed(() => previewQuery.data.value?.opening_mismatch ?? null)
+
+// El cierre anterior al dia que se esta cerrando, para decidir la base de
+// manana mirando lo que se dejo ayer (pedido de Central Cell: el dato ya
+// existia en cada cierre pero ninguna pantalla lo mostraba). Misma query que
+// la tabla de historial (pagina 1, del mas reciente al mas viejo), asi que
+// no suma una consulta.
+const recentClosingsQuery = useCashClosingHistory(ref(1))
+const previousClosing = computed(
+  () =>
+    recentClosingsQuery.data.value?.data.find((closing) => closing.date.slice(0, 10) < selectedDate.value) ??
+    null,
+)
 
 function formatDay(isoDate: string): string {
   return new Date(`${isoDate}T00:00:00`).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })
@@ -276,6 +288,11 @@ async function submit(): Promise<void> {
           required
           @update:model-value="onBaseForNextDayInput"
         />
+        <p v-if="previousClosing" class="-mt-2 text-xs text-slate-500">
+          El cierre anterior ({{ formatDay(previousClosing.date.slice(0, 10)) }}) contó
+          {{ formatCop(previousClosing.actual_cash) }} y dejó
+          <strong class="text-slate-700">{{ formatCop(previousClosing.base_for_next_day) }}</strong> de base.
+        </p>
 
         <NxButton
           :disabled="actualCash === null || baseForNextDay === null"
