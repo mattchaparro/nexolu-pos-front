@@ -216,6 +216,21 @@ async function uploadPendingImages(created: Product): Promise<void> {
   }
 }
 
+// Las cruzadas viven en su propio endpoint (son relacion, no atributo) y ese
+// endpoint solo existe con tienda online: sin ella responde 403 y el aviso
+// "modulo no habilitado" salia al abrir cualquier producto.
+watch(
+  [() => productQuery.data.value?.id, onlineStoreEnabled],
+  ([id, enabled]) => {
+    if (id && enabled) {
+      void fetchCrossSells(id).then((related) => {
+        crossSellIds.value = related.map((item) => item.id)
+      })
+    }
+  },
+  { immediate: true },
+)
+
 watch(
   () => productQuery.data.value,
   (product) => {
@@ -226,10 +241,6 @@ watch(
     description.value = product.description ?? ''
     showDescription.value = Boolean(product.description)
     howToUse.value = product.how_to_use ?? ''
-    // Las cruzadas viven en su propio endpoint (son relacion, no atributo).
-    void fetchCrossSells(product.id).then((related) => {
-      crossSellIds.value = related.map((item) => item.id)
-    })
     showHowToUse.value = Boolean(product.how_to_use)
     price.value = Number(product.price)
     costPrice.value = Number(product.cost_price)
@@ -410,7 +421,9 @@ async function submit(): Promise<void> {
       await updateMutation.mutateAsync({ id: productId.value, payload })
       // Despues del producto: es una relacion aparte, y si fallara no debe
       // impedir que el producto se guarde.
-      await saveCrossSells(productId.value, crossSellIds.value)
+      if (onlineStoreEnabled.value) {
+        await saveCrossSells(productId.value, crossSellIds.value)
+      }
       notify('Producto actualizado')
     } else {
       const created = await createMutation.mutateAsync(payload)
