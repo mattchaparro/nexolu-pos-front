@@ -369,17 +369,6 @@ function openReceipt(row: TransactionRow): void {
         </NxTabs>
       </div>
 
-      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 class="mb-3 text-sm font-semibold text-slate-700">Productos más vendidos</h2>
-        <div v-if="summaryQuery.data.value.top_products.length === 0" class="py-4 text-center text-sm text-slate-400">Sin ventas en este rango.</div>
-        <ul v-else class="flex flex-col gap-2">
-          <li v-for="product in summaryQuery.data.value.top_products" :key="product.product_id" class="flex items-center justify-between text-sm">
-            <span class="text-slate-700">{{ product.name }} <span class="text-slate-400">x{{ product.total_quantity }}</span></span>
-            <span class="font-medium text-slate-900">{{ formatCop(product.total_revenue) }}</span>
-          </li>
-        </ul>
-      </div>
-
       <!-- ================= Detalle de transacciones ================= -->
       <div class="flex items-center justify-between gap-2">
         <h2 class="text-sm font-semibold text-slate-700">Detalle de transacciones</h2>

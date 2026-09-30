@@ -105,25 +105,33 @@ const quantityLabel = computed(() => {
   return type.value === 'entry' ? `Cantidad a agregar (${unitLabel.value})` : `Cantidad a retirar (${unitLabel.value})`
 })
 
-const canSubmit = computed(() => quantity.value !== null && quantity.value >= 0)
+// Una entrada sin cantidad pero con costo es una correccion de costo: el
+// backend fija el costo del articulo a ese valor, sin mover stock.
+const isCostCorrection = computed(
+  () => type.value === 'entry' && (quantity.value === null || quantity.value === 0) && (unitCost.value ?? 0) > 0,
+)
+
+const canSubmit = computed(() => isCostCorrection.value || (quantity.value !== null && quantity.value >= 0))
 
 async function submit(): Promise<void> {
   formError.value = null
-  if (!canSubmit.value || quantity.value === null) {
+  if (!canSubmit.value) {
     return
   }
 
+  const isCorrection = isCostCorrection.value
   try {
     const movement = await createMutation.mutateAsync({
       type: type.value,
-      quantity: quantity.value,
+      quantity: quantity.value ?? 0,
       unit_cost_cop: type.value === 'entry' ? (unitCost.value ?? undefined) : undefined,
       stock_movement_reason_id: reasonId.value ?? undefined,
       notes: notes.value.trim() || undefined,
     })
     appliedDelta.value += Number(movement.quantity) || 0
-    notify('Movimiento de stock registrado')
+    notify(isCorrection ? 'Costo actualizado' : 'Movimiento de stock registrado')
     quantity.value = null
+    unitCost.value = null
     notes.value = ''
   } catch (error) {
     formError.value = extractErrorMessage(error, 'No pudimos registrar el movimiento.')
@@ -195,6 +203,9 @@ function movementIcon(movementType: StockMovementType): string {
       />
 
       <NxInputNumber v-if="type === 'entry'" v-model="unitCost" label="Costo unitario (opcional)" :min="0" />
+      <p v-if="isCostCorrection" class="-mt-2 text-xs text-slate-500">
+        Sin cantidad, solo se corregirá el costo a este valor; el stock no cambia.
+      </p>
 
       <NxInput v-model="notes" label="Notas (opcional)" />
 
