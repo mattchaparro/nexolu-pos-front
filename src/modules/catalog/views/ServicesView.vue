@@ -5,7 +5,8 @@
 // (catalogKind='services') del legacy - misma tabla Product, listado y
 // formulario (ver ProductFormView.vue) aparte porque los campos relevantes
 // y las acciones (sin ajuste de stock) son distintos a los de Productos.
-import { computed, ref, watch } from 'vue'
+import { servicesPage as page, servicesSearch as search, servicesSearchInput as searchInput } from '../state/catalogListState'
+import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import type { Product } from '@/types/product'
@@ -20,9 +21,6 @@ import { useServices } from '../composables/useProducts'
 
 const router = useRouter()
 
-const searchInput = ref('')
-const search = ref('')
-const page = ref(1)
 let debounce: number | undefined
 
 watch(searchInput, (value) => {

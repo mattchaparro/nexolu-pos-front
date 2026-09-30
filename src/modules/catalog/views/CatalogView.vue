@@ -6,6 +6,18 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
+import {
+  activeArticleTab,
+  ingredientFilter,
+  ingredientPage,
+  ingredientSearch,
+  ingredientSearchInput,
+  productCategoryId,
+  productFilter,
+  productPage,
+  productSearch,
+  productSearchInput,
+} from '../state/catalogListState'
 import GuidedTour from '@/components/GuidedTour.vue'
 import { useBusiness } from '@/composables/useBusiness'
 import { useGuidedTour } from '@/composables/useGuidedTour'
@@ -67,12 +79,8 @@ const ingredientsEnabled = computed(() => business.value?.feature_flags?.ingredi
 const canAdd = computed(() => hasPermission('inventory.add'))
 const canAdjust = computed(() => hasPermission('inventory.adjust'))
 
-const activeArticleTab = ref<'productos' | 'ingredientes'>('productos')
 
 // --- Productos ---
-const productSearchInput = ref('')
-const productSearch = ref('')
-const productPage = ref(1)
 let productDebounce: number | undefined
 
 watch(productSearchInput, (value) => {
@@ -89,8 +97,6 @@ watch(productSearchInput, (value) => {
 // lectura, ver ProductController::summary()) - se agrega aca a pedido
 // explicito, no es un puerto.
 const categoriesQuery = useCategories()
-const productCategoryId = ref<number | null>(null)
-const productFilter = ref<ProductStockFilter | null>(null)
 
 const categoryOptions = computed(() => {
   const all = categoriesQuery.data.value ?? []
@@ -231,9 +237,6 @@ function onProductPage(event: { page: number }): void {
 }
 
 // --- Ingredientes ---
-const ingredientSearchInput = ref('')
-const ingredientSearch = ref('')
-const ingredientPage = ref(1)
 let ingredientDebounce: number | undefined
 
 watch(ingredientSearchInput, (value) => {
@@ -244,7 +247,6 @@ watch(ingredientSearchInput, (value) => {
   }, 300)
 })
 
-const ingredientFilter = ref<IngredientStockFilter | null>(null)
 
 function toggleIngredientFilter(filter: IngredientStockFilter): void {
   ingredientFilter.value = ingredientFilter.value === filter ? null : filter
