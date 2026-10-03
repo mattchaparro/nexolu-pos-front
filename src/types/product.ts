@@ -138,6 +138,8 @@ export interface ProductOptionGroup {
   min_choices: number
   max_choices: number
   options: ProductOption[]
+  // Solo en la biblioteca (GET /product-option-groups): productos que lo usan.
+  products?: { id: number; name: string }[]
 }
 
 export interface Product {

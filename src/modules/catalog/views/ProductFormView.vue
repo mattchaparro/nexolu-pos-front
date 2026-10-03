@@ -40,6 +40,7 @@ import ProductOptionGroupsEditor from '../components/ProductOptionGroupsEditor.v
 import ProductVariantsEditor from '../components/ProductVariantsEditor.vue'
 import { useCategories } from '../composables/useCategories'
 import { useIngredientOptions } from '../composables/useIngredientOptions'
+import { useOptionGroupLibrary } from '../composables/useOptionGroupLibrary'
 import { useProduct } from '../composables/useProduct'
 import { useProductAttributes } from '../composables/useProductAttributes'
 import { useProductMutations } from '../composables/useProductMutations'
@@ -68,6 +69,8 @@ const ingredientOptionsQuery = useIngredientOptions(ingredientsEnabled)
 // leyendo el JSON crudo, la seccion de Variaciones quedaba invisible justo
 // para los negocios que ya existian, que son los que van a activarla.
 const variantsEnabled = computed(() => hasFeature(business.value, 'variants'))
+const productOptionsEnabled = computed(() => hasFeature(business.value, 'product_options'))
+const optionLibraryQuery = useOptionGroupLibrary(productOptionsEnabled)
 // El precio por sede solo tiene sentido sobre un producto que ya existe (su
 // endpoint cuelga del id) y en un negocio con varias sedes.
 const branchPricesEnabled = computed(
@@ -431,7 +434,7 @@ async function submit(): Promise<void> {
     category_id: categoryId.value,
     ...(ingredientsEnabled.value ? { ingredients: ingredients.value } : {}),
     ...(variantsEnabled.value ? { variants: variants.value } : {}),
-    option_groups: isService.value ? [] : optionGroups.value,
+    ...(productOptionsEnabled.value ? { option_groups: isService.value ? [] : optionGroups.value } : {}),
   }
 
   try {
@@ -657,10 +660,12 @@ async function submit(): Promise<void> {
           />
         </div>
 
-        <div v-if="!isService" class="rounded-xl border border-slate-200 bg-white p-4">
+        <div v-if="productOptionsEnabled && !isService" class="rounded-xl border border-slate-200 bg-white p-4">
           <p class="mb-3 text-sm font-semibold text-slate-700">Opciones de elección (opcional)</p>
           <ProductOptionGroupsEditor
             v-model="optionGroups"
+            :library="optionLibraryQuery.data.value ?? []"
+            :current-product-id="productId"
             :ingredients="ingredientOptionsQuery.data.value ?? []"
             :ingredients-enabled="ingredientsEnabled"
           />

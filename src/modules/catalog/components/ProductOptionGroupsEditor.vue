@@ -3,13 +3,17 @@
 // maximo de elecciones, y dentro de cada grupo las opciones con recargo y,
 // opcionalmente, un insumo que descuentan. Los ids se conservan al editar
 // para que el API actualice en sitio en vez de recrear.
-import type { Ingredient, ProductOptionGroupInput } from '@/types/product'
+import { computed } from 'vue'
+
+import type { Ingredient, ProductOptionGroup, ProductOptionGroupInput } from '@/types/product'
 import { NxInput, NxInputNumber, NxSelect } from '@/ui'
 
 const props = defineProps<{
   modelValue: ProductOptionGroupInput[]
   ingredients: Ingredient[]
   ingredientsEnabled: boolean
+  library: ProductOptionGroup[]
+  currentProductId: number | null
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [value: ProductOptionGroupInput[]] }>()
@@ -43,6 +47,62 @@ function setIngredient(option: ProductOptionGroupInput['options'][number], id: n
   option.ingredient_quantity = id === null ? null : (option.ingredient_quantity ?? 1)
 }
 
+function toInput(group: ProductOptionGroup, keepIds: boolean): ProductOptionGroupInput {
+  return {
+    id: keepIds ? group.id : undefined,
+    name: group.name,
+    min_choices: group.min_choices,
+    max_choices: group.max_choices,
+    options: group.options.map((o) => ({
+      id: keepIds ? o.id : undefined,
+      name: o.name,
+      extra_price: Number(o.extra_price),
+      ingredient_id: o.ingredient_id,
+      ingredient_quantity: o.ingredient_quantity,
+      is_active: o.is_active,
+    })),
+  }
+}
+
+// Grupos de la biblioteca que este producto aun no tiene enlazados.
+const linkableGroups = computed(() =>
+  props.library
+    .filter((g) => !props.modelValue.some((m) => m.id === g.id))
+    .map((g) => ({ ...g, label: `${g.name} · usado en ${g.products?.length ?? 0} producto(s)` })),
+)
+
+// Productos (distintos del actual) que tienen grupos, para copiarselos.
+const copySources = computed(() => {
+  const byId = new Map<number, string>()
+  for (const g of props.library) {
+    for (const p of g.products ?? []) {
+      if (p.id !== props.currentProductId) byId.set(p.id, p.name)
+    }
+  }
+  return [...byId].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))
+})
+
+function sharedWith(group: ProductOptionGroupInput): string[] {
+  if (!group.id) return []
+  const entry = props.library.find((g) => g.id === group.id)
+  return (entry?.products ?? []).filter((p) => p.id !== props.currentProductId).map((p) => p.name)
+}
+
+// Enlazar: mismo grupo (mismo id); editarlo cambia todos los productos que lo usan.
+function linkGroup(id: number | null): void {
+  const group = props.library.find((g) => g.id === id)
+  if (group) update([...props.modelValue, toInput(group, true)])
+}
+
+// Copiar: grupos nuevos e independientes, sin ids; editarlos no toca al producto origen.
+function copyFromProduct(productId: number | null): void {
+  if (productId === null) return
+  const copies = props.library
+    .filter((g) => g.products?.some((p) => p.id === productId))
+    .map((g) => toInput(g, false))
+  if (copies.length) update([...props.modelValue, ...copies])
+}
+
 function unitFor(ingredientId: number | null | undefined): string {
   return props.ingredients.find((i) => i.id === ingredientId)?.unit ?? ''
 }
@@ -57,10 +117,13 @@ function unitFor(ingredientId: number | null | undefined): string {
     <div v-for="(group, gi) in modelValue" :key="group.id ?? `new-${gi}`" class="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
       <div class="flex items-center gap-2">
         <NxInput v-model="group.name" label="Nombre del grupo" size="sm" class="min-w-0 flex-1" />
-        <button type="button" class="shrink-0 text-slate-300 hover:text-red-500" title="Quitar grupo" @click="removeGroup(gi)">
+        <button type="button" class="shrink-0 text-slate-300 hover:text-red-500" title="Quitar de este producto" @click="removeGroup(gi)">
           <i class="pi pi-trash" />
         </button>
       </div>
+      <p v-if="sharedWith(group).length" class="rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-700">
+        Compartido con {{ sharedWith(group).join(', ') }}: si lo editas aquí, cambia en todos.
+      </p>
       <div class="flex gap-2">
         <NxInputNumber
           :model-value="group.min_choices"
@@ -131,5 +194,30 @@ function unitFor(ingredientId: number | null | undefined): string {
     <button type="button" class="text-left text-xs font-semibold text-indigo-600 hover:text-indigo-800" @click="addGroup">
       + Agregar grupo de opciones
     </button>
+
+    <div v-if="linkableGroups.length || copySources.length" class="flex flex-col gap-2 border-t border-slate-200 pt-3 sm:flex-row">
+      <NxSelect
+        v-if="linkableGroups.length"
+        :model-value="null"
+        :options="linkableGroups"
+        option-label="label"
+        option-value="id"
+        label="Usar un grupo existente (compartido)"
+        size="sm"
+        class="min-w-0 flex-1"
+        @update:model-value="linkGroup(($event as number | null) ?? null)"
+      />
+      <NxSelect
+        v-if="copySources.length"
+        :model-value="null"
+        :options="copySources"
+        option-label="name"
+        option-value="id"
+        label="Copiar opciones de otro producto"
+        size="sm"
+        class="min-w-0 flex-1"
+        @update:model-value="copyFromProduct(($event as number | null) ?? null)"
+      />
+    </div>
   </div>
 </template>

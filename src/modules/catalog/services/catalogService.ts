@@ -15,6 +15,7 @@ import type {
   ProductAttributePayload,
   ProductCategory,
   ProductCategoryPayload,
+  ProductOptionGroup,
   ProductPayload,
   ProductVariant,
 } from '@/types/product'
@@ -120,6 +121,12 @@ export async function toggleProductVariant(
   const { data } = await httpClient.patch<ProductVariant>(
     `/products/${productId}/variants/${variantId}/toggle`,
   )
+  return data
+}
+
+// Biblioteca de grupos de opciones del negocio (detras de feature:product_options).
+export async function fetchOptionGroupLibrary(): Promise<ProductOptionGroup[]> {
+  const { data } = await httpClient.get<ProductOptionGroup[]>('/product-option-groups')
   return data
 }
 
