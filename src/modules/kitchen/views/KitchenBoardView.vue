@@ -86,10 +86,15 @@ function ticketLabel(ticket: KitchenTicket): string {
           </div>
 
           <ul class="mb-3 flex flex-col gap-1">
-            <li v-for="item in card.items" :key="item.id" class="flex items-center gap-1.5 text-sm text-slate-700">
-              <span class="font-semibold text-slate-500">x{{ item.quantity }}</span>
-              {{ item.name }}
-              <span v-if="item.is_deleted" class="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">Eliminado</span>
+            <li v-for="item in card.items" :key="item.id" class="text-sm text-slate-700">
+              <div class="flex items-center gap-1.5">
+                <span class="font-semibold text-slate-500">x{{ item.quantity }}</span>
+                {{ item.name }}
+                <span v-if="item.is_deleted" class="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">Eliminado</span>
+              </div>
+              <p v-if="item.options.length" class="pl-6 text-xs font-medium text-amber-700">
+                {{ item.options.map((o) => o.name).join(' · ') }}
+              </p>
             </li>
           </ul>
 

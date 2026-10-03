@@ -120,6 +120,26 @@ export interface VariantPhotoTarget {
   label: string
 }
 
+// Opciones de eleccion (salsas, toppings) de un producto - ver
+// ProductOptionGroupResource en el backend. extra_price llega como string
+// (decimal:2), igual que los demas montos.
+export interface ProductOption {
+  id: number
+  name: string
+  extra_price: string
+  ingredient_id: number | null
+  ingredient_quantity: number | null
+  is_active: boolean
+}
+
+export interface ProductOptionGroup {
+  id: number
+  name: string
+  min_choices: number
+  max_choices: number
+  options: ProductOption[]
+}
+
 export interface Product {
   id: number
   business_id: number
@@ -161,6 +181,7 @@ export interface Product {
   // backend) - no hace falta sumarlo a mano en el front.
   variants?: ProductVariant[]
   has_variants?: boolean
+  option_groups?: ProductOptionGroup[]
   // Falso para venta-unica, para productos con receta, y para productos
   // con variantes: en los tres casos el stock no se puede escribir a mano
   // sobre el producto (venta-unica es siempre 1/0, receta se calcula desde
@@ -183,6 +204,23 @@ export interface Ingredient {
   // "Platos que lo usan" (ver IngredientController::index/show) - solo
   // presente cuando el endpoint carga la relacion products.
   products?: { id: number; name: string }[]
+}
+
+export interface ProductOptionInput {
+  id?: number
+  name: string
+  extra_price: number
+  ingredient_id?: number | null
+  ingredient_quantity?: number | null
+  is_active?: boolean
+}
+
+export interface ProductOptionGroupInput {
+  id?: number
+  name: string
+  min_choices: number
+  max_choices: number
+  options: ProductOptionInput[]
 }
 
 export interface ProductRecipeLineInput {
@@ -233,4 +271,5 @@ export interface ProductPayload {
   variants?: ProductVariantInput[]
   category_id: number
   ingredients?: ProductRecipeLineInput[]
+  option_groups?: ProductOptionGroupInput[]
 }

@@ -8,6 +8,7 @@ export interface KitchenTicketItem {
   name: string
   is_deleted: boolean
   quantity: number
+  options: { group: string; name: string }[]
   kitchen_status: KitchenStatus
 }
 

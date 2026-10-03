@@ -12,6 +12,7 @@ import { useSystemAlert } from '@/composables/useSystemAlert'
 import type {
   PendingProductImage,
   Product,
+  ProductOptionGroupInput,
   ProductRecipeLineInput,
   ProductVariantInput,
   VariantPhotoTarget,
@@ -35,6 +36,7 @@ import ProductImagesEditor from '../components/ProductImagesEditor.vue'
 import ProductQuickViewModal from '../components/ProductQuickViewModal.vue'
 import BranchPricesEditor from '../components/BranchPricesEditor.vue'
 import ProductIngredientsEditor from '../components/ProductIngredientsEditor.vue'
+import ProductOptionGroupsEditor from '../components/ProductOptionGroupsEditor.vue'
 import ProductVariantsEditor from '../components/ProductVariantsEditor.vue'
 import { useCategories } from '../composables/useCategories'
 import { useIngredientOptions } from '../composables/useIngredientOptions'
@@ -110,6 +112,7 @@ const isActive = ref(true)
 const categoryId = ref<number | null>(null)
 const ingredients = ref<ProductRecipeLineInput[]>([])
 const variants = ref<ProductVariantInput[]>([])
+const optionGroups = ref<ProductOptionGroupInput[]>([])
 const fieldErrors = ref<Record<string, string>>({})
 const formError = ref<string | null>(null)
 
@@ -257,6 +260,20 @@ watch(
     ingredients.value = (product.ingredients ?? []).map((i) => ({
       ingredient_id: i.id,
       quantity: i.quantity,
+    }))
+    optionGroups.value = (product.option_groups ?? []).map((g) => ({
+      id: g.id,
+      name: g.name,
+      min_choices: g.min_choices,
+      max_choices: g.max_choices,
+      options: g.options.map((o) => ({
+        id: o.id,
+        name: o.name,
+        extra_price: Number(o.extra_price),
+        ingredient_id: o.ingredient_id,
+        ingredient_quantity: o.ingredient_quantity,
+        is_active: o.is_active,
+      })),
     }))
     variants.value = (product.variants ?? []).map((v) => ({
       id: v.id,
@@ -414,6 +431,7 @@ async function submit(): Promise<void> {
     category_id: categoryId.value,
     ...(ingredientsEnabled.value ? { ingredients: ingredients.value } : {}),
     ...(variantsEnabled.value ? { variants: variants.value } : {}),
+    option_groups: isService.value ? [] : optionGroups.value,
   }
 
   try {
@@ -636,6 +654,15 @@ async function submit(): Promise<void> {
           <ProductIngredientsEditor
             v-model="ingredients"
             :ingredients="ingredientOptionsQuery.data.value ?? []"
+          />
+        </div>
+
+        <div v-if="!isService" class="rounded-xl border border-slate-200 bg-white p-4">
+          <p class="mb-3 text-sm font-semibold text-slate-700">Opciones de elección (opcional)</p>
+          <ProductOptionGroupsEditor
+            v-model="optionGroups"
+            :ingredients="ingredientOptionsQuery.data.value ?? []"
+            :ingredients-enabled="ingredientsEnabled"
           />
         </div>
 

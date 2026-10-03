@@ -3,6 +3,8 @@ import { computed, ref } from 'vue'
 import type { Product, ProductVariant } from '@/types/product'
 import type { SaleItemInput } from '@/types/sale'
 
+import { optionsExtraTotal, optionsKey, type ChosenOption } from '../../sales/support/productOptions'
+
 // Carrito para los items NUEVOS que se van a abrir/agregar a una cuenta.
 //
 // Los descuentos por linea se quedaron fuera del primer corte, y eso dejo un
@@ -15,6 +17,8 @@ export interface NewCartLine {
   product: Product
   /** Presente cuando product.has_variants - la variante concreta elegida. */
   variant?: ProductVariant | null
+  /** Salsas/toppings elegidos; su recargo ya va sumado en unitPrice. */
+  options?: ChosenOption[]
   quantity: number
   unitPrice: number
   /** Descuento de linea elegido por el cajero (scope 'item'), o null. */
@@ -31,13 +35,18 @@ export function useNewItemsCart() {
     return product.track_stock ? product.stock : Number.MAX_SAFE_INTEGER
   }
 
-  function findLine(productId: number, variantId?: number | null): NewCartLine | undefined {
-    return lines.value.find((l) => l.product.id === productId && (l.variant?.id ?? null) === (variantId ?? null))
+  // La clave de opciones distingue dos platos iguales con salsas distintas:
+  // son lineas aparte (cada una sale asi en la comanda).
+  function findLine(productId: number, variantId?: number | null, key = ''): NewCartLine | undefined {
+    return lines.value.find(
+      (l) =>
+        l.product.id === productId && (l.variant?.id ?? null) === (variantId ?? null) && optionsKey(l.options) === key,
+    )
   }
 
-  function addProduct(product: Product, unitPrice?: number): void {
+  function addProduct(product: Product, unitPrice?: number, options: ChosenOption[] = []): void {
     const maxStock = maxStockFor(product)
-    const existing = findLine(product.id, null)
+    const existing = findLine(product.id, null, optionsKey(options))
     if (existing) {
       if (existing.quantity < maxStock) {
         existing.quantity += 1
@@ -47,7 +56,13 @@ export function useNewItemsCart() {
     if (maxStock <= 0) {
       return
     }
-    lines.value.push({ product, quantity: 1, unitPrice: unitPrice ?? Number(product.price), discountId: null })
+    lines.value.push({
+      product,
+      options,
+      quantity: 1,
+      unitPrice: (unitPrice ?? Number(product.price)) + optionsExtraTotal(options),
+      discountId: null,
+    })
   }
 
   /**
@@ -70,29 +85,30 @@ export function useNewItemsCart() {
     lines.value.push({ product, variant, quantity: 1, unitPrice: Number(variant.price), discountId: null })
   }
 
-  function setQuantity(productId: number, quantity: number, variantId: number | null = null): void {
-    const line = findLine(productId, variantId)
+  function setQuantity(productId: number, quantity: number, variantId: number | null = null, key = ''): void {
+    const line = findLine(productId, variantId, key)
     if (!line) {
       return
     }
     if (quantity <= 0) {
-      removeLine(productId, variantId)
+      removeLine(productId, variantId, key)
       return
     }
     line.quantity = Math.min(quantity, maxStockFor(line.product, line.variant))
   }
 
-  function setDiscount(productId: number, discountId: number | null, variantId: number | null = null): void {
-    const line = findLine(productId, variantId)
+  function setDiscount(productId: number, discountId: number | null, variantId: number | null = null, key = ''): void {
+    const line = findLine(productId, variantId, key)
     if (!line) {
       return
     }
     line.discountId = discountId
   }
 
-  function removeLine(productId: number, variantId: number | null = null): void {
+  function removeLine(productId: number, variantId: number | null = null, key = ''): void {
     lines.value = lines.value.filter(
-      (l) => !(l.product.id === productId && (l.variant?.id ?? null) === (variantId ?? null)),
+      (l) =>
+        !(l.product.id === productId && (l.variant?.id ?? null) === (variantId ?? null) && optionsKey(l.options) === key),
     )
   }
 
@@ -108,8 +124,9 @@ export function useNewItemsCart() {
       product_id: l.product.id,
       product_variant_id: l.variant?.id ?? null,
       quantity: l.quantity,
-      ...(!l.variant && l.product.price_varies_at_sale ? { unit_price: l.unitPrice } : {}),
+      ...(!l.variant && l.product.price_varies_at_sale ? { unit_price: l.unitPrice - optionsExtraTotal(l.options) } : {}),
       discount_id: l.discountId,
+      ...(l.options?.length ? { options: l.options.map((o) => o.id) } : {}),
     }))
   }
 

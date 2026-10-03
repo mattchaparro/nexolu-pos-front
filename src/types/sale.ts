@@ -13,6 +13,8 @@ export interface SaleItemInput {
   /** Solo obligatorio si el producto es price_varies_at_sale. */
   unit_price?: number
   discount_id?: number | null
+  /** IDs de las opciones elegidas (product_options.id): salsas, toppings. */
+  options?: number[]
 }
 
 export interface PaymentSplitInput {
@@ -46,6 +48,16 @@ export interface SaleItem {
   subtotal: number
   discount_id: number | null
   discount_amount: number
+  /** Foto de las opciones elegidas al vender; el recargo ya va dentro de unit_price. */
+  options?: SaleItemOption[]
+}
+
+export interface SaleItemOption {
+  id: number
+  product_option_id: number | null
+  group: string
+  name: string
+  extra_price: string
 }
 
 export interface SalePaymentSplit {

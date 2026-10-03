@@ -25,6 +25,8 @@ export interface SaleDraftLine {
   quantity: number
   unitPrice: number
   discountId: number | null
+  /** IDs de las opciones elegidas (salsas, toppings). */
+  optionIds?: number[]
 }
 
 export interface SaleDraft {

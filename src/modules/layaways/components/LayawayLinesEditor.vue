@@ -25,6 +25,12 @@ const rows = computed({
   set: (value) => emit('update:modelValue', value),
 })
 
+// La categoria va en la etiqueta para distinguir productos de nombre parecido
+// y para poder buscar tambien por categoria en el filtro del selector.
+const productOptions = computed(() =>
+  props.products.map((p) => ({ id: p.id, label: p.category ? `${p.name} · ${p.category.name}` : p.name })),
+)
+
 function productFor(row: LayawayLineRow): Product | undefined {
   return props.products.find((p) => p.id === row.product_id)
 }
@@ -84,8 +90,8 @@ function errorFor(index: number, field: string): string | undefined {
         <div class="flex min-w-0 flex-1 flex-col gap-2">
           <NxSelect
             :model-value="row.product_id"
-            :options="products"
-            option-label="name"
+            :options="productOptions"
+            option-label="label"
             option-value="id"
             label="Producto"
             size="sm"

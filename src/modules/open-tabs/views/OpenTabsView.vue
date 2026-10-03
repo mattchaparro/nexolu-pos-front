@@ -16,6 +16,8 @@ import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { hasFeature } from '@/utils/hasFeature'
 
 import PriceVariesModal from '../../sales/components/PriceVariesModal.vue'
+import ProductOptionsModal from '../../sales/components/ProductOptionsModal.vue'
+import { hasOptionGroups, type ChosenOption } from '../../sales/support/productOptions'
 import ProductGrid from '../../sales/components/ProductGrid.vue'
 import { useProductCatalog } from '../../sales/composables/useProductCatalog'
 import PaymentModal from '../../sales/components/PaymentModal.vue'
@@ -53,6 +55,8 @@ const closeModalOpen = ref(false)
 const tabClosedOpen = ref(false)
 const lastClosedSale = ref<Sale | null>(null)
 const priceVariesProduct = ref<Product | null>(null)
+const optionsProduct = ref<Product | null>(null)
+const chosenOptions = ref<ChosenOption[]>([])
 const submitError = ref<string | null>(null)
 
 /**
@@ -173,18 +177,38 @@ function goBack(): void {
 }
 
 function handleSelectProduct(product: Product): void {
+  chosenOptions.value = []
+  if (hasOptionGroups(product)) {
+    optionsProduct.value = product
+    return
+  }
+  continueAdding(product)
+}
+
+function continueAdding(product: Product, options: ChosenOption[] = []): void {
   if (product.price_varies_at_sale) {
     priceVariesProduct.value = product
     return
   }
-  cart.addProduct(product)
+  cart.addProduct(product, undefined, options)
+}
+
+function handleOptionsConfirmed(options: ChosenOption[]): void {
+  const product = optionsProduct.value
+  optionsProduct.value = null
+  if (!product) {
+    return
+  }
+  chosenOptions.value = options
+  continueAdding(product, options)
 }
 
 function handlePriceConfirmed(price: number): void {
   if (priceVariesProduct.value) {
-    cart.addProduct(priceVariesProduct.value, price)
+    cart.addProduct(priceVariesProduct.value, price, chosenOptions.value)
   }
   priceVariesProduct.value = null
+  chosenOptions.value = []
 }
 
 async function submitCart(): Promise<void> {
@@ -397,6 +421,13 @@ async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Prom
         </NxButton>
       </div>
     </div>
+
+    <ProductOptionsModal
+      :model-value="optionsProduct !== null"
+      :product="optionsProduct"
+      @update:model-value="optionsProduct = null"
+      @confirm="handleOptionsConfirmed"
+    />
 
     <PriceVariesModal
       :model-value="priceVariesProduct !== null"

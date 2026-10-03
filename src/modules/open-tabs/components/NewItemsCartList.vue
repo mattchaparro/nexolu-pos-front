@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Discount } from '@/types/discount'
 
+import { optionsKey } from '../../sales/support/productOptions'
 import type { useNewItemsCart } from '../composables/useNewItemsCart'
 import NewItemsCartLineRow from './NewItemsCartLineRow.vue'
 
@@ -19,12 +20,12 @@ defineProps<{
   <div v-else class="divide-y divide-slate-100">
     <NewItemsCartLineRow
       v-for="line in cart.lines.value"
-      :key="`${line.product.id}-${line.variant?.id ?? 0}`"
+      :key="`${line.product.id}-${line.variant?.id ?? 0}-${optionsKey(line.options)}`"
       :line="line"
       :item-discounts="itemDiscounts"
-      @update:quantity="cart.setQuantity(line.product.id, $event, line.variant?.id ?? null)"
-      @update:discount-id="cart.setDiscount(line.product.id, $event, line.variant?.id ?? null)"
-      @remove="cart.removeLine(line.product.id, line.variant?.id ?? null)"
+      @update:quantity="cart.setQuantity(line.product.id, $event, line.variant?.id ?? null, optionsKey(line.options))"
+      @update:discount-id="cart.setDiscount(line.product.id, $event, line.variant?.id ?? null, optionsKey(line.options))"
+      @remove="cart.removeLine(line.product.id, line.variant?.id ?? null, optionsKey(line.options))"
     />
   </div>
 </template>

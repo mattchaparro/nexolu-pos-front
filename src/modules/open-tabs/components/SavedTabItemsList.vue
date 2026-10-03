@@ -89,7 +89,12 @@ const visibleItems = computed<SaleItem[]>(() => {
     <div class="divide-y divide-slate-100">
       <div v-for="item in visibleItems" :key="item.id" class="flex flex-col gap-1.5 py-2 text-sm">
       <div class="flex items-center gap-2">
-      <span class="min-w-0 flex-1 truncate text-slate-700">{{ item.product.name }}</span>
+      <div class="min-w-0 flex-1">
+        <p class="truncate text-slate-700">{{ item.product.name }}</p>
+        <p v-if="item.options?.length" class="truncate text-xs text-slate-500">
+          {{ item.options.map((o) => o.name).join(', ') }}
+        </p>
+      </div>
       <!-- Los +/- editan un BORRADOR local (instantaneo, sin red - ver
            useActiveTabItemActions); `syncing` solo es verdadero durante el
            breve "Confirmar cambios", donde si conviene congelar la edicion

@@ -8,13 +8,17 @@ import type { Business } from '@/types/business'
 import type { Discount } from '@/types/discount'
 import type { Product, ProductVariant } from '@/types/product'
 
+import type { ChosenOption } from './productOptions'
+
 export interface CartLine {
   cartKey: string
   product: Product
   /** Presente cuando product.has_variants - la variante concreta elegida. */
   variant?: ProductVariant | null
   quantity: number
-  /** Precio unitario efectivo: fijo = product.price, variable = editable, variante = variant.price. */
+  /** Salsas/toppings elegidos; su recargo ya va sumado en unitPrice. */
+  options?: ChosenOption[]
+  /** Precio unitario efectivo (incluye el recargo de las opciones): fijo = product.price, variable = editable, variante = variant.price. */
   unitPrice: number
   discountId: number | null
 }

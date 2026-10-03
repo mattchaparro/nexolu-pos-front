@@ -39,6 +39,8 @@ import MobileCartSheet from '../components/MobileCartSheet.vue'
 import MobileTabSheet from '../components/MobileTabSheet.vue'
 import PaymentModal from '../components/PaymentModal.vue'
 import PriceVariesModal from '../components/PriceVariesModal.vue'
+import ProductOptionsModal from '../components/ProductOptionsModal.vue'
+import { hasOptionGroups, type ChosenOption } from '../support/productOptions'
 import ProductGrid from '../components/ProductGrid.vue'
 import SaleSuccessDialog from '../components/SaleSuccessDialog.vue'
 import TabInProgressPanel from '../components/TabInProgressPanel.vue'
@@ -380,6 +382,8 @@ function mobileTabLabel(): string {
 
 // --- Venta directa ---
 const priceVariesProduct = ref<Product | null>(null)
+const optionsProduct = ref<Product | null>(null)
+const chosenOptions = ref<ChosenOption[]>([])
 const variantSelectProduct = ref<Product | null>(null)
 const successOpen = ref(false)
 const submitError = ref<string | null>(null)
@@ -401,28 +405,47 @@ function handleSelectProduct(product: Product): void {
     variantSelectProduct.value = product
     return
   }
+  chosenOptions.value = []
+  if (hasOptionGroups(product)) {
+    optionsProduct.value = product
+    return
+  }
+  continueAdding(product)
+}
+
+function continueAdding(product: Product, options: ChosenOption[] = []): void {
   if (product.price_varies_at_sale) {
     priceVariesProduct.value = product
     return
   }
+  addToCart(product, undefined, options)
+}
+
+function addToCart(product: Product, price: number | undefined, options: ChosenOption[]): void {
   if (mode.value === 'quick') {
-    checkout.addProduct(product)
+    checkout.addProduct(product, price, options)
   } else {
-    tabCart.addProduct(product)
+    tabCart.addProduct(product, price, options)
   }
   notify(`Producto agregado a ${cartDestinationLabel()}`)
 }
 
+function handleOptionsConfirmed(options: ChosenOption[]): void {
+  const product = optionsProduct.value
+  optionsProduct.value = null
+  if (!product) {
+    return
+  }
+  chosenOptions.value = options
+  continueAdding(product, options)
+}
+
 function handlePriceConfirmed(price: number): void {
   if (priceVariesProduct.value) {
-    if (mode.value === 'quick') {
-      checkout.addProduct(priceVariesProduct.value, price)
-    } else {
-      tabCart.addProduct(priceVariesProduct.value, price)
-    }
-    notify(`Producto agregado a ${cartDestinationLabel()}`)
+    addToCart(priceVariesProduct.value, price, chosenOptions.value)
   }
   priceVariesProduct.value = null
+  chosenOptions.value = []
 }
 
 function handleVariantSelected(variant: ProductVariant): void {
@@ -638,6 +661,13 @@ function handleNewSale(): void {
         @discard-draft="discardDraftChanges"
       />
     </Teleport>
+
+    <ProductOptionsModal
+      :model-value="optionsProduct !== null"
+      :product="optionsProduct"
+      @update:model-value="optionsProduct = null"
+      @confirm="handleOptionsConfirmed"
+    />
 
     <PriceVariesModal
       :model-value="priceVariesProduct !== null"

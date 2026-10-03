@@ -32,6 +32,9 @@ function applicableDiscounts(): Discount[] {
     <div class="flex items-center gap-2">
     <div class="min-w-0 flex-1">
       <p class="truncate text-sm font-medium leading-snug text-slate-900">{{ line.product.name }}</p>
+      <p v-if="line.options?.length" class="mt-0.5 truncate text-xs text-slate-500">
+        {{ line.options.map((o) => o.name).join(', ') }}
+      </p>
       <span
         v-if="line.variant"
         class="mt-0.5 inline-block rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600"

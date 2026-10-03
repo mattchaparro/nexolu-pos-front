@@ -15,6 +15,12 @@ import type { CreateSalePayload } from '@/types/sale'
 import { hasFeature } from '@/utils/hasFeature'
 
 import { clearSaleDraft, isDraftEmpty, loadSaleDraft, saveSaleDraft } from '../support/saleDraftStorage'
+import {
+  optionsExtraTotal,
+  optionsKey,
+  resolveChosenOptions,
+  type ChosenOption,
+} from '../support/productOptions'
 import { computeSaleTotals, type CartLine } from '../support/saleMath'
 
 // Cortesia/cargos (servicio/ipoconsumo)/metodo de pago (unico o dividido)
@@ -107,13 +113,17 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
   }
 
   /** Para productos de precio fijo: si ya esta en el carrito, suma cantidad. */
-  function addProduct(product: Product, unitPrice?: number): void {
+  function addProduct(product: Product, unitPrice?: number, options: ChosenOption[] = []): void {
     if (product.track_stock && availableStock(product) <= 0) {
       return
     }
 
+    const extra = optionsExtraTotal(options)
+
     if (!product.price_varies_at_sale) {
-      const existing = lines.value.find((l) => l.product.id === product.id && !l.variant)
+      const existing = lines.value.find(
+        (l) => l.product.id === product.id && !l.variant && optionsKey(l.options) === optionsKey(options),
+      )
       if (existing) {
         existing.quantity += 1
         return
@@ -123,11 +133,13 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     lines.value.push({
       cartKey: crypto.randomUUID(),
       product,
+      options,
       quantity: 1,
       // Number() explicito: product.price llega como string (ver el tipo).
       // Funcionaba por accidente porque la primera operacion del carrito es
       // una multiplicacion, que coacciona; una suma habria concatenado.
-      unitPrice: product.price_varies_at_sale ? (unitPrice ?? Number(product.price)) : Number(product.price),
+      unitPrice:
+        (product.price_varies_at_sale ? (unitPrice ?? Number(product.price)) : Number(product.price)) + extra,
       discountId: null,
     })
   }
@@ -206,8 +218,10 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
         product_id: l.product.id,
         product_variant_id: l.variant?.id ?? null,
         quantity: l.quantity,
-        unit_price: l.product.price_varies_at_sale ? l.unitPrice : undefined,
+        // El API suma el recargo de las opciones por su cuenta: aca va solo el precio base.
+        unit_price: l.product.price_varies_at_sale ? l.unitPrice - optionsExtraTotal(l.options) : undefined,
         discount_id: l.discountId,
+        options: l.options?.length ? l.options.map((o) => o.id) : undefined,
       })),
       customer_name: customerName.value || undefined,
       customer_phone: customerPhone.value || undefined,
@@ -251,6 +265,7 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
           quantity: l.quantity,
           unitPrice: l.unitPrice,
           discountId: l.discountId,
+          optionIds: l.options?.map((o) => o.id) ?? [],
         })),
         customerName: customerName.value,
         customerPhone: customerPhone.value,
@@ -307,10 +322,17 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
             }
             variant = found
           }
+          // Mismo criterio que la variante: si una opcion ya no existe o se
+          // desactivo, la linea se descarta en vez de restaurarse mal cobrada.
+          const options = resolveChosenOptions(product, l.optionIds ?? [])
+          if (!options) {
+            return null
+          }
           return {
             cartKey: crypto.randomUUID(),
             product,
             variant,
+            options,
             quantity: l.quantity,
             unitPrice: l.unitPrice,
             discountId: l.discountId,

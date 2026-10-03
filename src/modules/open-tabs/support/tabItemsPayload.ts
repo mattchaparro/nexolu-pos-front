@@ -1,5 +1,7 @@
 import type { SaleItem, SaleItemInput } from '@/types/sale'
 
+import { savedItemExtra } from '../../sales/support/productOptions'
+
 /**
  * Los items YA guardados de una cuenta, en el formato que espera
  * `PUT /open-tabs/{id}/items` (OpenTabItemsRequest).
@@ -16,7 +18,11 @@ export function toSyncItemsPayload(items: SaleItem[]): SaleItemInput[] {
     product_id: item.product.id,
     product_variant_id: item.product_variant?.id ?? null,
     quantity: item.quantity,
-    unit_price: item.unit_price,
+    // unit_price guardado incluye el recargo de las opciones; el API lo vuelve a sumar.
+    unit_price: Number(item.unit_price) - savedItemExtra(item),
     discount_id: item.discount_id,
+    ...(item.options?.length
+      ? { options: item.options.map((o) => o.product_option_id).filter((id): id is number => id !== null) }
+      : {}),
   }))
 }
