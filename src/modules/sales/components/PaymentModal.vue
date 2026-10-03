@@ -18,10 +18,9 @@
 // personas, ver la nota en submitConfirm). "Abonar" (abono parcial) es una
 // cuarta tab, al final, solo para cuentas abiertas (sale != null) - se usa
 // poco comparado con las otras tres, por eso no vive suelta arriba de los
-// tabs como antes. El domicilio NO vive aca a proposito: se decide al
-// crear la venta/cuenta (carrito o alta de cuenta), nunca al cerrarla -
-// moverlo aca solo para venta directa rompería esa simetría entre los dos
-// flujos.
+// tabs como antes. El domicilio SI se decide aca (casilla arriba): parte
+// del valor que traia la venta/cuenta y el cajero lo ajusta al cobrar;
+// el API recalcula tarifa y total, nunca el cliente.
 //
 // receivableMode=true: tambien lo reusa el cobro de Fiados (antes tenia su
 // propio CollectReceivableModal aparte) - misma experiencia de cobro que
@@ -60,7 +59,9 @@ const props = withDefaults(
     submitting: boolean
     sale: Sale | null
     fallbackChargeBase?: number
-    fallbackDeliveryFee?: number
+    // Valor inicial de la casilla de domicilio en venta directa (la cuenta
+    // abierta usa el suyo, sale.is_delivery).
+    initialDelivery?: boolean
     existingCustomerName?: string | null
     existingCustomerPhone?: string | null
     existingCustomerIdentification?: string | null
@@ -85,7 +86,7 @@ const props = withDefaults(
   }>(),
   {
     fallbackChargeBase: 0,
-    fallbackDeliveryFee: 0,
+    initialDelivery: false,
     existingCustomerName: null,
     existingCustomerPhone: null,
     existingCustomerIdentification: null,
@@ -138,8 +139,10 @@ const partialAmount = ref<number | null>(null)
 const partialMethod = ref<string | null>(null)
 const partialLabel = ref('')
 const receivedInput = ref<number | null>(null)
+const isDelivery = ref(false)
 
 function resetForm(): void {
+  isDelivery.value = props.sale ? Boolean(props.sale.is_delivery) : props.initialDelivery
   isCourtesy.value = false
   courtesyReason.value = ''
   applyServiceCharge.value = true
@@ -183,11 +186,26 @@ const chargeBase = computed(() =>
     ? Math.max(0, Number(props.sale.total) - Number(props.sale.delivery_fee))
     : props.fallbackChargeBase,
 )
-const grandBase = computed(() => (props.sale ? Number(props.sale.total) : props.fallbackChargeBase + props.fallbackDeliveryFee))
+
+// Domicilio: se decide aqui al cobrar. En fiados no aplica (la venta ya
+// existe y su domicilio no se toca).
+const showDelivery = computed(() => props.business.delivery_enabled && !props.receivableMode)
+const savedDeliveryFee = computed(() => (props.sale ? Number(props.sale.delivery_fee) : 0))
+const deliveryFee = computed(() => {
+  if (!showDelivery.value) {
+    return savedDeliveryFee.value
+  }
+  return isDelivery.value ? Number(props.business.delivery_fee) : 0
+})
+const grandBase = computed(() =>
+  props.sale
+    ? Number(props.sale.total) - savedDeliveryFee.value + deliveryFee.value
+    : props.fallbackChargeBase + deliveryFee.value,
+)
 
 const balanceBeforeCharges = computed(() => {
   if (props.sale?.balance_due !== null && props.sale?.balance_due !== undefined) {
-    return round2(Number(props.sale.balance_due))
+    return round2(Number(props.sale.balance_due) - savedDeliveryFee.value + deliveryFee.value)
   }
   return round2(grandBase.value - amountPaid.value)
 })
@@ -320,6 +338,9 @@ function submitConfirm(): void {
     apply_service_charge: !isCourtesy.value && applyServiceCharge.value,
     apply_ipoconsumo: !isCourtesy.value && applyIpoconsumo.value,
   }
+  if (showDelivery.value) {
+    payload.is_delivery = isDelivery.value
+  }
 
   if (!isCourtesy.value && isSplitTab.value) {
     payload.payment_splits = splitRows.value
@@ -404,6 +425,17 @@ function applyClient(client: { id: number; name: string; phone: string | null })
         <p class="text-2xl font-bold text-indigo-700">{{ formatCop(amountDue) }}</p>
         <p class="text-xs text-slate-400">{{ amountPaid > 0 ? 'Saldo a cobrar ahora' : 'Total a cobrar' }}</p>
       </div>
+
+      <label
+        v-if="showDelivery"
+        class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+      >
+        <span class="flex items-center gap-2 font-medium">
+          <input v-model="isDelivery" type="checkbox" class="h-4 w-4 rounded accent-indigo-600" />
+          Domicilio
+        </span>
+        <span class="font-semibold">+{{ formatCop(business.delivery_fee) }}</span>
+      </label>
 
       <div v-if="!receivableMode">
         <NxToggleButton

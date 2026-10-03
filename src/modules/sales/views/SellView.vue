@@ -697,7 +697,7 @@ function handleNewSale(): void {
       :business="business"
       :submitting="mode === 'quick' ? createSaleMutation.isPending.value : tabMutations.closeMutation.isPending.value"
       :fallback-charge-base="checkout.totals.value?.subtotalAfterCartDiscount ?? 0"
-      :fallback-delivery-fee="checkout.totals.value?.deliveryFee ?? 0"
+      :initial-delivery="checkout.isDelivery.value"
       :existing-customer-name="mode === 'quick' ? checkout.customerName.value : activeSale?.customer_name"
       :existing-customer-phone="mode === 'quick' ? checkout.customerPhone.value : activeSale?.customer_phone"
       @confirm="handlePaymentConfirm"
