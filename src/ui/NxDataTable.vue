@@ -6,7 +6,7 @@
 // que ya maneja TanStack Query en el composable de la lista).
 import PrimeDataTable, { type DataTablePageEvent, type DataTableSortEvent } from 'primevue/datatable'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     value: T[]
     loading?: boolean
@@ -49,6 +49,26 @@ const emit = defineEmits<{
   sort: [event: DataTableSortEvent]
   'update:expandedRows': [rows: Record<string, boolean>]
 }>()
+
+// Con filas desplegables, tocar cualquier parte de la fila la abre/cierra
+// (salvo botones, links y campos: esos hacen lo suyo).
+function onRowClick(event: { originalEvent: Event; data: T }): void {
+  if (!props.dataKey || !props.expandedRows || !props.dataKey.length) {
+    return
+  }
+  const target = event.originalEvent.target as HTMLElement | null
+  if (target?.closest('button, a, input, select, textarea')) {
+    return
+  }
+  const key = String((event.data as Record<string, unknown>)[props.dataKey])
+  const next = { ...props.expandedRows }
+  if (next[key]) {
+    delete next[key]
+  } else {
+    next[key] = true
+  }
+  emit('update:expandedRows', next)
+}
 </script>
 
 <template>
@@ -68,6 +88,8 @@ const emit = defineEmits<{
     striped-rows
     responsive-layout="scroll"
     class="text-sm"
+    :row-class="() => (expandedRows ? 'cursor-pointer' : '')"
+    @row-click="onRowClick"
     @page="emit('page', $event)"
     @sort="emit('sort', $event)"
     @update:expanded-rows="emit('update:expandedRows', $event as Record<string, boolean>)"

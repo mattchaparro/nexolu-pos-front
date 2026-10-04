@@ -304,6 +304,10 @@ async function submit(): Promise<void> {
       </div>
     </template>
 
-    <DailySummaryDetailModal v-model="detailModalOpen" :date="selectedDate" />
+    <DailySummaryDetailModal
+      v-model="detailModalOpen"
+      :date="selectedDate"
+      :cash="existingClosing ?? previewQuery.data.value?.totals ?? null"
+    />
   </div>
 </template>

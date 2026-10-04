@@ -8,14 +8,20 @@
 import { computed, toRef } from 'vue'
 
 import { useDailySummary } from '@/modules/daily-summary/composables/useDailySummary'
+import type { CashTotals } from '@/types/cashShift'
 import type { IncomeChannel } from '@/types/dailySummary'
 import { NxModal } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
-const props = defineProps<{
-  modelValue: boolean
-  date: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: boolean
+    date: string
+    /** Efectivo del arqueo: base + cobrado en efectivo - gastos. */
+    cash?: Pick<CashTotals, 'opening_cash' | 'total_cash' | 'total_expenses' | 'expected_cash'> | null
+  }>(),
+  { cash: null },
+)
 
 defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
@@ -90,6 +96,25 @@ const grandTotal = computed(() => visibleChannels.value.reduce((sum, channel) =>
             </tr>
           </tfoot>
         </table>
+      </div>
+
+      <div v-if="cash" class="flex flex-col gap-1 rounded-xl bg-indigo-50 p-4 text-sm">
+        <div class="flex justify-between text-slate-600">
+          <span>Base inicial (lo que dejaron para este día)</span>
+          <span>{{ formatCop(cash.opening_cash) }}</span>
+        </div>
+        <div class="flex justify-between text-slate-600">
+          <span>+ Cobrado en efectivo</span>
+          <span>{{ formatCop(cash.total_cash) }}</span>
+        </div>
+        <div class="flex justify-between text-slate-600">
+          <span>− Gastos</span>
+          <span>{{ formatCop(cash.total_expenses) }}</span>
+        </div>
+        <div class="mt-1 flex justify-between border-t border-indigo-200 pt-2 font-semibold text-indigo-900">
+          <span>Efectivo que debería haber en caja</span>
+          <span>{{ formatCop(cash.expected_cash) }}</span>
+        </div>
       </div>
     </div>
   </NxModal>

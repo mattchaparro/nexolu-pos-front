@@ -1,11 +1,13 @@
 <script setup lang="ts">
-// Filas del apartado (producto + cantidad + precio) - mismo patron de filas
-// repetibles que PurchaseLinesEditor, pero mas simple: sin selector
-// producto/insumo (un apartado siempre reserva stock de productos, igual
-// que un item de venta - ver ValidatesSaleItems en el backend) y el precio
-// se autocompleta con el del producto pero queda editable.
+// Productos del apartado: mini version del display de Vender (buscador,
+// categorias y cajitas) arriba, y debajo las lineas elegidas. El precio sale
+// del catalogo y no se edita (el backend tambien lo ignora), salvo en los
+// productos de precio variable.
+import { useQuery } from '@tanstack/vue-query'
 import { computed } from 'vue'
 
+import { fetchProductCategories } from '@/modules/sales/services/salesService'
+import ProductGrid from '@/modules/sales/components/ProductGrid.vue'
 import type { Product } from '@/types/product'
 import { NxInputNumber, NxSelect } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
@@ -20,16 +22,15 @@ const props = defineProps<{
 
 const emit = defineEmits<{ 'update:modelValue': [value: LayawayLineRow[]] }>()
 
+const categoriesQuery = useQuery({
+  queryKey: ['product-categories'],
+  queryFn: fetchProductCategories,
+})
+
 const rows = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value),
 })
-
-// La categoria va en la etiqueta para distinguir productos de nombre parecido
-// y para poder buscar tambien por categoria en el filtro del selector.
-const productOptions = computed(() =>
-  props.products.map((p) => ({ id: p.id, label: p.category ? `${p.name} · ${p.category.name}` : p.name })),
-)
 
 function productFor(row: LayawayLineRow): Product | undefined {
   return props.products.find((p) => p.id === row.product_id)
@@ -40,15 +41,7 @@ function priceVaries(row: LayawayLineRow): boolean {
 }
 
 function subtotalLabel(row: LayawayLineRow): string {
-  const price = Number(row.unit_price) || 0
-  return formatCop(price * row.quantity)
-}
-
-function onProductChange(row: LayawayLineRow, productId: number | null): void {
-  row.product_id = productId
-  row.product_variant_id = null
-  const product = props.products.find((p) => p.id === productId)
-  row.unit_price = product && !product.has_variants && !product.price_varies_at_sale ? Number(product.price) : null
+  return formatCop((Number(row.unit_price) || 0) * row.quantity)
 }
 
 function hasVariants(row: LayawayLineRow): boolean {
@@ -66,14 +59,19 @@ function onVariantChange(row: LayawayLineRow, variantId: number | null): void {
   row.unit_price = variant ? Number(variant.price) : null
 }
 
-function addRow(): void {
-  rows.value = [...rows.value, newLayawayLineRow()]
+function addProduct(product: Product): void {
+  const existing = rows.value.find((r) => r.product_id === product.id && !product.has_variants)
+  if (existing) {
+    existing.quantity += 1
+    return
+  }
+  const row = newLayawayLineRow()
+  row.product_id = product.id
+  row.unit_price = !product.has_variants && !product.price_varies_at_sale ? Number(product.price) : null
+  rows.value = [...rows.value, row]
 }
 
 function removeRow(index: number): void {
-  if (rows.value.length === 1) {
-    return
-  }
   rows.value = rows.value.filter((_, i) => i !== index)
 }
 
@@ -83,22 +81,20 @@ function errorFor(index: number, field: string): string | undefined {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3">
+  <div class="flex flex-col gap-4">
+    <div class="h-[22rem] rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+      <ProductGrid :products="products" :categories="categoriesQuery.data.value ?? []" @select="addProduct" />
+    </div>
+
+    <p v-if="rows.length === 0" class="rounded-lg border border-dashed border-slate-300 p-4 text-center text-sm text-slate-400">
+      Toca un producto para añadirlo al apartado.
+    </p>
+
     <div v-for="(row, index) in rows" :key="row.uid" class="rounded-xl border border-slate-200 p-3">
       <div class="flex items-start gap-2">
-        <span class="mt-3 shrink-0 text-xs font-bold text-slate-400">#{{ index + 1 }}</span>
         <div class="flex min-w-0 flex-1 flex-col gap-2">
-          <NxSelect
-            :model-value="row.product_id"
-            :options="productOptions"
-            option-label="label"
-            option-value="id"
-            label="Producto"
-            size="sm"
-            filter
-            :error="errorFor(index, 'product_id')"
-            @update:model-value="onProductChange(row, $event as number | null)"
-          />
+          <p class="truncate text-sm font-semibold text-slate-800">{{ productFor(row)?.name ?? 'Producto' }}</p>
+          <p v-if="errorFor(index, 'product_id')" class="text-xs text-red-600">{{ errorFor(index, 'product_id') }}</p>
 
           <NxSelect
             v-if="hasVariants(row)"
@@ -123,14 +119,21 @@ function errorFor(index: number, field: string): string | undefined {
               @update:model-value="row.quantity = $event ?? 1"
             />
             <NxInputNumber
+              v-if="priceVaries(row)"
               :model-value="row.unit_price"
-              :label="priceVaries(row) ? 'Precio (requerido)' : 'Precio unitario'"
+              label="Precio (requerido)"
               size="sm"
               :min="0"
               :error="errorFor(index, 'unit_price')"
               @update:model-value="row.unit_price = $event"
             />
-            <div class="col-span-2 flex flex-col gap-1">
+            <div v-else class="flex flex-col gap-1">
+              <p class="text-xs font-medium text-slate-500">Precio unitario</p>
+              <p class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-right text-sm tabular-nums text-slate-600">
+                {{ formatCop(Number(row.unit_price) || 0) }}
+              </p>
+            </div>
+            <div class="col-span-2 flex flex-col gap-1 sm:col-span-2">
               <p class="text-xs font-medium text-slate-500">Subtotal</p>
               <p class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-right text-sm tabular-nums text-slate-600">
                 {{ subtotalLabel(row) }}
@@ -138,20 +141,10 @@ function errorFor(index: number, field: string): string | undefined {
             </div>
           </div>
         </div>
-        <button
-          type="button"
-          class="mt-3 shrink-0 text-slate-300 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40"
-          :disabled="rows.length === 1"
-          title="Eliminar fila"
-          @click="removeRow(index)"
-        >
+        <button type="button" class="mt-1 shrink-0 text-slate-300 hover:text-red-500" title="Quitar" @click="removeRow(index)">
           <i class="pi pi-times" />
         </button>
       </div>
     </div>
-
-    <button type="button" class="self-start text-sm font-semibold text-indigo-600 hover:text-indigo-800" @click="addRow">
-      + Añadir fila
-    </button>
   </div>
 </template>

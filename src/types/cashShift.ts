@@ -78,6 +78,8 @@ export interface CashClosing {
 export interface ExpectedOpening {
   amount: number
   closing_date: string
+  /** 'shift': lo que contó el último turno; 'closing': la base del último cierre de caja. */
+  source?: 'closing' | 'shift'
 }
 
 export interface CurrentShiftResponse {

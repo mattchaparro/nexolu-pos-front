@@ -110,6 +110,14 @@ function methodLabel(method: string): string {
 
 const expandedRows = ref<Record<string, boolean>>({})
 
+// "2 Cerveza, Papas, 3 Agua": lo que se vendio, de un vistazo, sin abrir la fila.
+function itemsSummary(row: SaleHistoryRow): string {
+  if (row.items.length === 0) {
+    return 'Sin productos'
+  }
+  return row.items.map((item) => (item.quantity > 1 ? `${item.quantity} ${item.name}` : item.name)).join(', ')
+}
+
 function paymentLabel(row: SaleHistoryRow): string {
   if (row.payment_splits.length > 0) {
     return row.payment_splits.map((s) => paymentMethodLabels.value[s.payment_method] ?? s.payment_method).join(' + ')
@@ -225,48 +233,24 @@ async function exportCsv(): Promise<void> {
             <p class="text-sm text-slate-700">{{ data.created_at }}</p>
           </template>
         </NxColumn>
-        <NxColumn header="Venta">
+        <NxColumn header="Productos">
           <template #body="{ data }: { data: SaleHistoryRow }">
-            <p class="text-sm font-medium text-slate-900">{{ data.invoice_number ?? `#${data.id}` }}</p>
-            <p class="max-w-[14rem] truncate text-xs text-slate-400">
-              {{ [data.table_name, data.customer_name].filter(Boolean).join(' · ') || '—' }}
-            </p>
+            <p class="line-clamp-2 min-w-[12rem] max-w-[26rem] text-sm text-slate-900">{{ itemsSummary(data) }}</p>
           </template>
         </NxColumn>
-        <NxColumn header="Medio de pago">
-          <template #body="{ data }: { data: SaleHistoryRow }">
-            <div v-if="data.payment_splits.length > 1" class="flex flex-col gap-0.5">
-              <span
-                v-for="(split, idx) in data.payment_splits"
-                :key="idx"
-                class="text-xs text-slate-600"
-              >
-                {{ methodLabel(split.payment_method) }}
-                <span class="font-semibold text-slate-800">{{ formatCop(split.amount) }}</span>
-              </span>
-            </div>
-            <span v-else class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-              {{ paymentLabel(data) }}
-            </span>
-          </template>
-        </NxColumn>
-        <NxColumn header="Total" field="total" sortable>
+        <NxColumn header="Valor" field="total" sortable>
           <template #body="{ data }: { data: SaleHistoryRow }">
             <p class="text-right text-sm font-semibold text-slate-900">{{ formatCop(data.total) }}</p>
-          </template>
-        </NxColumn>
-        <NxColumn header="Estado" field="status" sortable>
-          <template #body="{ data }: { data: SaleHistoryRow }">
-            <div class="flex flex-wrap gap-1">
-              <span
-                class="rounded-full px-2 py-0.5 text-xs font-medium"
-                :class="data.status === 'closed' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'"
-              >
-                {{ data.status === 'closed' ? 'Cerrada' : 'Abierta' }}
-              </span>
+            <div class="flex flex-wrap justify-end gap-1">
+              <span v-if="data.status !== 'closed'" class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-600">Abierta</span>
               <span v-if="data.is_non_revenue" class="rounded-full bg-fuchsia-50 px-2 py-0.5 text-xs font-medium text-fuchsia-600">Cortesía</span>
               <span v-if="data.is_credit" class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-600">Fiado</span>
             </div>
+          </template>
+        </NxColumn>
+        <NxColumn header="Vendedor">
+          <template #body="{ data }: { data: SaleHistoryRow }">
+            <p class="text-sm text-slate-700">{{ data.user_name ?? '—' }}</p>
           </template>
         </NxColumn>
         <NxColumn v-if="canReverse" header="Acciones">
@@ -312,9 +296,9 @@ async function exportCsv(): Promise<void> {
             </div>
             <div>
               <p class="mb-1 font-semibold text-slate-700">Datos</p>
+              <p>Factura: {{ data.invoice_number ?? `#${data.id}` }}</p>
               <p>Cliente: {{ data.customer_name || '—' }}</p>
               <p v-if="data.customer_phone">Teléfono: {{ data.customer_phone }}</p>
-              <p>Vendedor: {{ data.user_name ?? '—' }}</p>
               <p v-if="data.table_name">Mesa: {{ data.table_name }}</p>
             </div>
           </div>

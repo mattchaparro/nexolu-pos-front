@@ -13,7 +13,7 @@ import { formatCop } from '@/utils/formatCop'
 
 import { useLayawayMutations } from '../composables/useLayawayMutations'
 import { useLayawayProductOptions } from '../composables/useLayawayProductOptions'
-import { newLayawayLineRow, type LayawayLineRow } from '../support/layawayLine'
+import type { LayawayLineRow } from '../support/layawayLine'
 import LayawayLinesEditor from './LayawayLinesEditor.vue'
 
 const props = defineProps<{
@@ -29,7 +29,7 @@ const productsQuery = useLayawayProductOptions(
   () => props.layaway?.items.map((item) => item.product?.id).filter((id): id is number => id !== undefined) ?? [],
 )
 
-const rows = ref<LayawayLineRow[]>([newLayawayLineRow()])
+const rows = ref<LayawayLineRow[]>([])
 const fieldErrors = ref<Record<string, string>>({})
 const formError = ref<string | null>(null)
 
@@ -50,7 +50,7 @@ watch(
           // numero real.
           unit_price: Number(item.unit_price),
         }))
-      : [newLayawayLineRow()]
+      : []
     fieldErrors.value = {}
     formError.value = null
   },

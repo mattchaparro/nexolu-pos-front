@@ -33,6 +33,10 @@ const closingDateLabel = computed(() =>
     : '',
 )
 
+const sourceLabel = computed(() =>
+  props.expectedOpening?.source === 'shift' ? 'Efectivo con que cerró el último turno' : 'Base que dejó el cierre',
+)
+
 // Nulo si no hay base con la cual comparar o si coincide.
 const openingDifference = computed<number | null>(() => {
   if (!props.expectedOpening || openingCash.value === null) {
@@ -78,7 +82,7 @@ async function submit(): Promise<void> {
     <div class="flex flex-col gap-1">
       <NxInputNumber v-model="openingCash" label="Base inicial de efectivo" required />
       <p v-if="expectedOpening" class="text-xs text-slate-500">
-        Base que dejó el cierre del {{ closingDateLabel }}: {{ formatCop(expectedOpening.amount) }}
+        {{ sourceLabel }} del {{ closingDateLabel }}: {{ formatCop(expectedOpening.amount) }}
       </p>
     </div>
 
@@ -88,7 +92,7 @@ async function submit(): Promise<void> {
     >
       <p class="font-semibold">
         {{ openingDifference < 0 ? 'Faltan' : 'Sobran' }} {{ formatCop(Math.abs(openingDifference)) }}
-        respecto a la base que dejó el cierre del {{ closingDateLabel }}.
+        respecto a {{ sourceLabel.toLowerCase() }} del {{ closingDateLabel }}.
       </p>
       <p class="mt-1 text-xs text-amber-800">Si es lo que hay en la caja, déjalo así y anota abajo qué pasó.</p>
     </div>

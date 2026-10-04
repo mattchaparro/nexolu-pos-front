@@ -20,7 +20,7 @@ import PaymentMethodPicker from '@/components/PaymentMethodPicker.vue'
 import LayawayLinesEditor from '../components/LayawayLinesEditor.vue'
 import { useLayawayMutations } from '../composables/useLayawayMutations'
 import { useLayawayProductOptions } from '../composables/useLayawayProductOptions'
-import { newLayawayLineRow, type LayawayLineRow } from '../support/layawayLine'
+import type { LayawayLineRow } from '../support/layawayLine'
 
 const router = useRouter()
 const { notify } = useSystemAlert()
@@ -55,7 +55,7 @@ function applyClient(client: { id: number; name: string; phone: string | null })
   customerPhone.value = client.phone ?? ''
   clientId.value = client.id
 }
-const lines = ref<LayawayLineRow[]>([newLayawayLineRow()])
+const lines = ref<LayawayLineRow[]>([])
 
 const registerInitialPayment = ref(false)
 const initialPayment = ref<number | null>(null)
