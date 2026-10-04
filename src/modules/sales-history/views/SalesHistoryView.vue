@@ -104,6 +104,12 @@ function setLast7Days(): void {
 // real, no el id crudo.
 const paymentMethodLabels = computed(() => historyQuery.data.value?.payment_method_labels ?? {})
 
+function methodLabel(method: string): string {
+  return paymentMethodLabels.value[method] ?? method
+}
+
+const expandedRows = ref<Record<string, boolean>>({})
+
 function paymentLabel(row: SaleHistoryRow): string {
   if (row.payment_splits.length > 0) {
     return row.payment_splits.map((s) => paymentMethodLabels.value[s.payment_method] ?? s.payment_method).join(' + ')
@@ -196,6 +202,7 @@ async function exportCsv(): Promise<void> {
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
       <NxDataTable
+        v-model:expanded-rows="expandedRows"
         :value="historyQuery.data.value?.data ?? []"
         :loading="historyQuery.isPending.value"
         paginator
@@ -205,42 +212,42 @@ async function exportCsv(): Promise<void> {
         :first="((meta?.current_page ?? 1) - 1) * 20"
         :sort-field="sortField"
         :sort-order="sortOrder"
+        data-key="id"
         @page="onPage"
         @sort="onSort"
       >
         <template #empty>
           <p class="py-6 text-center text-sm text-slate-400">Sin ventas en este rango con los filtros actuales.</p>
         </template>
+        <NxColumn expander style="width: 2.5rem" />
         <NxColumn header="Fecha" field="date" sortable>
           <template #body="{ data }: { data: SaleHistoryRow }">
             <p class="text-sm text-slate-700">{{ data.created_at }}</p>
           </template>
         </NxColumn>
-        <NxColumn header="Factura">
+        <NxColumn header="Venta">
           <template #body="{ data }: { data: SaleHistoryRow }">
             <p class="text-sm font-medium text-slate-900">{{ data.invoice_number ?? `#${data.id}` }}</p>
-            <p v-if="data.table_name" class="text-xs text-slate-400">{{ data.table_name }}</p>
-          </template>
-        </NxColumn>
-        <NxColumn header="Cliente">
-          <template #body="{ data }: { data: SaleHistoryRow }">
-            <p class="text-sm text-slate-700">{{ data.customer_name || '—' }}</p>
-            <p v-if="data.customer_phone" class="text-xs text-slate-400">{{ data.customer_phone }}</p>
-          </template>
-        </NxColumn>
-        <NxColumn header="Vendedor">
-          <template #body="{ data }: { data: SaleHistoryRow }">
-            <p class="text-sm text-slate-700">{{ data.user_name ?? '—' }}</p>
-          </template>
-        </NxColumn>
-        <NxColumn header="Productos">
-          <template #body="{ data }: { data: SaleHistoryRow }">
-            <p class="max-w-xs truncate text-sm text-slate-600">{{ data.items_preview }}</p>
+            <p class="max-w-[14rem] truncate text-xs text-slate-400">
+              {{ [data.table_name, data.customer_name].filter(Boolean).join(' · ') || '—' }}
+            </p>
           </template>
         </NxColumn>
         <NxColumn header="Medio de pago">
           <template #body="{ data }: { data: SaleHistoryRow }">
-            <p class="text-sm text-slate-600">{{ paymentLabel(data) }}</p>
+            <div v-if="data.payment_splits.length > 1" class="flex flex-col gap-0.5">
+              <span
+                v-for="(split, idx) in data.payment_splits"
+                :key="idx"
+                class="text-xs text-slate-600"
+              >
+                {{ methodLabel(split.payment_method) }}
+                <span class="font-semibold text-slate-800">{{ formatCop(split.amount) }}</span>
+              </span>
+            </div>
+            <span v-else class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+              {{ paymentLabel(data) }}
+            </span>
           </template>
         </NxColumn>
         <NxColumn header="Total" field="total" sortable>
@@ -275,6 +282,43 @@ async function exportCsv(): Promise<void> {
             </NxButton>
           </template>
         </NxColumn>
+        <template #expansion="{ data }: { data: SaleHistoryRow }">
+          <div class="grid gap-4 px-4 py-2 text-xs text-slate-600 sm:grid-cols-3">
+            <div>
+              <p class="mb-1 font-semibold text-slate-700">Productos</p>
+              <p v-for="(item, idx) in data.items" :key="idx" class="flex justify-between gap-3">
+                <span>
+                  {{ item.name }}
+                  <span v-if="item.is_deleted" class="text-red-400">(eliminado)</span>
+                  <span class="text-slate-400">x{{ item.quantity }}</span>
+                </span>
+                <span>{{ formatCop(item.subtotal) }}</span>
+              </p>
+              <p v-if="data.items.length === 0" class="text-slate-400">Sin productos.</p>
+            </div>
+            <div>
+              <p class="mb-1 font-semibold text-slate-700">Pago</p>
+              <template v-if="data.payment_splits.length > 0">
+                <p v-for="(split, idx) in data.payment_splits" :key="idx" class="flex justify-between gap-3">
+                  <span>{{ methodLabel(split.payment_method) }}</span>
+                  <span>{{ formatCop(split.amount) }}</span>
+                </p>
+                <p class="mt-1 flex justify-between gap-3 border-t border-slate-200 pt-1 font-semibold text-slate-800">
+                  <span>Total</span>
+                  <span>{{ formatCop(data.total) }}</span>
+                </p>
+              </template>
+              <p v-else>{{ paymentLabel(data) }}</p>
+            </div>
+            <div>
+              <p class="mb-1 font-semibold text-slate-700">Datos</p>
+              <p>Cliente: {{ data.customer_name || '—' }}</p>
+              <p v-if="data.customer_phone">Teléfono: {{ data.customer_phone }}</p>
+              <p>Vendedor: {{ data.user_name ?? '—' }}</p>
+              <p v-if="data.table_name">Mesa: {{ data.table_name }}</p>
+            </div>
+          </div>
+        </template>
       </NxDataTable>
     </div>
   </div>

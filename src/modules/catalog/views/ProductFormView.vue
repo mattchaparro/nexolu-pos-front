@@ -12,6 +12,7 @@ import { useSystemAlert } from '@/composables/useSystemAlert'
 import type {
   PendingProductImage,
   Product,
+  ProductComponentInput,
   ProductOptionGroupInput,
   ProductRecipeLineInput,
   ProductVariantInput,
@@ -35,6 +36,7 @@ import { hasFeature } from '@/utils/hasFeature'
 import ProductImagesEditor from '../components/ProductImagesEditor.vue'
 import ProductQuickViewModal from '../components/ProductQuickViewModal.vue'
 import BranchPricesEditor from '../components/BranchPricesEditor.vue'
+import ProductComponentsEditor from '../components/ProductComponentsEditor.vue'
 import ProductIngredientsEditor from '../components/ProductIngredientsEditor.vue'
 import ProductOptionGroupsEditor from '../components/ProductOptionGroupsEditor.vue'
 import ProductVariantsEditor from '../components/ProductVariantsEditor.vue'
@@ -116,6 +118,7 @@ const categoryId = ref<number | null>(null)
 const ingredients = ref<ProductRecipeLineInput[]>([])
 const variants = ref<ProductVariantInput[]>([])
 const optionGroups = ref<ProductOptionGroupInput[]>([])
+const components = ref<ProductComponentInput[]>([])
 const fieldErrors = ref<Record<string, string>>({})
 const formError = ref<string | null>(null)
 
@@ -278,6 +281,11 @@ watch(
         is_active: o.is_active,
       })),
     }))
+    components.value = (product.components ?? []).map((c) => ({
+      component_product_id: c.component_product_id,
+      ingredient_id: c.ingredient_id,
+      quantity: Number(c.quantity),
+    }))
     variants.value = (product.variants ?? []).map((v) => ({
       id: v.id,
       sku: v.sku,
@@ -316,6 +324,19 @@ watch(
   (value) => {
     if (value.length > 0) {
       trackStock.value = true
+      variants.value = []
+      components.value = []
+    }
+  },
+  { deep: true },
+)
+// Un combo no lleva stock propio: se descuenta de sus piezas al venderlo.
+watch(
+  components,
+  (value) => {
+    if (value.length > 0) {
+      trackStock.value = false
+      ingredients.value = []
       variants.value = []
     }
   },
@@ -435,6 +456,9 @@ async function submit(): Promise<void> {
     ...(ingredientsEnabled.value ? { ingredients: ingredients.value } : {}),
     ...(variantsEnabled.value ? { variants: variants.value } : {}),
     ...(productOptionsEnabled.value ? { option_groups: isService.value ? [] : optionGroups.value } : {}),
+    ...(productOptionsEnabled.value
+      ? { components: isService.value || isSingleSale.value ? [] : components.value }
+      : {}),
   }
 
   try {
@@ -604,7 +628,7 @@ async function submit(): Promise<void> {
                   v-model="trackStock"
                   label="Controla inventario"
                   icon="pi pi-box"
-                  :disabled="isSingleSale || ingredients.length > 0 || variants.length > 0"
+                  :disabled="isSingleSale || ingredients.length > 0 || variants.length > 0 || components.length > 0"
                 />
               </template>
               <NxToggleButton
@@ -657,6 +681,18 @@ async function submit(): Promise<void> {
           <ProductIngredientsEditor
             v-model="ingredients"
             :ingredients="ingredientOptionsQuery.data.value ?? []"
+          />
+        </div>
+
+        <div
+          v-if="productOptionsEnabled && !isService && !isSingleSale && ingredients.length === 0 && variants.length === 0"
+          class="rounded-xl border border-slate-200 bg-white p-4"
+        >
+          <p class="mb-3 text-sm font-semibold text-slate-700">Combo (opcional)</p>
+          <ProductComponentsEditor
+            v-model="components"
+            :ingredients="ingredientOptionsQuery.data.value ?? []"
+            :current-product-id="productId"
           />
         </div>
 

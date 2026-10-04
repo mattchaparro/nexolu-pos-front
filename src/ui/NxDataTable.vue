@@ -25,6 +25,9 @@ withDefaults(
     sortOrder?: number | null
     /** Tercer click en el header quita el orden en vez de ciclar para siempre entre asc/desc. */
     removableSort?: boolean
+    /** Filas desplegables: con `dataKey` + `expandedRows` y el slot `expansion`. */
+    dataKey?: string
+    expandedRows?: Record<string, boolean>
   }>(),
   {
     loading: false,
@@ -36,10 +39,16 @@ withDefaults(
     sortField: undefined,
     sortOrder: undefined,
     removableSort: true,
+    dataKey: undefined,
+    expandedRows: undefined,
   },
 )
 
-const emit = defineEmits<{ page: [event: DataTablePageEvent]; sort: [event: DataTableSortEvent] }>()
+const emit = defineEmits<{
+  page: [event: DataTablePageEvent]
+  sort: [event: DataTableSortEvent]
+  'update:expandedRows': [rows: Record<string, boolean>]
+}>()
 </script>
 
 <template>
@@ -54,15 +63,21 @@ const emit = defineEmits<{ page: [event: DataTablePageEvent]; sort: [event: Data
     :sort-field="sortField"
     :sort-order="sortOrder ?? undefined"
     :removable-sort="removableSort"
+    :data-key="dataKey"
+    :expanded-rows="expandedRows"
     striped-rows
     responsive-layout="scroll"
     class="text-sm"
     @page="emit('page', $event)"
     @sort="emit('sort', $event)"
+    @update:expanded-rows="emit('update:expandedRows', $event as Record<string, boolean>)"
   >
     <template #empty>
       <slot name="empty" />
     </template>
     <slot />
+    <template v-if="$slots.expansion" #expansion="slotProps">
+      <slot name="expansion" v-bind="slotProps" />
+    </template>
   </PrimeDataTable>
 </template>

@@ -184,6 +184,10 @@ export interface Product {
   variants?: ProductVariant[]
   has_variants?: boolean
   option_groups?: ProductOptionGroup[]
+  // Combo: piezas que se descuentan al vender y cuantos se pueden armar hoy
+  // (null = no es combo).
+  components?: ProductComponent[]
+  combo_stock?: number | null
   // Falso para venta-unica, para productos con receta, y para productos
   // con variantes: en los tres casos el stock no se puede escribir a mano
   // sobre el producto (venta-unica es siempre 1/0, receta se calcula desde
@@ -223,6 +227,21 @@ export interface ProductOptionGroupInput {
   min_choices: number
   max_choices: number
   options: ProductOptionInput[]
+}
+
+export interface ProductComponent {
+  id: number
+  component_product_id: number | null
+  ingredient_id: number | null
+  name: string | null
+  unit: string | null
+  quantity: number
+}
+
+export interface ProductComponentInput {
+  component_product_id: number | null
+  ingredient_id: number | null
+  quantity: number
 }
 
 export interface ProductRecipeLineInput {
@@ -274,4 +293,5 @@ export interface ProductPayload {
   category_id: number
   ingredients?: ProductRecipeLineInput[]
   option_groups?: ProductOptionGroupInput[]
+  components?: ProductComponentInput[]
 }

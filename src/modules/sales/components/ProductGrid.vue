@@ -62,7 +62,12 @@ const filteredProducts = computed(() => {
     if (selectedCategoryId.value !== null && product.category?.id !== selectedCategoryId.value) {
       return false
     }
-    if (term && !product.name.toLowerCase().includes(term)) {
+    // Como en el legacy: el texto busca por nombre del producto o de su categoria.
+    if (
+      term &&
+      !product.name.toLowerCase().includes(term) &&
+      !(product.category?.name ?? '').toLowerCase().includes(term)
+    ) {
       return false
     }
     return true
