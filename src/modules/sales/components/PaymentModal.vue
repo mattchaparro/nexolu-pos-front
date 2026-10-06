@@ -26,10 +26,12 @@
 // propio CollectReceivableModal aparte) - misma experiencia de cobro que
 // venta/cuenta abierta, con cortesia/cargos/pestañas extra ocultas por no
 // aplicar al backend de Receivable (ver el comentario de la prop).
+import { useQuery } from '@tanstack/vue-query'
 import { computed, ref, watch } from 'vue'
 
 import PaymentMethodPicker from '@/components/PaymentMethodPicker.vue'
 import ClientQuickAssociate from '@/modules/clients/components/ClientQuickAssociate.vue'
+import { fetchFinancingProviders } from '@/modules/financing/services/financingService'
 import type { Business } from '@/types/business'
 import type { Sale } from '@/types/sale'
 import {
@@ -83,6 +85,8 @@ const props = withDefaults(
      * la referencia, y la venta quedaria facturada sin atarse a la plata.
      */
     allowTerminal?: boolean
+    /** Venta financiada por un tercero (Addi, Banti...): solo venta directa, como el datáfono. */
+    allowFinancing?: boolean
   }>(),
   {
     fallbackChargeBase: 0,
@@ -93,6 +97,7 @@ const props = withDefaults(
     title: undefined,
     receivableMode: false,
     allowTerminal: false,
+    allowFinancing: false,
   },
 )
 
@@ -102,7 +107,7 @@ const emit = defineEmits<{
   'register-partial': [payload: RecordPartialPaymentPayload]
 }>()
 
-type PaymentTab = 'single' | 'multi' | 'split' | 'partial'
+type PaymentTab = 'single' | 'multi' | 'split' | 'partial' | 'financed'
 
 // Cobro aprobado en el datáfono, listo para cerrar la venta.
 const terminalChargeReference = ref<string | null>(null)
@@ -140,6 +145,11 @@ const partialMethod = ref<string | null>(null)
 const partialLabel = ref('')
 const receivedInput = ref<number | null>(null)
 const isDelivery = ref(false)
+// Venta financiada: el cliente da una inicial y la financiadora gira el resto.
+const financingProviderId = ref<number | null>(null)
+const downPayment = ref<number | null>(null)
+const downPaymentMethod = ref<string | null>(null)
+const approvalNumber = ref('')
 
 function resetForm(): void {
   isDelivery.value = props.sale ? Boolean(props.sale.is_delivery) : props.initialDelivery
@@ -159,7 +169,23 @@ function resetForm(): void {
   partialMethod.value = defaultSplitMethodId.value
   partialLabel.value = ''
   receivedInput.value = null
+  financingProviderId.value = financingProviders.value.length === 1 ? financingProviders.value[0]!.id : null
+  downPayment.value = null
+  downPaymentMethod.value = defaultSplitMethodId.value
+  approvalNumber.value = ''
 }
+
+const financingProvidersQuery = useQuery({
+  queryKey: ['financing-providers', 'active'],
+  queryFn: () => fetchFinancingProviders(true),
+  enabled: computed(() => props.allowFinancing && props.modelValue),
+})
+const financingProviders = computed(() => financingProvidersQuery.data.value ?? [])
+watch(financingProviders, (providers) => {
+  if (financingProviderId.value === null && providers.length === 1) {
+    financingProviderId.value = providers[0]!.id
+  }
+})
 
 watch(
   () => props.modelValue,
@@ -232,6 +258,11 @@ const amountDue = computed(() =>
 )
 
 const isSplitTab = computed(() => activeTab.value === 'multi' || activeTab.value === 'split')
+const isFinancedTab = computed(() => activeTab.value === 'financed')
+const financedAmount = computed(() => round2(amountDue.value - (downPayment.value ?? 0)))
+const financingCustomerMissing = computed(
+  () => !hasExistingCustomerInfo.value && !customerName.value.trim() && !customerPhone.value.trim(),
+)
 const splitTotal = computed(() => round2(splitRows.value.reduce((s, r) => s + (Number(r.amount) || 0), 0)))
 const splitRemainder = computed(() => round2(amountDue.value - splitTotal.value))
 
@@ -318,6 +349,15 @@ const canConfirm = computed(() => {
   if (isCourtesy.value) {
     return true
   }
+  if (isFinancedTab.value) {
+    return (
+      financingProviderId.value !== null &&
+      financedAmount.value > 0.009 &&
+      (downPayment.value ?? 0) >= 0 &&
+      ((downPayment.value ?? 0) <= 0.009 || Boolean(downPaymentMethod.value)) &&
+      !financingCustomerMissing.value
+    )
+  }
   if (isSplitTab.value) {
     const validRows = splitRows.value.filter((r) => Number(r.amount) > 0.009)
     return validRows.length >= 2 && Math.abs(splitRemainder.value) < 0.02
@@ -340,6 +380,24 @@ function submitConfirm(): void {
   }
   if (showDelivery.value) {
     payload.is_delivery = isDelivery.value
+  }
+
+  if (!isCourtesy.value && isFinancedTab.value && financingProviderId.value !== null) {
+    payload.payment_method = (downPayment.value ?? 0) > 0.009 ? downPaymentMethod.value : null
+    payload.financing = {
+      financing_provider_id: financingProviderId.value,
+      amount: financedAmount.value,
+      approval_number: approvalNumber.value.trim() || undefined,
+    }
+    if (!hasExistingCustomerInfo.value) {
+      payload.customer_name = customerName.value || undefined
+      payload.customer_phone = customerPhone.value || undefined
+      if (clientId.value) {
+        payload.client_id = clientId.value
+      }
+    }
+    emit('confirm', payload)
+    return
   }
 
   if (!isCourtesy.value && isSplitTab.value) {
@@ -489,6 +547,7 @@ function applyClient(client: { id: number; name: string; phone: string | null })
           <NxTab value="multi" icon="pi pi-credit-card">Varios medios</NxTab>
           <NxTab value="split" icon="pi pi-users">Dividir</NxTab>
           <NxTab v-if="allowPartial" value="partial" icon="pi pi-history">Abonar</NxTab>
+          <NxTab v-if="allowFinancing" value="financed" icon="pi pi-building-columns">Financiado</NxTab>
         </NxTabList>
         <NxTabPanels>
           <NxTabPanel value="single">
@@ -625,6 +684,53 @@ function applyClient(client: { id: number; name: string; phone: string | null })
               <button type="button" class="text-left text-xs font-semibold text-indigo-600 hover:text-indigo-800" @click="addSplitRow">
                 + Agregar persona
               </button>
+            </div>
+          </NxTabPanel>
+
+          <NxTabPanel v-if="allowFinancing" value="financed">
+            <p v-if="financingProvidersQuery.isSuccess.value && financingProviders.length === 0" class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+              No hay financiadoras activas. El administrador las agrega en Financiación.
+            </p>
+            <div v-else class="flex flex-col gap-3">
+              <NxSelect
+                :model-value="financingProviderId"
+                :options="financingProviders"
+                option-label="name"
+                option-value="id"
+                label="Financiadora"
+                size="sm"
+                @update:model-value="financingProviderId = $event as number"
+              />
+              <NxInputNumber v-model="downPayment" label="Inicial que paga el cliente" size="sm" :min="0" />
+              <div v-if="(downPayment ?? 0) > 0" class="flex flex-col gap-1">
+                <p class="text-xs font-medium text-slate-500">La inicial se paga con</p>
+                <PaymentMethodPicker
+                  :methods="splitMethods"
+                  :model-value="downPaymentMethod"
+                  @update:model-value="downPaymentMethod = $event"
+                />
+              </div>
+              <p
+                class="rounded-lg px-3 py-2 text-sm"
+                :class="financedAmount > 0.009 ? 'bg-indigo-50 text-indigo-900' : 'bg-red-50 text-red-700'"
+              >
+                <template v-if="financedAmount > 0.009">
+                  Financia: <strong>{{ formatCop(financedAmount) }}</strong> · queda por cobrarle a la financiadora
+                </template>
+                <template v-else>La inicial no puede cubrir todo el total.</template>
+              </p>
+              <NxInput v-model="approvalNumber" label="N.º de crédito o aprobación (opcional)" size="sm" />
+              <p v-if="hasExistingCustomerInfo" class="text-xs text-slate-500">
+                Cliente: {{ existingCustomerName || existingCustomerPhone || existingCustomerIdentification }}
+              </p>
+              <template v-else>
+                <p v-if="financingCustomerMissing" class="text-xs text-red-600">
+                  Una venta financiada necesita al menos el nombre o el teléfono del cliente.
+                </p>
+                <NxInput :model-value="customerName" label="Nombre del cliente" size="sm" @update:model-value="setCustomerName" />
+                <NxInput :model-value="customerPhone" label="Teléfono" size="sm" @update:model-value="setCustomerPhone" />
+                <ClientQuickAssociate :name="customerName" :phone="customerPhone" @apply="applyClient" />
+              </template>
             </div>
           </NxTabPanel>
 

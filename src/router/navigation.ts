@@ -44,6 +44,12 @@ export const adminNavItems: NavItem[] = [
     featureKey: 'receivables',
   },
   {
+    label: 'Financiación',
+    icon: 'pi pi-building-columns',
+    routeName: 'financing.index',
+    featureKey: 'financing',
+  },
+  {
     label: 'Traslados',
     icon: 'pi pi-arrow-right-arrow-left',
     routeName: 'stock-transfers.index',

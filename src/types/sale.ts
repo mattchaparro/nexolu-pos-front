@@ -1,3 +1,4 @@
+import type { SaleFinancingInput } from './financing'
 // Refleja SaleResource/SaleItemResource (app/Http/Resources/Api/V1) y los
 // payloads que esperan StoreSaleRequest/StoreOpenTabRequest/etc en
 // nexolu-pos-api. Sale cubre tanto venta directa (status='closed' siempre)
@@ -37,6 +38,7 @@ export interface CreateSalePayload {
   cart_discount_id?: number | null
   apply_service_charge?: boolean
   apply_ipoconsumo?: boolean
+  financing?: SaleFinancingInput
 }
 
 export interface SaleItem {

@@ -345,6 +345,12 @@ const router = createRouter({
           meta: { requiresFeature: 'discounts', requiresPermission: 'discounts.manage' },
         },
         {
+          path: 'financiacion',
+          name: 'financing.index',
+          component: () => import('@/modules/financing/views/FinancingView.vue'),
+          meta: { requiresFeature: 'financing', requiresAdmin: true },
+        },
+        {
           path: 'fiados',
           name: 'receivables.index',
           component: () => import('@/modules/receivables/views/FiadosView.vue'),

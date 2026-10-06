@@ -693,6 +693,7 @@ function handleNewSale(): void {
       v-if="business"
       v-model="paymentModalOpen"
       allow-terminal
+      :allow-financing="mode === 'quick' && hasFeature(business, 'financing')"
       :sale="mode === 'quick' ? null : activeSale"
       :business="business"
       :submitting="mode === 'quick' ? createSaleMutation.isPending.value : tabMutations.closeMutation.isPending.value"

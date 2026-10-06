@@ -1,3 +1,4 @@
+import type { SaleFinancingInput } from '@/types/financing'
 // Payloads que esperan StoreOpenTabRequest/OpenTabItemsRequest/
 // RecordPartialPaymentRequest/CloseOpenTabRequest en nexolu-pos-api.
 import type { PaymentSplitInput, SaleItemInput } from '@/types/sale'
@@ -40,4 +41,6 @@ export interface CloseOpenTabPayload {
    * la venta antes de facturar.
    */
   terminal_charge_reference?: string
+  /** Venta financiada por un tercero: solo POST /sales. */
+  financing?: SaleFinancingInput
 }
