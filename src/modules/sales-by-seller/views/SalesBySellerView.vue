@@ -6,7 +6,7 @@ import { computed, ref } from 'vue'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { SellerSummary } from '@/types/salesBySeller'
-import { NxButton, NxColumn, NxDataTable, NxDatePicker, NxPageHeader, NxStatCard } from '@/ui'
+import { NxButton, NxColumn, NxDataTable, NxDateRangePicker, NxPageHeader, NxStatCard } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
@@ -18,19 +18,6 @@ const dateFrom = ref(toLocalDateIso())
 const dateTo = ref(toLocalDateIso())
 
 const sellerQuery = useSalesBySeller(dateFrom, dateTo)
-
-function setToday(): void {
-  dateFrom.value = toLocalDateIso()
-  dateTo.value = toLocalDateIso()
-}
-
-function setLast7Days(): void {
-  const end = new Date()
-  const start = new Date()
-  start.setDate(start.getDate() - 6)
-  dateFrom.value = toLocalDateIso(start)
-  dateTo.value = toLocalDateIso(end)
-}
 
 function methodsSummary(seller: SellerSummary): string {
   return seller.methods.map((m) => `${m.label}: ${formatCop(m.total)}`).join(' · ')
@@ -64,10 +51,7 @@ const totals = computed(() => sellerQuery.data.value?.totals)
     <NxPageHeader title="Ventas por vendedor" icon="pi pi-users" compact />
 
     <div class="grid grid-cols-2 items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:flex lg:flex-wrap">
-      <NxDatePicker v-model="dateFrom" label="Desde" class="w-full lg:w-40" />
-      <NxDatePicker v-model="dateTo" label="Hasta" class="w-full lg:w-40" />
-      <NxButton variant="outline" class="w-full lg:w-auto" @click="setToday">Hoy</NxButton>
-      <NxButton variant="outline" class="w-full lg:w-auto" @click="setLast7Days">Últimos 7 días</NxButton>
+      <NxDateRangePicker v-model:from="dateFrom" v-model:to="dateTo" class="col-span-2 lg:w-64" />
       <NxButton variant="outline" icon="pi pi-download" :loading="exporting" class="col-span-2 justify-self-end lg:ml-auto" @click="exportCsv">
         Exportar CSV
       </NxButton>

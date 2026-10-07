@@ -82,8 +82,8 @@ function errorFor(index: number, field: string): string | undefined {
 
 <template>
   <div class="flex flex-col gap-4">
-    <div class="h-[22rem] rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-      <ProductGrid :products="products" :categories="categoriesQuery.data.value ?? []" @select="addProduct" />
+    <div class="h-[65vh] max-h-[40rem] min-h-[26rem] rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+      <ProductGrid :products="products" :categories="categoriesQuery.data.value ?? []" fit-container @select="addProduct" />
     </div>
 
     <p v-if="rows.length === 0" class="rounded-lg border border-dashed border-slate-300 p-4 text-center text-sm text-slate-400">

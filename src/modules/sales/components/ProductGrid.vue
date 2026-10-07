@@ -20,8 +20,10 @@ const props = withDefaults(
     categories: ProductCategory[]
     /** Ids de lo que mas rota, de mayor a menor - ver useProductCatalog. */
     frequentIds?: number[]
+    /** Columnas segun el ancho de la caja y no de la pantalla (ej. dentro de un modal). */
+    fitContainer?: boolean
   }>(),
-  { frequentIds: () => [] },
+  { frequentIds: () => [], fitContainer: false },
 )
 
 const emit = defineEmits<{ select: [product: Product] }>()
@@ -156,7 +158,7 @@ function toggleFrequent(): void {
       </button>
     </div>
 
-    <div class="flex-1 overflow-y-auto">
+    <div class="@container flex-1 overflow-y-auto">
       <div
         v-if="filteredProducts.length === 0"
         class="flex h-full flex-col items-center justify-center gap-2 text-slate-400"
@@ -164,7 +166,15 @@ function toggleFrequent(): void {
         <i class="pi pi-search-minus text-5xl" />
         <p class="text-sm">No se encontraron productos.</p>
       </div>
-      <div v-else class="grid grid-cols-2 gap-2 pb-4 sm:grid-cols-3 sm:gap-3 xl:grid-cols-4 2xl:grid-cols-5">
+      <div
+        v-else
+        class="grid grid-cols-2 gap-2 pb-4"
+        :class="
+          fitContainer
+            ? '@lg:grid-cols-3 @lg:gap-3 @3xl:grid-cols-4 @5xl:grid-cols-5'
+            : 'sm:grid-cols-3 sm:gap-3 xl:grid-cols-4 2xl:grid-cols-5'
+        "
+      >
         <ProductCard
           v-for="product in filteredProducts"
           :key="product.id"

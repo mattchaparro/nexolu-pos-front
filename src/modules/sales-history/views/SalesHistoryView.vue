@@ -13,7 +13,7 @@ import { useSystemAlert } from '@/composables/useSystemAlert'
 import { useOpenTabMutations } from '@/modules/open-tabs/composables/useOpenTabMutations'
 import { useSaleMutations } from '@/modules/sales/composables/useSaleMutations'
 import type { SaleHistoryRow } from '@/types/salesHistory'
-import { NxButton, NxColumn, NxDataTable, NxDatePicker, NxInput, NxPageHeader, NxSelect } from '@/ui'
+import { NxButton, NxColumn, NxDataTable, NxDateRangePicker, NxInput, NxPageHeader, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
@@ -83,19 +83,6 @@ const paymentMethodOptions = computed(() => [
 
 function onPage(event: { page: number }): void {
   page.value = event.page + 1
-}
-
-function setToday(): void {
-  dateFrom.value = toLocalDateIso()
-  dateTo.value = toLocalDateIso()
-}
-
-function setLast7Days(): void {
-  const end = new Date()
-  const start = new Date()
-  start.setDate(start.getDate() - 6)
-  dateFrom.value = toLocalDateIso(start)
-  dateTo.value = toLocalDateIso(end)
 }
 
 // Contra TODOS los ids configurados (habilitados o no), no solo las
@@ -185,10 +172,7 @@ async function exportCsv(): Promise<void> {
     <NxPageHeader title="Historial de ventas" icon="pi pi-receipt" compact />
 
     <div class="grid grid-cols-2 items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:flex lg:flex-wrap">
-      <NxDatePicker v-model="dateFrom" label="Desde" class="w-full lg:w-40" />
-      <NxDatePicker v-model="dateTo" label="Hasta" class="w-full lg:w-40" />
-      <NxButton variant="outline" class="w-full lg:w-auto" @click="setToday">Hoy</NxButton>
-      <NxButton variant="outline" class="w-full lg:w-auto" @click="setLast7Days">Últimos 7 días</NxButton>
+      <NxDateRangePicker v-model:from="dateFrom" v-model:to="dateTo" class="col-span-2 lg:w-64" />
       <NxSelect v-model="status" :options="statusOptions" option-label="label" option-value="id" label="Estado" class="w-full lg:w-40" />
       <NxSelect
         v-model="paymentMethod"

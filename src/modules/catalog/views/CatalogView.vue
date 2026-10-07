@@ -431,7 +431,7 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
             <div class="flex flex-col gap-3 sm:flex-row" data-tour="product-search">
               <NxInput
                 v-model="productSearchInput"
-                label="Buscar producto o SKU"
+                label="Buscar producto, categoría o SKU"
                 size="lg"
                 icon="pi pi-search"
                 clearable

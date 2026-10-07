@@ -16,7 +16,7 @@ import { useLayawayMutations } from '@/modules/layaways/composables/useLayawayMu
 import { useServiceOrderMutations } from '@/modules/service-orders/composables/useServiceOrderMutations'
 import { useSaleMutations } from '@/modules/sales/composables/useSaleMutations'
 import type { IncomeChannel, RecentLayaway, RecentReceivable, RecentSale, RecentServiceOrder } from '@/types/dailySummary'
-import { NxButton, NxDatePicker, NxSelect, NxStatCard, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs, NxToggleButton } from '@/ui'
+import { NxButton, NxDateRangePicker, NxSelect, NxStatCard, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs, NxToggleButton } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
@@ -77,19 +77,6 @@ watch(summaryQuery.data, (summary) => {
     paymentMethodFilter.value = 'all'
   }
 })
-
-function setToday(): void {
-  dateFrom.value = toLocalDateIso()
-  dateTo.value = toLocalDateIso()
-}
-
-function setLast7Days(): void {
-  const end = new Date()
-  const start = new Date()
-  start.setDate(start.getDate() - 6)
-  dateFrom.value = toLocalDateIso(start)
-  dateTo.value = toLocalDateIso(end)
-}
 
 const paymentMethodOptions = computed(() => [
   { id: 'all', label: 'Todos los medios' },
@@ -287,10 +274,7 @@ function openReceipt(row: TransactionRow): void {
     </div>
 
     <div class="grid grid-cols-2 items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:flex lg:flex-wrap">
-      <NxDatePicker v-model="dateFrom" label="Desde" class="w-full lg:w-40" />
-      <NxDatePicker v-model="dateTo" label="Hasta" class="w-full lg:w-40" />
-      <NxButton variant="outline" class="w-full lg:w-auto" @click="setToday">Hoy</NxButton>
-      <NxButton variant="outline" class="w-full lg:w-auto" @click="setLast7Days">Últimos 7 días</NxButton>
+      <NxDateRangePicker v-model:from="dateFrom" v-model:to="dateTo" class="col-span-2 lg:w-64" />
       <NxSelect
         v-model="paymentMethodFilter"
         :options="paymentMethodOptions"

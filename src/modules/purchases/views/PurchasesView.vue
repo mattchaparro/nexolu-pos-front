@@ -5,7 +5,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import type { Purchase, PurchasePaymentStatus } from '@/types/purchase'
-import { NxButton, NxColumn, NxDataTable, NxDatePicker, NxPageHeader } from '@/ui'
+import { NxButton, NxColumn, NxDataTable, NxDateRangePicker, NxPageHeader } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 import GuidedTour from '@/components/GuidedTour.vue'
 import { useBusiness } from '@/composables/useBusiness'
@@ -58,8 +58,7 @@ watch(business, (value) => { if (value) { void tour.start() } }, { once: true })
     <CatalogHubTabs data-tour="catalog-hub" />
 
     <div class="flex flex-wrap gap-3" data-tour="purchase-dates">
-      <NxDatePicker v-model="from" label="Desde" class="min-w-[160px]" />
-      <NxDatePicker v-model="to" label="Hasta" class="min-w-[160px]" />
+      <NxDateRangePicker v-model:from="from" v-model:to="to" clearable class="min-w-[16rem]" />
     </div>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">

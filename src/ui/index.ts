@@ -19,6 +19,7 @@ export { default as NxColorPicker } from './NxColorPicker.vue'
 export { default as NxDataTable } from './NxDataTable.vue'
 
 export { default as NxDatePicker } from './NxDatePicker.vue'
+export { default as NxDateRangePicker } from './NxDateRangePicker.vue'
 
 export { default as NxInput } from './NxInput.vue'
 export type { NxInputSize } from './NxInput.vue'

@@ -9,7 +9,7 @@ import type { DataTableSortEvent } from 'primevue/datatable'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { NamedOption, ReasonOption, StockMovementRow } from '@/types/inventoryReport'
-import { NxButton, NxColumn, NxDataTable, NxDatePicker, NxSelect } from '@/ui'
+import { NxButton, NxColumn, NxDataTable, NxDateRangePicker, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
@@ -108,8 +108,7 @@ async function exportCsv(): Promise<void> {
 <template>
   <div class="flex flex-col gap-4">
     <div class="grid grid-cols-2 items-end gap-3 lg:flex lg:flex-wrap">
-      <NxDatePicker v-model="dateFrom" label="Desde" class="w-full lg:w-40" />
-      <NxDatePicker v-model="dateTo" label="Hasta" class="w-full lg:w-40" />
+      <NxDateRangePicker v-model:from="dateFrom" v-model:to="dateTo" clearable class="w-full lg:w-64" />
       <NxSelect v-model="type" :options="typeOptions" option-label="label" option-value="id" label="Tipo" filter class="w-full lg:w-40" />
       <NxSelect v-model="reasonId" :options="reasonOptions" option-label="label" option-value="id" label="Razón" filter class="w-full lg:w-44" />
       <NxSelect v-model="productId" :options="productSelectOptions" option-label="label" option-value="id" label="Producto" filter class="w-full lg:w-48" />

@@ -5,7 +5,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import type { Layaway, LayawayStatus } from '@/types/layaway'
-import { NxButton, NxColumn, NxDataTable, NxDatePicker, NxInput, NxPageHeader, NxSelect } from '@/ui'
+import { NxButton, NxColumn, NxDataTable, NxDateRangePicker, NxInput, NxPageHeader, NxSelect } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 import { formatShortDateTime } from '@/utils/formatShortDateTime'
 
@@ -109,8 +109,7 @@ function statusLabel(layaway: Layaway): string {
         class="col-span-2 lg:min-w-[180px]"
         @update:model-value="status = $event as LayawayStatus | ''"
       />
-      <NxDatePicker v-model="dateFrom" label="Desde" class="lg:min-w-[160px]" />
-      <NxDatePicker v-model="dateTo" label="Hasta" class="lg:min-w-[160px]" />
+      <NxDateRangePicker v-model:from="dateFrom" v-model:to="dateTo" clearable class="col-span-2 lg:w-64" />
     </div>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">

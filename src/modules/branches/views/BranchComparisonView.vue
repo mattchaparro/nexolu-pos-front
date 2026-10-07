@@ -10,7 +10,7 @@ import { useQuery } from '@tanstack/vue-query'
 
 import { fetchBranchComparison } from '@/services/branches'
 import type { BranchComparisonRow } from '@/types/branch'
-import { NxCard, NxColumn, NxDataTable, NxDatePicker, NxPageHeader } from '@/ui'
+import { NxCard, NxColumn, NxDataTable, NxDateRangePicker, NxPageHeader } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
 function isoDate(date: Date): string {
@@ -53,8 +53,7 @@ const leader = computed<BranchComparisonRow | null>(() => {
 
     <NxCard>
       <div class="flex flex-wrap items-end gap-4">
-        <NxDatePicker v-model="from" label="Desde" />
-        <NxDatePicker v-model="to" label="Hasta" />
+        <NxDateRangePicker v-model:from="from" v-model:to="to" />
       </div>
     </NxCard>
 
