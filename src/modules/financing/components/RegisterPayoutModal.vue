@@ -22,6 +22,15 @@ const emit = defineEmits<{
   confirm: [payload: RegisterPayoutPayload]
 }>()
 
+function defaultPayoutMethod(): string | null {
+  const methods = props.business?.payment_methods ?? []
+  return (
+    methods.find((m) => ['transfer', 'transferencia'].includes(m.id) || /transfer/i.test(m.label))?.id ??
+    methods[0]?.id ??
+    null
+  )
+}
+
 const paidAt = ref(toLocalDateIso())
 const payoutMethod = ref<string | null>(null)
 const payoutReference = ref('')
@@ -32,7 +41,7 @@ watch(
   (open) => {
     if (open) {
       paidAt.value = toLocalDateIso()
-      payoutMethod.value = null
+      payoutMethod.value = defaultPayoutMethod()
       payoutReference.value = ''
       notes.value = ''
     }
@@ -71,7 +80,7 @@ function submit(): void {
         :options="business?.payment_methods ?? []"
         option-label="label"
         option-value="id"
-        label="Dónde llegó (opcional)"
+        label="Dónde llegó la plata"
         @update:model-value="payoutMethod = $event as string | null"
       />
       <NxInput v-model="payoutReference" label="Referencia de la transferencia (opcional)" />

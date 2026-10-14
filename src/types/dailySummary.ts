@@ -6,7 +6,7 @@ export interface PaymentMethodTotal {
 }
 
 export interface IncomeChannel {
-  key: 'sales' | 'services' | 'layaways' | 'receivables'
+  key: 'sales' | 'services' | 'layaways' | 'receivables' | 'financing'
   label: string
   total: number
   count: number
@@ -75,6 +75,17 @@ export interface RecentReceivable {
   paid_at: string
 }
 
+/** Giro de una financiadora (Addi, Banti...): entra como ingreso el dia que llega. */
+export interface RecentFinancingPayout {
+  id: number
+  provider_name: string | null
+  customer_name: string | null
+  approval_number: string | null
+  amount: number
+  payout_method: string
+  paid_at: string | null
+}
+
 export interface DailySummary {
   date: string
   date_from: string
@@ -84,6 +95,7 @@ export interface DailySummary {
   net: number
   closed_sales_revenue: number
   collected_receivables_total: number
+  financing_payouts_total: number
   service_payments_total: number
   service_payments_count: number
   layaway_payments_total: number
@@ -97,6 +109,7 @@ export interface DailySummary {
     services: boolean
     layaways: boolean
     receivables: boolean
+    financing: boolean
   }
   sales_count: number
   open_count: number
@@ -110,4 +123,5 @@ export interface DailySummary {
   recent_service_orders: RecentServiceOrder[]
   recent_layaways: RecentLayaway[]
   recent_receivables: RecentReceivable[]
+  recent_financing_payouts: RecentFinancingPayout[]
 }

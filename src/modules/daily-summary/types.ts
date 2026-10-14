@@ -7,7 +7,7 @@ import type { ReceiptEntityType } from '@/types/receipt'
 // por fila, ver DailySummaryView.vue).
 export interface TransactionRow {
   key: string
-  channelKey: 'sales' | 'services' | 'layaways' | 'receivables'
+  channelKey: 'sales' | 'services' | 'layaways' | 'receivables' | 'financing'
   channelLabel: string
   title: string
   subtitle: string

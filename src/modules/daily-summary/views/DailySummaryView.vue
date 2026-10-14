@@ -10,12 +10,13 @@ import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import ReceiptActionsModal from '@/components/ReceiptActionsModal.vue'
+import { useBusiness } from '@/composables/useBusiness'
 import { usePermissions } from '@/composables/usePermissions'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import { useLayawayMutations } from '@/modules/layaways/composables/useLayawayMutations'
 import { useServiceOrderMutations } from '@/modules/service-orders/composables/useServiceOrderMutations'
 import { useSaleMutations } from '@/modules/sales/composables/useSaleMutations'
-import type { IncomeChannel, RecentLayaway, RecentReceivable, RecentSale, RecentServiceOrder } from '@/types/dailySummary'
+import type { IncomeChannel, RecentFinancingPayout, RecentLayaway, RecentReceivable, RecentSale, RecentServiceOrder } from '@/types/dailySummary'
 import { NxButton, NxDateRangePicker, NxSelect, NxStatCard, NxTab, NxTabList, NxTabPanel, NxTabPanels, NxTabs, NxToggleButton } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
@@ -132,6 +133,8 @@ const filteredPaymentBreakdown = computed(() => {
 // que ya usan Vender/Ordenes de servicio/Apartados - un solo modal
 // compartido con el estado de la fila seleccionada, igual que hacia el
 // legacy con su modal unico al final de la pagina.
+const { data: business } = useBusiness()
+
 const paymentMethodLabelMap = computed<Record<string, string>>(() => {
   const map: Record<string, string> = {}
   for (const method of summaryQuery.data.value?.payment_breakdown ?? []) {
@@ -141,7 +144,8 @@ const paymentMethodLabelMap = computed<Record<string, string>>(() => {
 })
 
 function paymentMethodLabel(id: string): string {
-  return paymentMethodLabelMap.value[id] ?? id
+  // El resto (ej. la linea "financiado", que no es ingreso del dia) sale del catalogo del negocio.
+  return paymentMethodLabelMap.value[id] ?? business.value?.payment_method_labels?.[id] ?? id
 }
 
 const closedSales = computed<RecentSale[]>(() => (summaryQuery.data.value?.recent_sales ?? []).filter((sale) => sale.status === 'closed'))
@@ -239,6 +243,24 @@ function receivableRow(receivable: RecentReceivable): TransactionRow {
   }
 }
 
+function financingRow(payout: RecentFinancingPayout): TransactionRow {
+  return {
+    key: `financing-${payout.id}`,
+    channelKey: 'financing',
+    channelLabel: 'Financiadoras',
+    title: `${payout.provider_name ?? 'Financiadora'} giró`,
+    subtitle: [payout.paid_at, payout.customer_name, payout.approval_number ? `Crédito ${payout.approval_number}` : null]
+      .filter(Boolean)
+      .join(' · '),
+    amount: payout.amount,
+    paymentBadges: [{ label: paymentMethodLabel(payout.payout_method) }],
+    flags: [],
+    items: null,
+    receipt: null,
+    reverse: null,
+  }
+}
+
 const salesRows = computed(() => closedSales.value.map(saleRow))
 const serviceRows = computed(() =>
   summaryQuery.data.value?.channels_enabled.services ? (summaryQuery.data.value.recent_service_orders ?? []).map(serviceRow) : [],
@@ -250,7 +272,17 @@ const receivableRows = computed(() =>
   summaryQuery.data.value?.channels_enabled.receivables ? (summaryQuery.data.value.recent_receivables ?? []).map(receivableRow) : [],
 )
 
-const allRows = computed<TransactionRow[]>(() => [...salesRows.value, ...serviceRows.value, ...layawayRows.value, ...receivableRows.value])
+const financingRows = computed(() =>
+  summaryQuery.data.value?.channels_enabled.financing ? (summaryQuery.data.value.recent_financing_payouts ?? []).map(financingRow) : [],
+)
+
+const allRows = computed<TransactionRow[]>(() => [
+  ...salesRows.value,
+  ...serviceRows.value,
+  ...layawayRows.value,
+  ...receivableRows.value,
+  ...financingRows.value,
+])
 
 const linesGrouped = ref(true)
 
@@ -420,6 +452,18 @@ function openReceipt(row: TransactionRow): void {
           <p v-if="receivableRows.length === 0" class="py-4 text-center text-sm text-slate-400">Sin fiados cobrados en este rango.</p>
           <div v-else class="flex flex-col divide-y divide-slate-100">
             <TransactionRowItem v-for="row in receivableRows" :key="row.key" :row="row" :show-channel="false" @receipt="openReceipt(row)" />
+          </div>
+        </div>
+
+        <div v-if="summaryQuery.data.value.channels_enabled.financing" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h3 class="mb-1 text-sm font-semibold text-slate-700">
+            Giros de financiadoras <span class="font-normal text-slate-400">({{ financingRows.length }})</span>
+          </h3>
+          <p v-if="financingRows.length === 0" class="py-4 text-center text-sm text-slate-400">
+            Ninguna financiadora giró dinero en este rango.
+          </p>
+          <div v-else class="flex flex-col divide-y divide-slate-100">
+            <TransactionRowItem v-for="row in financingRows" :key="row.key" :row="row" :show-channel="false" />
           </div>
         </div>
       </template>
