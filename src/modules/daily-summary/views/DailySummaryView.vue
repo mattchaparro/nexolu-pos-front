@@ -36,7 +36,7 @@ const summaryQuery = useDailySummary(dateFrom, dateTo)
 const { hasPermission } = usePermissions()
 const canViewSalesHistory = computed(() => hasPermission('reports.sales'))
 const canReverseSales = computed(() => hasPermission('sales.reverse'))
-const canCancelServiceOrders = computed(() => hasPermission('appointments.manage'))
+const canCancelServiceOrders = computed(() => hasPermission('service_orders.cancel'))
 const canCancelLayaways = computed(() => hasPermission('layaways.manage'))
 
 const { notify } = useSystemAlert()

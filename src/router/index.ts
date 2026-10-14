@@ -272,7 +272,7 @@ const router = createRouter({
           path: 'ordenes-servicio/:id/editar',
           name: 'service-orders.edit',
           component: () => import('@/modules/service-orders/views/ServiceOrderFormView.vue'),
-          meta: { requiresFeature: 'services', requiresPermission: SERVICE_ORDERS_PERMISSIONS },
+          meta: { requiresFeature: 'services', requiresPermission: 'service_orders.edit' },
         },
         {
           path: 'agenda',

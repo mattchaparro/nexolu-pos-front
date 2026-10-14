@@ -9,6 +9,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import ReceiptActionsModal from '@/components/ReceiptActionsModal.vue'
 import StageBadge from '@/components/StageBadge.vue'
+import { usePermissions } from '@/composables/usePermissions'
 import { useServiceWorkflow } from '@/composables/useServiceWorkflow'
 import { useStaffOptions } from '@/composables/useStaffOptions'
 import { useSystemAlert } from '@/composables/useSystemAlert'
@@ -32,6 +33,10 @@ const workflowQuery = useServiceWorkflow()
 const stageOptions = computed(() => workflowQuery.data.value?.stages ?? [])
 
 const { cancelMutation, setStageMutation, deleteMutation } = useServiceOrderMutations()
+const { hasPermission } = usePermissions()
+const canEdit = computed(() => hasPermission('service_orders.edit'))
+const canCancel = computed(() => hasPermission('service_orders.cancel'))
+const canDelete = computed(() => hasPermission('service_orders.delete'))
 const actionError = ref<string | null>(null)
 const payModalOpen = ref(false)
 const receiptModalOpen = ref(false)
@@ -163,11 +168,11 @@ function formatDateTime(value: string): string {
       <div class="flex flex-wrap gap-2">
         <template v-if="order.status !== 'cancelled'">
           <NxButton v-if="order.status !== 'paid'" @click="payModalOpen = true">Registrar abono</NxButton>
-          <NxButton variant="outline" @click="router.push({ name: 'service-orders.edit', params: { id: order.id } })">Editar</NxButton>
-          <NxButton variant="outline" :loading="cancelMutation.isPending.value" @click="cancelOrder">Cancelar orden</NxButton>
+          <NxButton v-if="canEdit" variant="outline" @click="router.push({ name: 'service-orders.edit', params: { id: order.id } })">Editar</NxButton>
+          <NxButton v-if="canCancel" variant="outline" :loading="cancelMutation.isPending.value" @click="cancelOrder">Cancelar orden</NxButton>
         </template>
         <NxButton variant="outline" icon="pi pi-receipt" @click="receiptModalOpen = true">Comprobante</NxButton>
-        <NxButton variant="outline" class="text-red-600 hover:bg-red-50" :loading="deleteMutation.isPending.value" @click="deleteOrder">
+        <NxButton v-if="canDelete" variant="outline" class="text-red-600 hover:bg-red-50" :loading="deleteMutation.isPending.value" @click="deleteOrder">
           Eliminar orden
         </NxButton>
       </div>
