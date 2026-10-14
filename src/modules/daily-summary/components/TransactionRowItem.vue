@@ -21,6 +21,7 @@ const channelBadgeClass: Record<TransactionRow['channelKey'], string> = {
   services: 'bg-sky-50 text-sky-600',
   layaways: 'bg-purple-50 text-purple-600',
   receivables: 'bg-amber-50 text-amber-600',
+  financing: 'bg-emerald-50 text-emerald-600',
 }
 </script>
 
