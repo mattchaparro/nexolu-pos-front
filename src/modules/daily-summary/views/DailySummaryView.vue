@@ -37,7 +37,7 @@ const { hasPermission } = usePermissions()
 const canViewSalesHistory = computed(() => hasPermission('reports.sales'))
 const canReverseSales = computed(() => hasPermission('sales.reverse'))
 const canCancelServiceOrders = computed(() => hasPermission('service_orders.cancel'))
-const canCancelLayaways = computed(() => hasPermission('layaways.manage'))
+const canCancelLayaways = computed(() => hasPermission('layaways.cancel'))
 
 const { notify } = useSystemAlert()
 const queryClient = useQueryClient()

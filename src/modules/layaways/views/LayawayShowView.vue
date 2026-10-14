@@ -6,6 +6,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import ReceiptActionsModal from '@/components/ReceiptActionsModal.vue'
+import { usePermissions } from '@/composables/usePermissions'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import { NxButton, NxPageHeader } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
@@ -25,6 +26,9 @@ const layawayQuery = useLayaway(layawayId)
 const layaway = computed(() => layawayQuery.data.value ?? null)
 
 const { completeMutation, cancelMutation } = useLayawayMutations()
+const { hasPermission } = usePermissions()
+const canEditItems = computed(() => hasPermission('layaways.edit_items'))
+const canCancel = computed(() => hasPermission('layaways.cancel'))
 const actionError = ref<string | null>(null)
 
 const payModalOpen = ref(false)
@@ -129,13 +133,13 @@ function formatDateTime(value: string): string {
           <NxButton v-if="layaway.balance <= 0" variant="outline" :loading="completeMutation.isPending.value" @click="completeLayaway">
             Completar
           </NxButton>
-          <NxButton variant="outline" @click="editItemsModalOpen = true">Cambiar productos</NxButton>
-          <NxButton variant="outline" :loading="cancelMutation.isPending.value" @click="cancelLayaway">Cancelar apartado</NxButton>
+          <NxButton v-if="canEditItems" variant="outline" @click="editItemsModalOpen = true">Cambiar productos</NxButton>
+          <NxButton v-if="canCancel" variant="outline" :loading="cancelMutation.isPending.value" @click="cancelLayaway">Cancelar apartado</NxButton>
           <NxButton variant="outline" icon="pi pi-receipt" @click="receiptModalOpen = true">Comprobante</NxButton>
         </div>
       </div>
       <div v-else-if="layaway.status === 'completed'" class="flex gap-2">
-        <NxButton variant="outline" :loading="cancelMutation.isPending.value" @click="cancelLayaway">Cancelar apartado</NxButton>
+        <NxButton v-if="canCancel" variant="outline" :loading="cancelMutation.isPending.value" @click="cancelLayaway">Cancelar apartado</NxButton>
         <NxButton variant="outline" icon="pi pi-receipt" @click="receiptModalOpen = true">Comprobante</NxButton>
       </div>
 
