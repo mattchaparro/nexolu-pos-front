@@ -348,7 +348,7 @@ const router = createRouter({
           path: 'financiacion',
           name: 'financing.index',
           component: () => import('@/modules/financing/views/FinancingView.vue'),
-          meta: { requiresFeature: 'financing', requiresAdmin: true },
+          meta: { requiresFeature: 'financing', requiresPermission: ['financing.view', 'financing.payouts'] },
         },
         {
           path: 'fiados',

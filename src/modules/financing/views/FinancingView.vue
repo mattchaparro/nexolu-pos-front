@@ -7,7 +7,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, ref, watch } from 'vue'
 
 import { useBusiness } from '@/composables/useBusiness'
+import { usePermissions } from '@/composables/usePermissions'
 import { useSystemAlert } from '@/composables/useSystemAlert'
+import { useAuthStore } from '@/stores/auth.store'
 import type { FinancingCredit, RegisterPayoutPayload } from '@/types/financing'
 import { NxButton, NxColumn, NxDataTable, NxInput, NxPageHeader, NxSelect, NxStatCard } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
@@ -66,6 +68,10 @@ const meta = computed(() => creditsQuery.data.value?.meta)
 
 const { data: business } = useBusiness()
 const { notify } = useSystemAlert()
+const { hasPermission } = usePermissions()
+const auth = useAuthStore()
+const canRegisterPayouts = computed(() => hasPermission('financing.payouts'))
+const isAdmin = computed(() => auth.user?.roles?.includes('admin') === true)
 const queryClient = useQueryClient()
 
 function selectProvider(id: number): void {
@@ -150,7 +156,7 @@ function onPage(event: { page: number }): void {
   <div class="flex flex-col gap-4 pb-20 lg:pb-0">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <NxPageHeader title="Financiación" icon="pi pi-building-columns" compact />
-      <NxButton variant="outline" icon="pi pi-cog" @click="providersModalOpen = true">Financiadoras</NxButton>
+      <NxButton v-if="isAdmin" variant="outline" icon="pi pi-cog" @click="providersModalOpen = true">Financiadoras</NxButton>
     </div>
 
     <div v-if="summaryQuery.data.value" class="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -279,7 +285,7 @@ function onPage(event: { page: number }): void {
             </template>
           </template>
         </NxColumn>
-        <NxColumn>
+        <NxColumn v-if="canRegisterPayouts">
           <template #body="{ data }: { data: FinancingCredit }">
             <div class="flex justify-end">
               <NxButton v-if="data.status === 'pending'" size="sm" icon="pi pi-check" @click="openPayout(data)">
