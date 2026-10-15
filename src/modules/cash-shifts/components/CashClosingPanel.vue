@@ -1,10 +1,9 @@
 <script setup lang="ts">
-// Cierre de caja: si el dueño acumulo dias sin cerrar, la cola (arriba) lo
-// guia a cerrarlos en orden empezando por el mas antiguo - cerrar ese dia
-// saca su fecha de la cola automaticamente (la lista se recalcula) y salta
-// sola al siguiente. La base del dia siguiente se sugiere igual a lo
-// contado hoy (lo que normalmente se deja en caja) para que el dueño no
-// tenga que pensarlo, pero puede cambiarla.
+// Cierre de caja: arranca siempre en hoy. Los dias sin cierre no hace falta
+// cerrarlos uno por uno: la base se arrastra con lo que conto cada turno
+// (ver CashShiftService::expectedOpeningCash), asi que cerrar hoy ya parte
+// del efectivo acumulado. La base del dia siguiente se sugiere igual a lo
+// contado, pero el dueño puede cambiarla.
 import { computed, ref, watch } from 'vue'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
@@ -24,21 +23,7 @@ import PendingDatesQueue from './PendingDatesQueue.vue'
 const pendingDatesQuery = usePendingClosingDates()
 
 const selectedDate = ref(toLocalDateIso())
-const hasInitialized = ref(false)
 
-watch(
-  pendingDatesQuery.data,
-  (dates) => {
-    if (!dates) {
-      return
-    }
-    if (dates.length > 0 && (!hasInitialized.value || !dates.includes(selectedDate.value))) {
-      selectedDate.value = dates[0]
-    }
-    hasInitialized.value = true
-  },
-  { immediate: true },
-)
 
 const openingCash = ref(0)
 const openingCashInitializedForDate = ref<string | null>(null)
