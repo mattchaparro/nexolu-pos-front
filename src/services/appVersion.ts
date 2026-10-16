@@ -2,7 +2,7 @@
  * Detecta que esta pestana quedo corriendo una version vieja de la app.
  *
  * nginx le sigue sirviendo a una pestana abierta los assets de la release
- * anterior (ver nexolu-infra/nginx/new-pos.nexolu.co.conf) para que un
+ * anterior (ver nexolu-infra/nginx/pos.nexolu.co.conf) para que un
  * deploy no la rompa. El costo: una tablet de mostrador que nunca recarga se
  * queda para siempre en la version con la que abrio - Central Cell siguio
  * viendo el buscador de clientes viejo en "Editar orden" 20 minutos despues

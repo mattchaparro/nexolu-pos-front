@@ -1,6 +1,6 @@
 #!/bin/bash
 # Deploy de pos-front en el patron de PRODUCCION: build estatico servido
-# directo por el nginx del host (ver nexolu-infra/nginx/new-pos.nexolu.co.conf).
+# directo por el nginx del host (ver nexolu-infra/nginx/pos.nexolu.co.conf).
 #
 # Tres propiedades que este script garantiza, y por que existen:
 #
@@ -129,8 +129,8 @@ estado() {
 
 verificar() {
     local codigo
-    codigo="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 https://new-pos.nexolu.co/ 2>/dev/null || echo 000)"
-    log "curl https://new-pos.nexolu.co/ -> $codigo"
+    codigo="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 https://pos.nexolu.co/ 2>/dev/null || echo 000)"
+    log "curl https://pos.nexolu.co/ -> $codigo"
     [ "$codigo" = "200" ] || log "AVISO: no devolvio 200. Revisar nginx y, si hace falta, ./deploy.sh rollback"
 }
 
