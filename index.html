@@ -5,6 +5,28 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content" />
     <title>Nexolú POS</title>
+    <script>
+      // pos.nexolu.co/ sin sesion -> el home del POS, que vive en nexolu.co/pos
+      // (las landings van en nexolu.co a proposito: ver nexolu-sites). Con
+      // sesion no pasa nada: las tablets que abren pos.nexolu.co siguen
+      // entrando directo a la app.
+      //
+      // Inline y antes del bundle para que el visitante no descargue la app
+      // ni vea un parpadeo del login. No actua si la URL trae fragmento: el
+      // SSO vuelve a / con #auth_token= (o #token= del legacy) y todavia no
+      // hay token guardado.
+      try {
+        if (
+          location.pathname === '/' &&
+          !location.hash &&
+          !localStorage.getItem('nexolu_auth_token')
+        ) {
+          location.replace('https://nexolu.co/pos/' + location.search)
+        }
+      } catch (e) {
+        // localStorage bloqueado (modo privado estricto): se queda en la app.
+      }
+    </script>
   </head>
   <body>
     <div id="app"></div>

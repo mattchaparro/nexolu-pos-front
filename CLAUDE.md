@@ -12,9 +12,11 @@ dashboard, sales, inventory, ...). El home/marketing público de
 `pos.nexolu.co` (SEO, landing, contenido pre-login) queda **fuera de
 alcance** a propósito: una SPA client-rendered es mala opción para
 contenido que vive de indexación (los crawlers no ven HTML real hasta
-que se ejecuta el JS). El marketing site sigue sirviéndose desde el
-monolito legacy por ahora; si en el futuro se migra, evaluar SSR/SSG
-aparte, no meterlo en esta SPA.
+que se ejecuta el JS). El home del POS vive en `nexolu.co/pos`
+(sitio estático en Astro, repo `nexolu-sites`, carpeta `sites/nexolu`):
+`index.html` manda ahí a quien abre `pos.nexolu.co/` sin sesión, y nginx
+redirige las rutas viejas del legacy (`/login`, `/register`,
+`/privacy-policy`, `/terms-of-service`).
 
 ## Reglas del proyecto (inamovibles)
 
