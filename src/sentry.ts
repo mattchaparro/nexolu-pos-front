@@ -29,6 +29,8 @@ export function initSentry(app: App, router: Router): void {
     return
   }
 
+  const api = apiOrigin()
+
   Sentry.init({
     app,
     dsn,
@@ -37,6 +39,11 @@ export function initSentry(app: App, router: Router): void {
     // mano para eso) - el afterEach de abajo es solo para el tageo de
     // negocio/usuario, no para performance.
     integrations: [Sentry.browserTracingIntegration({ router })],
+    // Manda la traza (sentry-trace/baggage) a las llamadas al API, que esta en
+    // otro dominio. Sin esto Sentry ve dos mundos separados: la pantalla lenta
+    // en el front y la query lenta en el back, sin saber que son la misma
+    // peticion. El CORS del API ya acepta cualquier encabezado.
+    tracePropagationTargets: api ? [api] : [],
     tracesSampleRate:
       import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE !== undefined
         ? Number(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE)
@@ -45,6 +52,14 @@ export function initSentry(app: App, router: Router): void {
 
   router.afterEach(syncSentryBusinessContext)
   syncSentryBusinessContext()
+}
+
+function apiOrigin(): string | null {
+  try {
+    return new URL(import.meta.env.VITE_API_BASE_URL).origin
+  } catch {
+    return null
+  }
 }
 
 function syncSentryBusinessContext(): void {
