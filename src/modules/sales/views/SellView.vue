@@ -86,27 +86,33 @@ const checkout = useSaleCheckout(
 // no encontrado" (el catalogo todavia vacio, no que el producto ya no
 // exista). Una sola vez: watch con stop() apenas se dispara, no en cada
 // refetch de productsQuery.
-// stopDraftRestore se referencia dentro de su propio callback: con
-// immediate:true, si productsQuery.data.value ya tiene datos al montar, ese
-// callback corre de forma sincrona durante esta misma llamada a watch(),
-// antes de que la asignacion termine (TDZ de const/let -> ReferenceError).
-// Se declara aparte con let (ya inicializada en undefined) y se fuerza el
-// stop despues del watch() para cubrir tambien ese caso sincrono.
+// Con immediate:true, si el catalogo ya esta en cache (volver a Vender desde
+// otra pantalla), el callback corre DENTRO de la llamada a watch(), antes de
+// que stopDraftRestore exista: tocarlo ahi es un ReferenceError (TDZ) que
+// deja Vender en blanco. `?.` no lo evita. El callback solo lo usa cuando
+// watchReady ya es true; el caso sincrono se cierra justo despues.
+// Bug real dos veces: corregido el 25-ago y revertido el 29-ago por el
+// autofix de prefer-const (convirtio el `let` en `const`); volvio a pasar en
+// Central Cell el 22-oct (Sentry NEXOLU-POS-FRONT-5).
 let draftRestoreHandled = false
+let watchReady = false
 const stopDraftRestore = watch(
   () => productsQuery.data.value,
   (products) => {
-    if (!products || products.length === 0) {
+    if (draftRestoreHandled || !products || products.length === 0) {
       return
     }
+    draftRestoreHandled = true
     if (checkout.restoreDraft(products)) {
       notify('Retomamos la venta que tenías en curso')
     }
-    draftRestoreHandled = true
-    stopDraftRestore?.()
+    if (watchReady) {
+      stopDraftRestore()
+    }
   },
   { immediate: true },
 )
+watchReady = true
 if (draftRestoreHandled) {
   stopDraftRestore()
 }
