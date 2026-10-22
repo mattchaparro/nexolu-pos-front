@@ -10,7 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useBusiness } from '@/composables/useBusiness'
 import { useAuthStore } from '@/stores/auth.store'
-import type { SubscriptionPayment, SubscriptionStatus } from '@/types/subscription'
+import type { BillingCycle, SubscriptionPayment, SubscriptionStatus } from '@/types/subscription'
 import { NxButton, NxCard, NxPageHeader } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
@@ -50,12 +50,19 @@ const statusConfig: Record<SubscriptionStatus, { label: string; class: string; i
   inactive: { label: 'Inactiva', class: 'bg-slate-100 text-slate-500', icon: 'pi pi-pause-circle' },
 }
 
-const checkout = useSubscriptionCheckout()
+// Mensual o anual. Lo leen los dos flujos de cobro al iniciar el pago.
+const cycle = ref<BillingCycle>('monthly')
+const isAnnual = computed(() => cycle.value === 'annual')
+const amountToPay = computed(() =>
+  data.value ? (isAnnual.value ? data.value.pricing.annual.total_cop : data.value.pricing.total_cop) : 0,
+)
+
+const checkout = useSubscriptionCheckout(cycle)
 // Flujo nuevo (flow="api", sin abrir el widget) - convive con `checkout`
 // (Widget legado) sin tocarlo. El estado de "verificando/confirmado" se
 // combina abajo porque ambos terminan igual: esperando el mismo webhook
 // del Core, solo cambia como se inicio el cobro.
-const direct = useDirectCheckout()
+const direct = useDirectCheckout(cycle)
 
 const anyVerifying = computed(() => checkout.verifying.value || direct.verifying.value)
 const anyActivated = computed(() => checkout.activated.value || direct.activated.value)
@@ -242,11 +249,43 @@ onUnmounted(() => {
           >.
         </p>
 
+        <div
+          v-if="data.pricing.annual.discount_percent > 0"
+          class="mb-4 inline-flex rounded-xl bg-slate-100 p-1"
+          role="radiogroup"
+          aria-label="Periodo de pago"
+        >
+          <button
+            v-for="option in (['monthly', 'annual'] as const)"
+            :key="option"
+            type="button"
+            role="radio"
+            :aria-checked="cycle === option"
+            :disabled="checkout.paying.value || direct.paying.value"
+            class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+            :class="cycle === option ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'"
+            @click="cycle = option"
+          >
+            {{ option === 'monthly' ? 'Mensual' : 'Anual' }}
+            <span
+              v-if="option === 'annual'"
+              class="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-bold text-indigo-700"
+            >
+              {{ data.pricing.annual.discount_percent }}% dto
+            </span>
+          </button>
+        </div>
+
         <div class="mb-5 flex items-end justify-between gap-4">
           <div>
-            <p class="mb-1 text-xs text-slate-400">Valor a pagar</p>
-            <p class="text-4xl font-extrabold text-slate-900">{{ formatCop(data.pricing.total_cop) }}</p>
-            <p v-if="data.pricing.is_promo_eligible" class="mt-1 text-xs text-emerald-700">
+            <p class="mb-1 text-xs text-slate-400">{{ isAnnual ? 'Valor a pagar por un año' : 'Valor a pagar' }}</p>
+            <p class="text-4xl font-extrabold text-slate-900">{{ formatCop(amountToPay) }}</p>
+            <p v-if="isAnnual" class="mt-1 text-xs text-slate-500">
+              Equivale a {{ formatCop(data.pricing.annual.monthly_equivalent_cop) }} al mes · ahorras
+              <strong class="text-slate-700">{{ formatCop(data.pricing.annual.savings_cop) }}</strong>
+              frente a 12 mensualidades de {{ formatCop(data.pricing.plan_base_cop) }}
+            </p>
+            <p v-else-if="data.pricing.is_promo_eligible" class="mt-1 text-xs text-emerald-700">
               Desc. {{ data.pricing.promo_discount_percent }}% · regular {{ formatCop(data.pricing.plan_base_cop) }}
             </p>
           </div>

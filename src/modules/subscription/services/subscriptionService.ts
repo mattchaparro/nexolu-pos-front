@@ -1,6 +1,11 @@
 import { httpClient } from '@/services/http/client'
 import type { ChargeCheckoutResult } from '@/types/paymentSource'
-import type { SubscriptionCheckoutIntent, SubscriptionCheckoutStatus, SubscriptionStatusResponse } from '@/types/subscription'
+import type {
+  BillingCycle,
+  SubscriptionCheckoutIntent,
+  SubscriptionCheckoutStatus,
+  SubscriptionStatusResponse,
+} from '@/types/subscription'
 
 export async function fetchSubscriptionStatus(): Promise<SubscriptionStatusResponse> {
   const { data } = await httpClient.get<SubscriptionStatusResponse>('/subscription/status')
@@ -10,10 +15,12 @@ export async function fetchSubscriptionStatus(): Promise<SubscriptionStatusRespo
 export async function initiateSubscriptionCheckout(
   redirectUrl: string,
   flow: 'widget' | 'api' = 'widget',
+  cycle: BillingCycle = 'monthly',
 ): Promise<SubscriptionCheckoutIntent> {
   const { data } = await httpClient.post<SubscriptionCheckoutIntent>('/subscription/checkout', {
     redirect_url: redirectUrl,
     flow,
+    cycle,
   })
   return data
 }

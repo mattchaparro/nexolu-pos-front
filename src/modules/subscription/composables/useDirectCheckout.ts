@@ -1,5 +1,7 @@
 import { useQueryClient } from '@tanstack/vue-query'
-import { ref } from 'vue'
+import { type Ref, ref } from 'vue'
+
+import type { BillingCycle } from '@/types/subscription'
 
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
@@ -37,7 +39,11 @@ export interface PseChargeInput {
  * porque PSE/Boton Bancolombia redirigen la pagina completa al banco y de
  * vuelta - el estado en memoria se pierde.
  */
-export function useDirectCheckout() {
+/**
+ * `cycle`: mensual o anual. Se lee al iniciar cada cobro, asi que el
+ * selector de la pantalla puede cambiarlo hasta el ultimo momento.
+ */
+export function useDirectCheckout(cycle: Ref<BillingCycle> = ref('monthly')) {
   const queryClient = useQueryClient()
   const paying = ref(false)
   const error = ref<string | null>(null)
@@ -148,7 +154,7 @@ export function useDirectCheckout() {
     error.value = null
     declined.value = false
     try {
-      const intent = await initiateSubscriptionCheckout(redirectUrl(), 'api')
+      const intent = await initiateSubscriptionCheckout(redirectUrl(), 'api', cycle.value)
       await finishCharge(intent.order_key, {
         type: 'PAYMENT_SOURCE',
         payment_source_id: paymentSourceId,
@@ -167,7 +173,7 @@ export function useDirectCheckout() {
     error.value = null
     declined.value = false
     try {
-      const intent = await initiateSubscriptionCheckout(redirectUrl(), 'api')
+      const intent = await initiateSubscriptionCheckout(redirectUrl(), 'api', cycle.value)
       if (!intent.payment_init) {
         throw new Error('No se pudo iniciar el pago directo.')
       }
@@ -198,7 +204,7 @@ export function useDirectCheckout() {
     error.value = null
     declined.value = false
     try {
-      const intent = await initiateSubscriptionCheckout(redirectUrl(), 'api')
+      const intent = await initiateSubscriptionCheckout(redirectUrl(), 'api', cycle.value)
       if (!intent.payment_init) {
         throw new Error('No se pudo iniciar el pago directo.')
       }
@@ -224,7 +230,7 @@ export function useDirectCheckout() {
     error.value = null
     declined.value = false
     try {
-      const intent = await initiateSubscriptionCheckout(redirectUrl(), 'api')
+      const intent = await initiateSubscriptionCheckout(redirectUrl(), 'api', cycle.value)
       await finishCharge(intent.order_key, {
         type: 'PSE',
         payment_description: 'Suscripcion Nexolu',
@@ -242,7 +248,7 @@ export function useDirectCheckout() {
     error.value = null
     declined.value = false
     try {
-      const intent = await initiateSubscriptionCheckout(redirectUrl(), 'api')
+      const intent = await initiateSubscriptionCheckout(redirectUrl(), 'api', cycle.value)
       await finishCharge(intent.order_key, {
         type: 'BANCOLOMBIA_TRANSFER',
         payment_description: 'Suscripcion Nexolu',

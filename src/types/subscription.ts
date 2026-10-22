@@ -4,6 +4,16 @@
 // Core (Wompi por detras).
 export type SubscriptionStatus = 'inactive' | 'paid' | 'trial' | 'expired'
 
+/** Mensual (30 dias, con la promo si aplica) o anual (365 dias con descuento). */
+export type BillingCycle = 'monthly' | 'annual'
+
+export interface AnnualPricing {
+  discount_percent: number
+  total_cop: number
+  monthly_equivalent_cop: number
+  savings_cop: number
+}
+
 export interface SubscriptionPricing {
   plan_standard_cop: number
   plan_base_cop: number
@@ -15,6 +25,7 @@ export interface SubscriptionPricing {
   promo_discount_cop: number
   plan_after_promo_cop: number
   total_cop: number
+  annual: AnnualPricing
 }
 
 export interface SubscriptionPayment {
@@ -40,6 +51,7 @@ export interface SubscriptionStatusResponse {
 export interface SubscriptionCheckoutIntent {
   order_key: string
   amount_cop: number
+  cycle: BillingCycle
   checkout: {
     public_key: string
     amount_in_cents: number

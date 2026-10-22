@@ -1,5 +1,7 @@
 import { useQueryClient } from '@tanstack/vue-query'
-import { ref } from 'vue'
+import { type Ref, ref } from 'vue'
+
+import type { BillingCycle } from '@/types/subscription'
 
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
@@ -45,7 +47,11 @@ function loadWompiScript(): Promise<void> {
  * (ver checkoutReferenceStorage) porque en mobile Wompi redirige la pagina
  * completa y el estado en memoria se pierde.
  */
-export function useSubscriptionCheckout() {
+/**
+ * `cycle`: mensual o anual. Se lee al iniciar cada cobro, asi que el
+ * selector de la pantalla puede cambiarlo hasta el ultimo momento.
+ */
+export function useSubscriptionCheckout(cycle: Ref<BillingCycle> = ref('monthly')) {
   const queryClient = useQueryClient()
   const paying = ref(false)
   const error = ref<string | null>(null)
@@ -123,7 +129,7 @@ export function useSubscriptionCheckout() {
 
     try {
       const redirectUrl = `${window.location.origin}${window.location.pathname}?wompi_paid=1`
-      const intent = await initiateSubscriptionCheckout(redirectUrl)
+      const intent = await initiateSubscriptionCheckout(redirectUrl, 'widget', cycle.value)
       savePendingCheckoutReference(intent.order_key)
       await loadWompiScript()
 
