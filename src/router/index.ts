@@ -104,6 +104,28 @@ const router = createRouter({
         },
       ],
     },
+    // Rutas del POS legacy que siguen en enlaces viejos (correos, WhatsApp,
+    // favoritos y la landing de nexolu.co/pos antes de corregirla). Sin esto
+    // la SPA no las reconoce y muestra una pantalla vacia. nginx tambien las
+    // redirige con 301 (nexolu-infra/nginx/pos.nexolu.co.conf); esto cubre
+    // mientras ese cambio no este aplicado y a quien navegue dentro de la app.
+    { path: '/login', redirect: { name: 'login' } },
+    { path: '/register', redirect: { name: 'register' } },
+    { path: '/forgot-password', redirect: { name: 'forgot-password' } },
+    {
+      path: '/privacy-policy',
+      redirect: () => {
+        window.location.replace('https://nexolu.co/privacidad/')
+        return { name: 'login' }
+      },
+    },
+    {
+      path: '/terms-of-service',
+      redirect: () => {
+        window.location.replace('https://nexolu.co/terminos/')
+        return { name: 'login' }
+      },
+    },
     {
       path: '/',
       component: () => import('@/layouts/AppLayout.vue'),
