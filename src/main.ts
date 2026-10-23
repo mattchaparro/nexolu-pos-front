@@ -110,6 +110,14 @@ app.use(ToastService)
 
 app.mount('#app')
 
+// Quita la pantalla de carga de index.html cuando la primera navegacion
+// termina (incluye validar la sesion con /me): recien ahi hay algo que ver.
+// Si la navegacion falla tambien se quita, para que el error quede visible.
+router
+  .isReady()
+  .catch(() => undefined)
+  .finally(() => document.getElementById('boot-splash')?.remove())
+
 // Revalida la sesion apenas la pestaña vuelve a estar visible (usuario
 // volvio de background, pantalla bloqueada, cambio de app en el celular).
 // TanStack Query ya reintenta las queries activas al recuperar el foco
