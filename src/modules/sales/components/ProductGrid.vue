@@ -12,6 +12,7 @@ import type { Product } from '@/types/product'
 import { NxInput } from '@/ui'
 import { buildCategoryToneMap } from '@/utils/categoryTone'
 
+import { codeIncludes, findByExactCode } from '../support/productCode'
 import ProductCard from './ProductCard.vue'
 
 const props = withDefaults(
@@ -29,6 +30,7 @@ const props = withDefaults(
 const emit = defineEmits<{ select: [product: Product] }>()
 
 const search = ref('')
+const searchInput = ref<InstanceType<typeof NxInput> | null>(null)
 const selectedCategoryId = ref<number | null>(null)
 // Filtro "Frecuentes": vive aparte de selectedCategoryId porque no es una
 // categoria del negocio sino un corte por rotacion, y los dos son
@@ -64,11 +66,13 @@ const filteredProducts = computed(() => {
     if (selectedCategoryId.value !== null && product.category?.id !== selectedCategoryId.value) {
       return false
     }
-    // Como en el legacy: el texto busca por nombre del producto o de su categoria.
+    // Como en el legacy: el texto busca por nombre del producto, de su
+    // categoria o por codigo (el de un lector de codigo de barras).
     if (
       term &&
       !product.name.toLowerCase().includes(term) &&
-      !(product.category?.name ?? '').toLowerCase().includes(term)
+      !(product.category?.name ?? '').toLowerCase().includes(term) &&
+      !codeIncludes(product, term)
     ) {
       return false
     }
@@ -86,6 +90,22 @@ const filteredProducts = computed(() => {
   return list
 })
 
+/**
+ * Enter en el buscador: si lo escrito es exactamente el codigo de un producto
+ * (lo que manda un lector de codigo de barras), se agrega de una y el
+ * buscador queda limpio y con el foco para el siguiente escaneo.
+ */
+function addScannedCode(): void {
+  const product = findByExactCode(props.products, search.value)
+  if (!product) {
+    return
+  }
+
+  emit('select', product)
+  search.value = ''
+  searchInput.value?.focus()
+}
+
 function selectCategory(id: number | null): void {
   frequentSelected.value = false
   selectedCategoryId.value = selectedCategoryId.value === id ? null : id
@@ -102,12 +122,14 @@ function toggleFrequent(): void {
 <template>
   <div class="flex h-full flex-col gap-3">
     <NxInput
+      ref="searchInput"
       v-model="search"
-      label="Buscar producto"
+      label="Buscar producto o escanear código"
       size="lg"
       icon="pi pi-search"
       clearable
       blur-on-enter
+      @keydown.enter="addScannedCode"
     />
 
     <div v-if="categoriesInUse.length > 0 || hasFrequent" class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
