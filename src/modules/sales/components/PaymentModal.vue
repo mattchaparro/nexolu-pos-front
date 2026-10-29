@@ -701,7 +701,7 @@ function applyClient(client: { id: number; name: string; phone: string | null })
                 size="sm"
                 @update:model-value="financingProviderId = $event as number"
               />
-              <NxInputNumber v-model="downPayment" label="Inicial que paga el cliente" size="sm" :min="0" />
+              <NxInputNumber v-model="downPayment" label="Cuota inicial (opcional)" size="sm" :min="0" />
               <div v-if="(downPayment ?? 0) > 0" class="flex flex-col gap-1">
                 <p class="text-xs font-medium text-slate-500">La inicial se paga con</p>
                 <PaymentMethodPicker
