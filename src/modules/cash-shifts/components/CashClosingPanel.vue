@@ -13,7 +13,11 @@ import GatewayReconciliationCard from './GatewayReconciliationCard.vue'
 import { formatCop } from '@/utils/formatCop'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
-import { useCashClosingHistory, useCashClosingPreview, usePendingClosingDates } from '../composables/useCashClosing'
+import {
+  useCashClosingHistory,
+  useCashClosingPreview,
+  usePendingClosingDates,
+} from '../composables/useCashClosing'
 import { useCashClosingMutations } from '../composables/useCashClosingMutations'
 import { useCashDifference } from '../composables/useCashDifference'
 import DailySummaryDetailModal from './DailySummaryDetailModal.vue'
@@ -23,7 +27,6 @@ import PendingDatesQueue from './PendingDatesQueue.vue'
 const pendingDatesQuery = usePendingClosingDates()
 
 const selectedDate = ref(toLocalDateIso())
-
 
 const openingCash = ref(0)
 const openingCashInitializedForDate = ref<string | null>(null)
@@ -63,6 +66,15 @@ watch(previewQuery.data, (preview) => {
 })
 
 const existingClosing = computed(() => previewQuery.data.value?.existing_closing ?? null)
+
+// Cerrar el dia en curso tiene consecuencias que cerrar uno vencido no:
+// despues del cierre nadie puede abrir turno hoy y lo que se siga vendiendo
+// no entra en este cierre. Central Cell lo cerro dos veces por error
+// (18 y 29 de oct) queriendo cerrar solo los dias anteriores.
+const isClosingToday = computed(() => selectedDate.value === toLocalDateIso())
+const pendingPastDates = computed(() =>
+  (pendingDatesQuery.data.value ?? []).filter((date) => date < toLocalDateIso()),
+)
 const shiftsToAutoClose = computed(() => previewQuery.data.value?.shifts_to_auto_close ?? [])
 // El primer turno del dia abrio con una base distinta a la que dejo el cierre
 // anterior: la diferencia no es de hoy, paso entre ese cierre y la apertura.
@@ -76,12 +88,16 @@ const openingMismatch = computed(() => previewQuery.data.value?.opening_mismatch
 const recentClosingsQuery = useCashClosingHistory(ref(1))
 const previousClosing = computed(
   () =>
-    recentClosingsQuery.data.value?.data.find((closing) => closing.date.slice(0, 10) < selectedDate.value) ??
-    null,
+    recentClosingsQuery.data.value?.data.find(
+      (closing) => closing.date.slice(0, 10) < selectedDate.value,
+    ) ?? null,
 )
 
 function formatDay(isoDate: string): string {
-  return new Date(`${isoDate}T00:00:00`).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })
+  return new Date(`${isoDate}T00:00:00`).toLocaleDateString('es-CO', {
+    day: 'numeric',
+    month: 'short',
+  })
 }
 // Nulo si el negocio no tiene pasarela conectada: mostrarle un cuadre en
 // ceros a quien solo cobra en efectivo sería ruido.
@@ -104,6 +120,15 @@ async function submit(): Promise<void> {
     return
   }
   formError.value = null
+  if (
+    isClosingToday.value &&
+    !window.confirm(
+      '¿Seguro que quieres cerrar la caja de HOY?\n\n' +
+        'Después del cierre nadie podrá abrir turno hoy y lo que se siga vendiendo no quedará en este cierre. Si solo querías cerrar días anteriores, cancela y elige esa fecha.',
+    )
+  ) {
+    return
+  }
   try {
     await storeMutation.mutateAsync({
       date: selectedDate.value,
@@ -214,10 +239,10 @@ async function submit(): Promise<void> {
         </p>
         <p class="mt-1 text-amber-800">
           El turno de {{ openingMismatch.user_name }} abrió con
-          <strong>{{ formatCop(openingMismatch.shift_opening_cash) }}</strong>, pero el cierre del
-          {{ formatDay(openingMismatch.previous_closing_date) }} dejó
-          <strong>{{ formatCop(openingMismatch.expected_opening_cash) }}</strong>. Esa diferencia no es
-          del día: pasó entre ese cierre y la apertura del turno.
+          <strong>{{ formatCop(openingMismatch.shift_opening_cash) }}</strong
+          >, pero el cierre del {{ formatDay(openingMismatch.previous_closing_date) }} dejó
+          <strong>{{ formatCop(openingMismatch.expected_opening_cash) }}</strong
+          >. Esa diferencia no es del día: pasó entre ese cierre y la apertura del turno.
         </p>
       </div>
 
@@ -244,6 +269,51 @@ async function submit(): Promise<void> {
             >
           </li>
         </ul>
+      </div>
+
+      <!-- Dia pasado: se recuerda que hoy NO se cierra con esto. Es el
+           momento en que se cometio el error las dos veces: ponerse al dia
+           con los cierres atrasados y seguir de largo hasta hoy. -->
+      <div
+        v-if="!isClosingToday"
+        class="flex gap-3 rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900 shadow-sm"
+        role="status"
+      >
+        <i class="pi pi-info-circle mt-0.5 text-lg text-indigo-500" />
+        <div>
+          <p class="font-semibold">Vas a cerrar la caja del {{ formatDay(selectedDate) }}.</p>
+          <p class="mt-1 text-indigo-800">
+            Hoy, {{ formatDay(toLocalDateIso()) }}, no se cierra con esto: sigue abierto para vender
+            y abrir turnos. Ciérralo solo cuando termine la jornada.
+          </p>
+        </div>
+      </div>
+
+      <div
+        v-if="isClosingToday"
+        class="flex gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 shadow-sm"
+        role="alert"
+      >
+        <i class="pi pi-exclamation-triangle mt-0.5 text-lg text-amber-500" />
+        <div>
+          <p class="font-semibold">Vas a cerrar la caja de hoy, {{ formatDay(selectedDate) }}.</p>
+          <p class="mt-1 text-amber-800">
+            Después del cierre nadie podrá abrir turno hoy, y lo que se siga vendiendo no quedará en
+            este cierre. Ciérrala solo cuando termine la jornada.
+          </p>
+          <p v-if="pendingPastDates.length > 0" class="mt-2 text-amber-800">
+            ¿Querías cerrar días anteriores? Elige la fecha:
+            <button
+              v-for="date in pendingPastDates"
+              :key="date"
+              type="button"
+              class="ml-1 rounded-md border border-amber-300 bg-white px-2 py-0.5 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+              @click="selectedDate = date"
+            >
+              {{ formatDay(date) }}
+            </button>
+          </p>
+        </div>
       </div>
 
       <div class="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -276,7 +346,8 @@ async function submit(): Promise<void> {
         <p v-if="previousClosing" class="-mt-2 text-xs text-slate-500">
           El cierre anterior ({{ formatDay(previousClosing.date.slice(0, 10)) }}) contó
           {{ formatCop(previousClosing.actual_cash) }} y dejó
-          <strong class="text-slate-700">{{ formatCop(previousClosing.base_for_next_day) }}</strong> de base.
+          <strong class="text-slate-700">{{ formatCop(previousClosing.base_for_next_day) }}</strong>
+          de base.
         </p>
 
         <NxButton
@@ -284,7 +355,11 @@ async function submit(): Promise<void> {
           :loading="storeMutation.isPending.value"
           @click="submit"
         >
-          Confirmar cierre de caja
+          {{
+            isClosingToday
+              ? 'Cerrar la caja de hoy'
+              : `Cerrar la caja del ${formatDay(selectedDate)}`
+          }}
         </NxButton>
       </div>
     </template>

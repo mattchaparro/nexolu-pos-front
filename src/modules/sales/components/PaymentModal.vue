@@ -147,7 +147,8 @@ const receivedInput = ref<number | null>(null)
 const isDelivery = ref(false)
 // Venta financiada: el cliente da una inicial y la financiadora gira el resto.
 const financingProviderId = ref<number | null>(null)
-const downPayment = ref<number | null>(null)
+// 0 por defecto: no todas las financieras piden cuota inicial.
+const downPayment = ref<number | null>(0)
 const downPaymentMethod = ref<string | null>(null)
 const approvalNumber = ref('')
 
@@ -170,7 +171,7 @@ function resetForm(): void {
   partialLabel.value = ''
   receivedInput.value = null
   financingProviderId.value = financingProviders.value.length === 1 ? financingProviders.value[0]!.id : null
-  downPayment.value = null
+  downPayment.value = 0
   downPaymentMethod.value = defaultSplitMethodId.value
   approvalNumber.value = ''
 }
