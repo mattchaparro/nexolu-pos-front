@@ -51,8 +51,9 @@ httpClient.interceptors.request.use((config) => {
   return config
 })
 
-// Antes de este interceptor, un 401 (token vencido, ver config/sanctum.php
-// en la API - expira a las 4h) limpiaba la sesion y redirigia a /login en
+// Antes de este interceptor, un 401 (token vencido: desde oct-2026 vence tras
+// 24 h sin uso o a los 30 dias, ver App\Support\Auth\TokenLifetime en la
+// API; antes vencia a las 4 h fijas del login) limpiaba la sesion y redirigia a /login en
 // silencio: el usuario solo veia pantallas vacias hasta notar que estaba
 // en el login otra vez, sin saber por que. Sanctum no maneja refresh
 // tokens (son PATs planos) y este es un POS por turnos, no una app de
