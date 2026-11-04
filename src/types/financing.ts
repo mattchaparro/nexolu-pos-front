@@ -48,7 +48,14 @@ export interface FinancingProviderSummary {
   paid_this_month_amount: number
 }
 
+/**
+ * Como da el negocio por recibido lo financiado: el mismo dia de la venta
+ * (medio "Financiadoras", sin registrar giros) o a mano cuando llega el giro.
+ */
+export type FinancingPayoutMode = 'on_sale' | 'manual'
+
 export interface FinancingSummary {
+  payout_mode: FinancingPayoutMode
   providers: FinancingProviderSummary[]
   pending_amount: number
   overdue_amount: number

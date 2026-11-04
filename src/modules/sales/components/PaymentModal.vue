@@ -716,7 +716,7 @@ function applyClient(client: { id: number; name: string; phone: string | null })
                 :class="financedAmount > 0.009 ? 'bg-indigo-50 text-indigo-900' : 'bg-red-50 text-red-700'"
               >
                 <template v-if="financedAmount > 0.009">
-                  Financia: <strong>{{ formatCop(financedAmount) }}</strong> · queda por cobrarle a la financiadora
+                  Financia: <strong>{{ formatCop(financedAmount) }}</strong> · lo pone la financiadora
                 </template>
                 <template v-else>La inicial no puede cubrir todo el total.</template>
               </p>
