@@ -63,7 +63,14 @@ const createModalOpen = ref(false)
  * preguntas distintas: cuanta urgencia hay, y que dia hay que cobrar.
  */
 function renewalDate(business: SuperAdminBusiness): string | null {
-  const iso = business.subscription_status === 'paid' ? business.paid_until : business.trial_ends_at
+  // Vencido: el dia en que se quedo sin cubrir, que es la fecha mas reciente
+  // de las dos (si ya habia pagado, paid_until; si nunca pago, el trial).
+  const iso =
+    business.subscription_status === 'paid'
+      ? business.paid_until
+      : business.subscription_status === 'trial'
+        ? business.trial_ends_at
+        : [business.paid_until, business.trial_ends_at].filter(Boolean).sort().at(-1) ?? null
 
   if (!iso) {
     return null
