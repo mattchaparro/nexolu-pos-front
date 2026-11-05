@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { NxButton, NxModal, NxSwitch } from '@/ui'
+import { NxButton, NxModal } from '@/ui'
 
 import BillingDetailsFields from './BillingDetailsFields.vue'
 import CardPaymentFields from './CardPaymentFields.vue'
@@ -25,7 +25,6 @@ const expMonth = ref('')
 const expYear = ref('')
 const cvc = ref('')
 const cardValid = ref(false)
-const save = ref(true)
 
 const billing = useBillingCheckout()
 
@@ -41,7 +40,7 @@ function submit(): void {
     exp_year: expYear.value.padStart(2, '0'),
     card_holder: cardHolder.value.trim(),
   }
-  const label = save.value ? `Tarjeta •••• ${number.value.slice(-4)}` : null
+  const label = `Tarjeta •••• ${number.value.slice(-4)}`
   emit('submit', card, label)
 }
 </script>
@@ -71,10 +70,15 @@ function submit(): void {
         v-model:valid="cardValid"
         :disabled="paying"
       />
-      <label class="flex items-center gap-2 text-sm text-slate-600">
-        <NxSwitch v-model="save" />
-        Guardar y renovar automáticamente cada periodo (puedes apagarlo cuando quieras)
-      </label>
+      <!-- Es una suscripcion: el medio con el que se paga queda para el
+           cobro automatico de cada periodo. No es opcional (ver
+           subscriptions:renew en el API). -->
+      <div class="flex items-start gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2">
+        <span class="shrink-0 rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase">
+          Pago automático
+        </span>
+        <p class="text-xs text-indigo-900">Esta tarjeta queda registrada y cada periodo intentaremos el cobro de tu suscripción automáticamente. Te avisamos por WhatsApp antes de cobrar.</p>
+      </div>
       <p v-if="error" class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{{ error }}</p>
     </div>
 

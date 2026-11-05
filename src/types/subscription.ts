@@ -44,8 +44,6 @@ export interface SubscriptionStatusResponse {
   paid_until: string | null
   grace_ends_at: string | null
   access_locked: boolean
-  /** Cobrar solo al medio de pago guardado el dia que vence. */
-  auto_renew: boolean
   /** Lo que se cobra en la proxima renovacion (mismo ciclo del ultimo pago). */
   renewal_amount_cop: number
   pricing: SubscriptionPricing

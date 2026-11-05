@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { NxButton, NxInput, NxModal, NxSwitch } from '@/ui'
+import { NxButton, NxInput, NxModal } from '@/ui'
 
 import BillingDetailsFields from './BillingDetailsFields.vue'
 import { useBillingCheckout } from '../composables/useBillingCheckout'
@@ -23,7 +23,6 @@ const emit = defineEmits<{
 // del telefono de contacto de facturacion, aunque en la practica suela ser
 // el mismo numero.
 const phoneNumber = ref('')
-const save = ref(true)
 const phoneTouched = ref(false)
 
 const phoneFormatted = computed(() => formatColombianPhone(phoneNumber.value))
@@ -43,7 +42,7 @@ function submit(): void {
     return
   }
   billing.save()
-  emit('submit', phoneNumber.value, save.value, `Nequi ${phoneNumber.value.slice(0, 3)}•••${phoneNumber.value.slice(-4)}`)
+  emit('submit', phoneNumber.value, true, `Nequi ${phoneNumber.value.slice(0, 3)}•••${phoneNumber.value.slice(-4)}`)
 }
 </script>
 
@@ -76,10 +75,15 @@ function submit(): void {
         :error="phoneError"
         @update:model-value="onPhoneInput"
       />
-      <label class="flex items-center gap-2 text-sm text-slate-600">
-        <NxSwitch v-model="save" />
-        Guardar y renovar automáticamente cada periodo (puedes apagarlo cuando quieras)
-      </label>
+      <!-- Es una suscripcion: el medio con el que se paga queda para el
+           cobro automatico de cada periodo. No es opcional (ver
+           subscriptions:renew en el API). -->
+      <div class="flex items-start gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2">
+        <span class="shrink-0 rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase">
+          Pago automático
+        </span>
+        <p class="text-xs text-indigo-900">Esta cuenta Nequi queda registrada y cada periodo intentaremos el cobro de tu suscripción automáticamente. Te avisamos por WhatsApp antes de cobrar.</p>
+      </div>
       <p v-if="error" class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{{ error }}</p>
     </div>
 

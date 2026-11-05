@@ -12,9 +12,9 @@ export async function fetchSubscriptionStatus(): Promise<SubscriptionStatusRespo
   return data
 }
 
-export async function updateSubscriptionAutoRenew(autoRenew: boolean): Promise<boolean> {
-  const { data } = await httpClient.put<{ auto_renew: boolean }>('/subscription/auto-renew', { auto_renew: autoRenew })
-  return data.auto_renew
+/** Un empleado con el sistema bloqueado le avisa al dueño por WhatsApp. */
+export async function notifyAdminOfLockout(): Promise<void> {
+  await httpClient.post('/subscription/notify-admin')
 }
 
 export async function initiateSubscriptionCheckout(

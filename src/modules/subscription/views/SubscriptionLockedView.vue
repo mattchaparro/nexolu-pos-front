@@ -1,15 +1,17 @@
 <script setup lang="ts">
 // Pantalla de bloqueo por falta de pago: a donde manda el router (y el
 // interceptor de 402) cuando la suscripcion vencio y pasaron los dias de
-// gracia. El admin va a pagar; un empleado no puede, asi que se le dice a
-// quien avisarle. Si el negocio ya pago (otra pestaña, el superadmin), se
+// gracia. El admin va a pagar; un empleado no puede, pero con un boton le
+// avisa al dueño por WhatsApp. Si el negocio ya pago (otra pestaña, el superadmin), se
 // ofrece volver al inicio.
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useBusiness } from '@/composables/useBusiness'
 import { useAuthStore } from '@/stores/auth.store'
 import { NxButton } from '@/ui'
+
+import { notifyAdminOfLockout } from '../services/subscriptionService'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -17,6 +19,19 @@ const { data: business } = useBusiness()
 
 const isAdmin = computed(() => auth.user?.roles?.includes('admin') === true)
 const locked = computed(() => business.value?.access_locked !== false)
+
+// El empleado no puede pagar: le manda un WhatsApp al dueño.
+const notifying = ref(false)
+const notified = ref(false)
+async function notifyAdmin(): Promise<void> {
+  notifying.value = true
+  try {
+    await notifyAdminOfLockout()
+    notified.value = true
+  } finally {
+    notifying.value = false
+  }
+}
 </script>
 
 <template>
@@ -35,9 +50,15 @@ const locked = computed(() => business.value?.access_locked !== false)
         <NxButton v-if="isAdmin" class="mt-5 w-full" icon="pi pi-credit-card" @click="router.push({ name: 'subscription.index' })">
           Pagar ahora
         </NxButton>
-        <p v-else class="mt-5 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
-          Avísale al administrador del negocio para que pague la suscripción.
-        </p>
+        <template v-else>
+          <p class="mt-4 text-sm text-slate-600">Solo el administrador del negocio puede pagar la suscripción.</p>
+          <p v-if="notified" class="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+            <i class="pi pi-check mr-1 text-xs" />Listo, le avisamos al administrador por WhatsApp.
+          </p>
+          <NxButton v-else class="mt-4 w-full" icon="pi pi-whatsapp" :loading="notifying" @click="notifyAdmin">
+            Avisar al administrador
+          </NxButton>
+        </template>
       </template>
 
       <template v-else>
