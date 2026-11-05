@@ -37,17 +37,16 @@ const emit = defineEmits<{
 
 <template>
   <div class="mb-4 rounded-xl border border-slate-200 bg-white p-4">
-    <h3 class="mb-2 flex items-center gap-2 font-bold text-slate-900">
-      <i class="pi pi-file text-indigo-600" />
-      {{ sale.table_id ? `Mesa` : sale.customer_name || `Cuenta #${sale.id}` }}
+    <!-- Nombre de la mesa, nota y cambio de mesa en la misma linea. -->
+    <div class="mb-3 flex items-center gap-2">
+      <i class="pi pi-file shrink-0 text-indigo-600" />
+      <TabDetailsEditor class="min-w-0 flex-1" :sale="sale" @updated="emit('updated', $event)" />
       <!-- Saldo pendiente (total - abonos), coherente con los chips de
            Vender - ver utils/saleBalance. -->
-      <span class="ml-auto text-lg font-bold text-emerald-600">
+      <span class="shrink-0 text-lg font-bold text-emerald-600">
         {{ formatCop(saleRemaining(sale) + props.draftTotalDelta) }}
       </span>
-    </h3>
-
-    <TabDetailsEditor class="mb-3" :sale="sale" @updated="emit('updated', $event)" />
+    </div>
 
     <SavedTabItemsList
       :key="sale.id"

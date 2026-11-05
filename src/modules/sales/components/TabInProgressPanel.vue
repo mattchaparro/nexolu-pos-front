@@ -88,7 +88,8 @@ function title(): string {
         <p class="text-[10px] font-semibold uppercase tracking-wide text-indigo-600">
           {{ activeSale ? 'Editando' : 'Nueva cuenta' }}
         </p>
-        <h2 class="truncate text-sm font-semibold text-slate-900">{{ title() }}</h2>
+        <!-- Con cuenta abierta, el nombre va en la linea de la nota (abajo). -->
+        <h2 v-if="!activeSale" class="truncate text-sm font-semibold text-slate-900">{{ title() }}</h2>
       </div>
       <div class="flex shrink-0 items-center gap-2">
         <!-- Saldo pendiente (total - abonos), no el total: es lo que de
@@ -123,7 +124,12 @@ function title(): string {
       </label>
     </div>
 
-    <TabDetailsEditor v-if="activeSale" class="mb-3" :sale="activeSale" @updated="emit('tab-updated', $event)" />
+    <TabDetailsEditor
+      v-if="activeSale"
+      class="mb-3 px-1 text-sm"
+      :sale="activeSale"
+      @updated="emit('tab-updated', $event)"
+    />
 
     <div class="flex-1 overflow-y-auto">
       <template v-if="activeSale && draftItems.length > 0">

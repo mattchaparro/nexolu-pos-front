@@ -69,8 +69,6 @@ export interface PurchasePayload {
   invoice_number?: string | null
   notes?: string | null
   is_credit?: boolean
-  create_expense?: boolean
-  expense_payment_method?: string | null
   payment_reminder_title?: string | null
   payment_reminder_date?: string | null
   payment_reminder_recurrence?: 'none' | 'weekly' | 'monthly'

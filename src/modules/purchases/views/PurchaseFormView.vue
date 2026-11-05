@@ -13,11 +13,9 @@ import type { PurchaseLineInput, PurchasePayload } from '@/types/purchase'
 import { NxButton, NxDatePicker, NxInput, NxPageHeader, NxSelect, NxTextarea, NxToggleButton } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
-import { isCreditPaymentMethodId } from '@/utils/paymentMethod'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
 import CatalogHubTabs from '../../catalog/components/CatalogHubTabs.vue'
-import PaymentMethodPicker from '@/components/PaymentMethodPicker.vue'
 import PurchaseLinesEditor from '../components/PurchaseLinesEditor.vue'
 import { usePurchaseMutations } from '../composables/usePurchaseMutations'
 import { usePurchasableProducts, useSupplierOptions } from '../composables/usePurchaseFormOptions'
@@ -33,9 +31,6 @@ const ingredientsQuery = useIngredientOptions(ingredientsEnabled)
 const suppliersQuery = useSupplierOptions()
 const supplierOptions = computed(() => [{ id: null, name: 'Sin proveedor' }, ...(suppliersQuery.data.value ?? [])])
 
-const nonCreditPaymentMethods = computed(
-  () => business.value?.payment_methods.filter((m) => !isCreditPaymentMethodId(m.id)) ?? [],
-)
 
 const supplierId = ref<number | null>(null)
 const purchasedAt = ref(toLocalDateIso())
@@ -48,8 +43,6 @@ const paymentReminderDate = ref('')
 const paymentReminderRecurrence = ref<'none' | 'weekly' | 'monthly'>('none')
 const paymentReminderEndDate = ref('')
 
-const createExpense = ref(false)
-const expensePaymentMethod = ref<string | null>(null)
 
 const fieldErrors = ref<Record<string, string>>({})
 const formError = ref<string | null>(null)
@@ -102,9 +95,6 @@ async function submit(): Promise<void> {
           payment_reminder_recurrence: paymentReminderRecurrence.value,
           payment_reminder_end_date: paymentReminderRecurrence.value !== 'none' ? paymentReminderEndDate.value || null : null,
         }
-      : {}),
-    ...(!isCredit.value
-      ? { create_expense: createExpense.value, expense_payment_method: expensePaymentMethod.value ?? undefined }
       : {}),
   }
 
@@ -197,15 +187,6 @@ async function submit(): Promise<void> {
             v-model="paymentReminderEndDate"
             label="Repetir hasta (opcional)"
           />
-        </div>
-      </div>
-
-      <div v-if="!isCredit" class="flex flex-col gap-2">
-        <NxToggleButton v-model="createExpense" label="Registrar como gasto del día" icon="pi pi-money-bill" />
-
-        <div v-if="createExpense" class="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
-          <p class="mb-2 text-sm font-medium text-slate-700">¿Cómo se pagó esta compra?</p>
-          <PaymentMethodPicker :methods="nonCreditPaymentMethods" :model-value="expensePaymentMethod" @update:model-value="expensePaymentMethod = $event" />
         </div>
       </div>
     </div>
