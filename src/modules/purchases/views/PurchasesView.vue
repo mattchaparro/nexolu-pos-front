@@ -69,15 +69,23 @@ watch(business, (value) => { if (value) { void tour.start() } }, { once: true })
 
     <CatalogHubTabs data-tour="catalog-hub" />
 
-    <div class="flex flex-wrap gap-3" data-tour="purchase-dates">
-      <NxDateRangePicker v-model:from="from" v-model:to="to" clearable class="min-w-[16rem]" />
+    <!-- Fechas y proveedor en la misma linea, con ancho fijo (mismo patron
+         que los filtros de Movimientos de inventario); en celular, uno debajo
+         del otro a lo ancho. -->
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end" data-tour="purchase-dates">
+      <!-- Envuelto: PrimeVue le pone width: 100% al FloatLabel de un campo
+           "fluid" (fuera de las capas de Tailwind), asi que el ancho va en
+           el contenedor. -->
+      <div class="w-full sm:w-64">
+        <NxDateRangePicker v-model:from="from" v-model:to="to" clearable />
+      </div>
       <NxSelect
         :model-value="supplierId"
         :options="supplierFilterOptions"
         option-label="name"
         option-value="id"
         filter
-        class="min-w-[14rem]"
+        class="w-full sm:w-56"
         @update:model-value="supplierId = $event as number | 'none' | null"
       />
     </div>
