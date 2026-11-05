@@ -6,6 +6,8 @@ export interface FetchPurchasesParams {
   from?: string
   to?: string
   payment_status?: PurchasePaymentStatus
+  /** 'none' = compras sin proveedor. */
+  supplier_id?: number | 'none'
   page?: number
 }
 

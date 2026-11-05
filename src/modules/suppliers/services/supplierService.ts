@@ -5,6 +5,7 @@ import type { RemindSupplierVisitPayload, Supplier, SupplierPayload } from '@/ty
 export interface FetchSuppliersParams {
   search?: string
   page?: number
+  per_page?: number
 }
 
 export async function fetchSuppliers(params: FetchSuppliersParams = {}): Promise<PaginatedResponse<Supplier>> {

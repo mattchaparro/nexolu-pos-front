@@ -98,6 +98,8 @@ export interface Sale {
   non_revenue_reason: string | null
   is_credit: boolean
   customer_name: string | null
+  /** Nota libre de la cuenta abierta: quien esta en la mesa. */
+  notes?: string | null
   customer_phone: string | null
   customer_identification: string | null
   client_id: number | null

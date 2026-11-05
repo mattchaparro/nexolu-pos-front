@@ -23,6 +23,7 @@ const emit = defineEmits<{ select: [tab: Sale] }>()
         <p class="truncate text-sm font-semibold text-indigo-900">
           {{ tab.customer_name || `Cuenta #${tab.id}` }}
         </p>
+        <p v-if="tab.notes" class="truncate text-xs text-indigo-600/80">{{ tab.notes }}</p>
         <p class="text-xs text-slate-400">
           {{ tab.items.length }} item(s)
           <span v-if="tab.is_delivery" class="ml-2 font-semibold text-fuchsia-600">

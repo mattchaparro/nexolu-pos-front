@@ -58,6 +58,7 @@ function matchesTab(tab: Sale, q: string): boolean {
   return (
     (tab.customer_name ?? '').toLowerCase().includes(q) ||
     (tab.customer_phone ?? '').toLowerCase().includes(q) ||
+    (tab.notes ?? '').toLowerCase().includes(q) ||
     String(tab.id).includes(q)
   )
 }
@@ -192,6 +193,13 @@ function tabTotal(tab: Sale): number {
         <p class="text-xs font-semibold">{{ table.name }}</p>
         <p v-if="openSaleByTable.has(table.id)" class="text-[10px] font-bold">
           {{ formatCop(tableTotal(table)) }}
+        </p>
+        <p
+          v-if="openSaleByTable.get(table.id)?.notes"
+          class="max-w-[70px] truncate text-[9px] leading-tight opacity-80"
+          :title="openSaleByTable.get(table.id)?.notes ?? ''"
+        >
+          {{ openSaleByTable.get(table.id)?.notes }}
         </p>
         <p
           v-if="saleHasPartialPayments(openSaleByTable.get(table.id))"

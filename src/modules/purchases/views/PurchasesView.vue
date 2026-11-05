@@ -5,7 +5,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import type { Purchase, PurchasePaymentStatus } from '@/types/purchase'
-import { NxButton, NxColumn, NxDataTable, NxDateRangePicker, NxPageHeader } from '@/ui'
+import { NxButton, NxColumn, NxDataTable, NxDateRangePicker, NxPageHeader, NxSelect } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 import GuidedTour from '@/components/GuidedTour.vue'
 import { useBusiness } from '@/composables/useBusiness'
@@ -14,6 +14,7 @@ import { PURCHASES_TOUR } from '@/tours/purchases'
 
 import CatalogHubTabs from '../../catalog/components/CatalogHubTabs.vue'
 import PayPurchaseModal from '../components/PayPurchaseModal.vue'
+import { useSupplierOptions } from '../composables/usePurchaseFormOptions'
 import { usePurchases } from '../composables/usePurchases'
 
 const router = useRouter()
@@ -22,8 +23,19 @@ const from = ref('')
 const to = ref('')
 const paymentStatus = ref<PurchasePaymentStatus | ''>('')
 const page = ref(1)
+const supplierId = ref<number | 'none' | null>(null)
 
-const purchasesQuery = usePurchases(from, to, paymentStatus, page)
+const suppliersQuery = useSupplierOptions()
+const supplierFilterOptions = computed(() => [
+  { id: null, name: 'Todos los proveedores' },
+  { id: 'none', name: 'Sin proveedor' },
+  ...(suppliersQuery.data.value ?? []),
+])
+
+// Cambiar un filtro vuelve a la primera pagina.
+watch([from, to, supplierId], () => (page.value = 1))
+
+const purchasesQuery = usePurchases(from, to, paymentStatus, page, supplierId)
 const meta = computed(() => purchasesQuery.data.value?.meta)
 
 function onPage(event: { page: number }): void {
@@ -59,6 +71,15 @@ watch(business, (value) => { if (value) { void tour.start() } }, { once: true })
 
     <div class="flex flex-wrap gap-3" data-tour="purchase-dates">
       <NxDateRangePicker v-model:from="from" v-model:to="to" clearable class="min-w-[16rem]" />
+      <NxSelect
+        :model-value="supplierId"
+        :options="supplierFilterOptions"
+        option-label="name"
+        option-value="id"
+        filter
+        class="min-w-[14rem]"
+        @update:model-value="supplierId = $event as number | 'none' | null"
+      />
     </div>
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">

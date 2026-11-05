@@ -37,10 +37,12 @@ const emit = defineEmits<{
   'remove-item': [item: SaleItem]
   'update-item-discount': [item: SaleItem, discountId: number | null]
   'discard-draft': []
+  'tab-updated': [sale: Sale]
 }>()
 
 const newTabName = defineModel<string>('newTabName', { default: '' })
 const newTabPhone = defineModel<string>('newTabPhone', { default: '' })
+const newTabNotes = defineModel<string>('newTabNotes', { default: '' })
 const newTabIsDelivery = defineModel<boolean>('newTabIsDelivery', { default: false })
 </script>
 
@@ -54,6 +56,8 @@ const newTabIsDelivery = defineModel<boolean>('newTabIsDelivery', { default: fal
       <TabInProgressPanel
         v-model:new-tab-name="newTabName"
         v-model:new-tab-phone="newTabPhone"
+        v-model:new-tab-notes="newTabNotes"
+        @tab-updated="emit('tab-updated', $event)"
         v-model:new-tab-is-delivery="newTabIsDelivery"
         :active-sale="activeSale"
         :pending-table="pendingTable"

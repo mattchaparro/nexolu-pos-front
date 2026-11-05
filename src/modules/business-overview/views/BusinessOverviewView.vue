@@ -102,10 +102,14 @@ function formatQty(value: number): string {
           label="Gastos del mes"
           :value="formatCop(overview.period.summary.expenses_total)"
         />
+        <!-- Las compras se muestran pero no se restan: entran al inventario y
+             pesan en el margen como costo de lo vendido. El "neto" de antes
+             (ingresos - gastos) ignoraba ese costo y salia casi igual a los
+             ingresos. -->
         <StatTile
-          v-if="overview.channels_enabled.expenses"
-          label="Neto estimado"
-          :value="formatCop(overview.period.summary.net_estimate)"
+          v-if="overview.channels_enabled.purchases"
+          label="Compras a proveedores"
+          :value="formatCop(overview.period.summary.purchases_total)"
         />
       </section>
 
@@ -150,8 +154,16 @@ function formatQty(value: number): string {
             <p class="font-semibold text-emerald-900">{{ formatCop(overview.period.profit.profit) }}</p>
           </div>
         </div>
+        <div
+          v-if="overview.channels_enabled.expenses"
+          class="mt-3 flex items-center justify-between rounded-lg bg-white/60 px-3 py-2 text-xs"
+        >
+          <span class="text-emerald-800">Utilidad menos gastos del mes ({{ formatCop(overview.period.summary.expenses_total) }})</span>
+          <span class="font-bold text-emerald-900">{{ formatCop(overview.period.profit.profit_after_expenses) }}</span>
+        </div>
         <p class="mt-3 text-xs text-emerald-700/70">
-          Solo cuenta productos con costo configurado en Catálogo.
+          El costo es el de cada producto al momento de venderlo: así entran las compras a proveedores, sin
+          contarlas dos veces. Solo cuenta productos con costo configurado en Catálogo.
           <template v-if="overview.period.profit.uncosted_products_count > 0">
             {{ overview.period.profit.uncosted_products_count }} producto(s) sin costo quedaron fuera
             ({{ formatCop(overview.period.profit.uncosted_revenue) }} en ingresos no considerados).

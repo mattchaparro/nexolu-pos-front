@@ -53,7 +53,11 @@ export interface PeriodSummary {
   avg_ticket: number
   units_sold: number
   expenses_total: number
+  /** Ingresos menos gastos, sin el costo de lo vendido: ya no se muestra. */
   net_estimate: number
+  /** Compras a proveedores del mes: informativas, ya pesan en el margen como costo. */
+  purchases_total: number
+  purchases_count: number
   revenue_change_pct: number | null
 }
 
@@ -102,6 +106,8 @@ export interface PeriodProfit {
   cost: number
   profit: number
   margin_pct: number | null
+  /** Utilidad del mes menos sus gastos (las compras ya estan en el costo). */
+  profit_after_expenses: number
   uncosted_products_count: number
   uncosted_revenue: number
   top_products: ProfitProduct[]
@@ -129,5 +135,6 @@ export interface BusinessOverview {
     receivables: boolean
     layaway: boolean
     expenses: boolean
+    purchases: boolean
   }
 }

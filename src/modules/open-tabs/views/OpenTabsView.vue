@@ -48,6 +48,7 @@ const pendingTable = ref<BusinessTable | null>(null)
 const newTabType = ref<'table' | 'name'>('name')
 const newTabName = ref('')
 const newTabPhone = ref('')
+const newTabNotes = ref('')
 const newTabIsDelivery = ref(false)
 
 const tableManagerOpen = ref(false)
@@ -104,7 +105,8 @@ const filteredTables = computed(() => {
   return tables.filter(
     (t) =>
       t.name.toLowerCase().includes(q) ||
-      (openSaleByTable.value.get(t.id)?.customer_name ?? '').toLowerCase().includes(q),
+      (openSaleByTable.value.get(t.id)?.customer_name ?? '').toLowerCase().includes(q) ||
+      (openSaleByTable.value.get(t.id)?.notes ?? '').toLowerCase().includes(q),
   )
 })
 
@@ -114,7 +116,10 @@ const filteredOpenTabsByName = computed(() => {
     return openTabsByName.value
   }
   return openTabsByName.value.filter(
-    (t) => (t.customer_name ?? '').toLowerCase().includes(q) || String(t.id).includes(q),
+    (t) =>
+      (t.customer_name ?? '').toLowerCase().includes(q) ||
+      (t.notes ?? '').toLowerCase().includes(q) ||
+      String(t.id).includes(q),
   )
 })
 
@@ -142,6 +147,7 @@ function selectTable(table: BusinessTable): void {
     activeSale.value = null
     newTabType.value = 'table'
     newTabName.value = table.name
+    newTabNotes.value = ''
     newTabIsDelivery.value = false
   }
   cart.reset()
@@ -163,6 +169,7 @@ function openNewByName(): void {
   newTabType.value = 'name'
   newTabName.value = ''
   newTabPhone.value = ''
+  newTabNotes.value = ''
   newTabIsDelivery.value = false
   cart.reset()
   mode.value = 'building'
@@ -241,6 +248,7 @@ async function submitCart(): Promise<void> {
         table_id: newTabType.value === 'table' ? pendingTable.value?.id : null,
         customer_name: newTabType.value === 'name' ? newTabName.value || null : null,
         customer_phone: newTabPhone.value || null,
+        notes: newTabNotes.value.trim() || null,
         is_delivery: business.value?.delivery_enabled ? newTabIsDelivery.value : false,
         items: cart.toItemsPayload(),
       })
@@ -370,6 +378,7 @@ async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Prom
           @discard-draft="discardDraftChanges"
           @close="closeModalOpen = true"
           @destroy="confirmDestroyActiveTab"
+          @updated="activeSale = $event"
         />
 
         <div v-else class="mb-4 rounded-xl border border-slate-200 bg-white p-4">
@@ -378,6 +387,7 @@ async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Prom
             <NxInput v-model="newTabPhone" label="Teléfono (opcional)" />
           </div>
           <p v-else class="text-sm font-medium text-slate-700">Pedido para {{ newTabName }}</p>
+          <NxInput v-model="newTabNotes" class="mt-3" label="Nota (opcional): quién está en la mesa" />
 
           <label v-if="business?.delivery_enabled" class="mt-3 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
             <span class="text-sm font-medium text-slate-700">Pedido para domicilio</span>

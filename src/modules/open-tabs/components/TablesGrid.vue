@@ -40,6 +40,13 @@ const emit = defineEmits<{ select: [table: BusinessTable] }>()
         {{ formatCop(openSaleByTable.get(table.id)!.total) }}
       </p>
       <p v-else class="text-[10px] leading-tight text-slate-300">Libre</p>
+      <p
+        v-if="openSaleByTable.get(table.id)?.notes"
+        class="w-full truncate text-[10px] leading-tight text-indigo-600/80"
+        :title="openSaleByTable.get(table.id)?.notes ?? ''"
+      >
+        {{ openSaleByTable.get(table.id)?.notes }}
+      </p>
     </button>
   </div>
 </template>

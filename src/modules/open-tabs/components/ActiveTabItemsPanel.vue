@@ -7,6 +7,7 @@ import { salePartialPaid, saleRemaining } from '@/utils/saleBalance'
 
 import type { Discount } from '@/types/discount'
 import SavedTabItemsList from './SavedTabItemsList.vue'
+import TabDetailsEditor from './TabDetailsEditor.vue'
 
 const props = defineProps<{
   sale: Sale
@@ -30,6 +31,7 @@ const emit = defineEmits<{
   'discard-draft': []
   close: []
   destroy: []
+  updated: [sale: Sale]
 }>()
 </script>
 
@@ -44,6 +46,8 @@ const emit = defineEmits<{
         {{ formatCop(saleRemaining(sale) + props.draftTotalDelta) }}
       </span>
     </h3>
+
+    <TabDetailsEditor class="mb-3" :sale="sale" @updated="emit('updated', $event)" />
 
     <SavedTabItemsList
       :key="sale.id"

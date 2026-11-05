@@ -9,6 +9,7 @@ export interface OpenTabPayload {
   table_id?: number | null
   customer_name?: string | null
   customer_phone?: string | null
+  notes?: string | null
   is_delivery?: boolean
   items: SaleItemInput[]
 }

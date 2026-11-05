@@ -150,6 +150,7 @@ const activeSale = ref<Sale | null>(null)
 const pendingTable = ref<BusinessTable | null>(null)
 const newTabName = ref('')
 const newTabPhone = ref('')
+const newTabNotes = ref('')
 const newTabIsDelivery = ref(false)
 const mobileTabSheetOpen = ref(false)
 const paymentModalOpen = ref(false)
@@ -241,6 +242,7 @@ function selectNewNamedTab(): void {
   pendingTable.value = null
   newTabName.value = ''
   newTabPhone.value = ''
+  newTabNotes.value = ''
   newTabIsDelivery.value = false
   tabCart.reset()
 }
@@ -270,6 +272,7 @@ function selectTable(table: BusinessTable): void {
     activeSale.value = null
     newTabName.value = ''
     newTabPhone.value = ''
+    newTabNotes.value = ''
     newTabIsDelivery.value = false
   }
   tabCart.reset()
@@ -349,6 +352,7 @@ async function submitTabCart(): Promise<void> {
         table_id: pendingTable.value?.id ?? null,
         customer_name: pendingTable.value ? null : newTabName.value || null,
         customer_phone: newTabPhone.value || null,
+        notes: newTabNotes.value.trim() || null,
         is_delivery: business.value?.delivery_enabled ? newTabIsDelivery.value : false,
         items: tabCart.toItemsPayload(),
       })
@@ -584,6 +588,8 @@ function handleNewSale(): void {
           v-else
           v-model:new-tab-name="newTabName"
           v-model:new-tab-phone="newTabPhone"
+          v-model:new-tab-notes="newTabNotes"
+          @tab-updated="activeSale = $event"
           v-model:new-tab-is-delivery="newTabIsDelivery"
           :active-sale="activeSale"
           :pending-table="pendingTable"
@@ -643,6 +649,8 @@ function handleNewSale(): void {
         v-model="mobileTabSheetOpen"
         v-model:new-tab-name="newTabName"
         v-model:new-tab-phone="newTabPhone"
+        v-model:new-tab-notes="newTabNotes"
+        @tab-updated="activeSale = $event"
         v-model:new-tab-is-delivery="newTabIsDelivery"
         :active-sale="activeSale"
         :pending-table="pendingTable"

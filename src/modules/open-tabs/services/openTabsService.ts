@@ -52,6 +52,12 @@ export async function openTab(payload: OpenTabPayload): Promise<Sale> {
   return data
 }
 
+/** Nota de la cuenta y/o cambio a otra mesa libre. */
+export async function updateOpenTab(saleId: number, payload: { notes?: string | null; table_id?: number }): Promise<Sale> {
+  const { data } = await httpClient.patch<Sale>(`/open-tabs/${saleId}`, payload)
+  return data
+}
+
 export async function addOpenTabItems(saleId: number, payload: OpenTabItemsPayload): Promise<Sale> {
   const { data } = await httpClient.post<Sale>(`/open-tabs/${saleId}/items`, payload)
   return data

@@ -21,6 +21,7 @@ import type { Discount } from '@/types/discount'
 
 import NewItemsCartList from '../../open-tabs/components/NewItemsCartList.vue'
 import SavedTabItemsList from '../../open-tabs/components/SavedTabItemsList.vue'
+import TabDetailsEditor from '../../open-tabs/components/TabDetailsEditor.vue'
 
 const props = defineProps<{
   activeSale: Sale | null
@@ -47,10 +48,12 @@ const emit = defineEmits<{
   'remove-item': [item: SaleItem]
   'update-item-discount': [item: SaleItem, discountId: number | null]
   'discard-draft': []
+  'tab-updated': [sale: Sale]
 }>()
 
 const newTabName = defineModel<string>('newTabName', { default: '' })
 const newTabPhone = defineModel<string>('newTabPhone', { default: '' })
+const newTabNotes = defineModel<string>('newTabNotes', { default: '' })
 const newTabIsDelivery = defineModel<boolean>('newTabIsDelivery', { default: false })
 
 /** Hay algo sin guardar: cantidades tocadas, productos nuevos, o ambos. */
@@ -110,6 +113,7 @@ function title(): string {
     <div v-if="!activeSale" class="mb-3 flex flex-col gap-2">
       <NxInput v-if="!pendingTable" v-model="newTabName" label="Nombre de la cuenta" size="sm" />
       <NxInput v-if="!pendingTable" v-model="newTabPhone" label="Teléfono (opcional)" size="sm" />
+      <NxInput v-model="newTabNotes" label="Nota (opcional): quién está en la mesa" size="sm" />
       <label
         v-if="business?.delivery_enabled"
         class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
@@ -118,6 +122,8 @@ function title(): string {
         <input v-model="newTabIsDelivery" type="checkbox" class="h-4 w-4 rounded accent-indigo-600" />
       </label>
     </div>
+
+    <TabDetailsEditor v-if="activeSale" class="mb-3" :sale="activeSale" @updated="emit('tab-updated', $event)" />
 
     <div class="flex-1 overflow-y-auto">
       <template v-if="activeSale && draftItems.length > 0">

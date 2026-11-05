@@ -3,7 +3,7 @@
 // pagina de edicion: una compra ya aplicada movio stock/costo promedio,
 // igual que una venta - se corrige con un abono (PayPurchaseModal) o
 // anulando insumos manualmente, no editando la compra en si.
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useBusiness } from '@/composables/useBusiness'
@@ -21,7 +21,7 @@ import PaymentMethodPicker from '@/components/PaymentMethodPicker.vue'
 import PurchaseLinesEditor from '../components/PurchaseLinesEditor.vue'
 import { usePurchaseMutations } from '../composables/usePurchaseMutations'
 import { usePurchasableProducts, useSupplierOptions } from '../composables/usePurchaseFormOptions'
-import { newPurchaseLineRow, type PurchaseLineRow } from '../support/purchaseLine'
+import { costReferenceItem, newPurchaseLineRow, unusualCostReference, type PurchaseLineRow } from '../support/purchaseLine'
 
 const router = useRouter()
 const { notify } = useSystemAlert()
@@ -56,9 +56,29 @@ const formError = ref<string | null>(null)
 const { createMutation } = usePurchaseMutations()
 const isSaving = computed(() => createMutation.isPending.value)
 
+// Filas con un costo por unidad muy fuera de lo normal: hay que confirmarlas
+// antes de guardar. Si se cambia cualquier fila, se vuelve a pedir.
+const unusualCostCount = computed(
+  () =>
+    lines.value.filter(
+      (row) =>
+        unusualCostReference(
+          row,
+          costReferenceItem(row, productsQuery.data.value ?? [], ingredientsQuery.data.value ?? []),
+        ) !== null,
+    ).length,
+)
+const unusualCostConfirmed = ref(false)
+watch(lines, () => (unusualCostConfirmed.value = false), { deep: true })
+
 async function submit(): Promise<void> {
   fieldErrors.value = {}
   formError.value = null
+
+  if (unusualCostCount.value > 0 && !unusualCostConfirmed.value) {
+    unusualCostConfirmed.value = true
+    return
+  }
 
   const lineInputs: PurchaseLineInput[] = lines.value.map((row) => ({
     product_id: row.kind === 'product' ? row.product_id : null,
@@ -190,6 +210,12 @@ async function submit(): Promise<void> {
       </div>
     </div>
 
-    <NxButton :loading="isSaving" @click="submit">Guardar y aplicar</NxButton>
+    <p v-if="unusualCostConfirmed && unusualCostCount > 0" class="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      {{ unusualCostCount === 1 ? 'Una fila tiene' : `${unusualCostCount} filas tienen` }} un costo por unidad muy por
+      encima de lo normal. Si el total está bien, vuelve a tocar el botón para guardar.
+    </p>
+    <NxButton :loading="isSaving" @click="submit">
+      {{ unusualCostConfirmed && unusualCostCount > 0 ? 'Sí, el total está bien: guardar' : 'Guardar y aplicar' }}
+    </NxButton>
   </div>
 </template>

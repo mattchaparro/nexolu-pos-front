@@ -8,8 +8,9 @@ import { computed } from 'vue'
 
 import type { Ingredient, Product } from '@/types/product'
 import { NxInput, NxInputNumber, NxSelect } from '@/ui'
+import { formatCop } from '@/utils/formatCop'
 
-import { newPurchaseLineRow, type PurchaseLineRow } from '../support/purchaseLine'
+import { costReferenceItem, newPurchaseLineRow, unusualCostReference, type PurchaseLineRow } from '../support/purchaseLine'
 
 const props = defineProps<{
   modelValue: PurchaseLineRow[]
@@ -48,6 +49,16 @@ function unitCostValue(row: PurchaseLineRow): number | null {
     return null
   }
   return total / quantity
+}
+
+/** Aviso de un posible cero de mas en el total (ver unusualCostReference). */
+function unusualCostWarning(row: PurchaseLineRow): string | null {
+  const reference = unusualCostReference(row, costReferenceItem(row, props.products, props.ingredients))
+  const unitCost = unitCostValue(row)
+  if (reference === null || unitCost === null) {
+    return null
+  }
+  return `Queda a ${formatCop(unitCost)} por unidad y hoy cuesta ${formatCop(reference)}. Revisa que el total no tenga ceros de más.`
 }
 
 function addRow(): void {
@@ -166,6 +177,9 @@ function hasVariants(row: PurchaseLineRow): boolean {
             <NxInputNumber :model-value="unitCostValue(row)" label="Costo unitario" size="sm" disabled />
             <NxInput v-model="row.notes" label="Nota (opcional)" size="sm" />
           </div>
+          <p v-if="unusualCostWarning(row)" class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <i class="pi pi-exclamation-triangle mr-1 text-[11px]" />{{ unusualCostWarning(row) }}
+          </p>
         </div>
         <button
           type="button"

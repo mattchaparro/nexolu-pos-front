@@ -27,14 +27,13 @@ export function usePurchasableProducts() {
   })
 }
 
-// SupplierController::index() pagina fijo en 20 (no acepta per_page) - un
-// negocio con mas proveedores solo ve los primeros 20 en este picker,
-// mismo techo ya aceptado en otros pickers de este modulo.
+// Hasta 200 proveedores (tope de SupplierController::index): antes eran solo
+// los primeros 20 y el resto no aparecia ni en el formulario ni en el filtro.
 export function useSupplierOptions() {
   return useQuery({
     queryKey: ['suppliers', 'options'] as const,
     queryFn: async () => {
-      const { data } = await fetchSuppliers({})
+      const { data } = await fetchSuppliers({ per_page: 200 })
       return data
     },
   })
