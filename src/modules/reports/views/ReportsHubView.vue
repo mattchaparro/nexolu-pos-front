@@ -50,6 +50,13 @@ const cards = computed<ReportCard[]>(() => [
     visible: hasPermission('reports.sales_by_seller'),
   },
   {
+    routeName: 'supplier-report.index',
+    label: 'Proveedores',
+    description: 'Cuánto le compras a cada proveedor, mes a mes y en total, con el detalle de cada compra.',
+    icon: 'pi pi-truck',
+    visible: hasPermission('purchases.manage') && business.value?.can_access_purchases === true,
+  },
+  {
     routeName: 'accounting.index',
     label: 'Contabilidad gerencial',
     description: 'Utilidad neta mensual, líneas de ingreso/gasto y cierre de mes.',

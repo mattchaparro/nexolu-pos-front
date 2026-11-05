@@ -443,6 +443,14 @@ const router = createRouter({
           meta: { requiresPermission: 'reports.sales' },
         },
         {
+          // Misma puerta que Compras: el negocio tiene que poder comprar y el
+          // usuario, gestionar compras (reports/suppliers en el API).
+          path: 'reportes/proveedores',
+          name: 'supplier-report.index',
+          component: () => import('@/modules/supplier-report/views/SupplierReportView.vue'),
+          meta: { requiresPurchasesAccess: true, requiresPermission: 'purchases.manage' },
+        },
+        {
           path: 'reportes/ventas-por-vendedor',
           name: 'sales-by-seller.index',
           component: () => import('@/modules/sales-by-seller/views/SalesBySellerView.vue'),
