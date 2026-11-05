@@ -9,6 +9,7 @@ import { useRouter } from 'vue-router'
 
 import { homeRouteFor } from '@/router'
 import logo from '@/assets/nexolu-logo.png'
+import AutoPayNoticeModal from '@/components/AutoPayNoticeModal.vue'
 import BranchSwitcher from '@/components/BranchSwitcher.vue'
 import SubscriptionRenewalBanner from '@/components/SubscriptionRenewalBanner.vue'
 import WelcomeExperienceModal from '@/components/WelcomeExperienceModal.vue'
@@ -85,5 +86,6 @@ async function stopImpersonating(): Promise<void> {
       </div>
     </div>
     <WelcomeExperienceModal />
+    <AutoPayNoticeModal />
   </div>
 </template>
