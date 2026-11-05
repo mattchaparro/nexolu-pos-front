@@ -73,7 +73,7 @@ function submit(): void {
       />
       <label class="flex items-center gap-2 text-sm text-slate-600">
         <NxSwitch v-model="save" />
-        Guardar para pagos futuros (sin volver a escribirla)
+        Guardar y renovar automáticamente cada periodo (puedes apagarlo cuando quieras)
       </label>
       <p v-if="error" class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{{ error }}</p>
     </div>

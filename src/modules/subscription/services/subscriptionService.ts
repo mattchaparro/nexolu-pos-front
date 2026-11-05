@@ -12,6 +12,11 @@ export async function fetchSubscriptionStatus(): Promise<SubscriptionStatusRespo
   return data
 }
 
+export async function updateSubscriptionAutoRenew(autoRenew: boolean): Promise<boolean> {
+  const { data } = await httpClient.put<{ auto_renew: boolean }>('/subscription/auto-renew', { auto_renew: autoRenew })
+  return data.auto_renew
+}
+
 export async function initiateSubscriptionCheckout(
   redirectUrl: string,
   flow: 'widget' | 'api' = 'widget',

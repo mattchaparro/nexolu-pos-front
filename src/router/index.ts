@@ -531,6 +531,13 @@ const router = createRouter({
           component: () => import('@/modules/subscription/views/SubscriptionView.vue'),
           meta: { requiresAdmin: true },
         },
+        {
+          // Negocio bloqueado por falta de pago (ver el guard de abajo): a
+          // donde va cualquiera que intente entrar a otra pantalla.
+          path: 'suscripcion-vencida',
+          name: 'subscription.locked',
+          component: () => import('@/modules/subscription/views/SubscriptionLockedView.vue'),
+        },
       ],
     },
     {
@@ -707,6 +714,18 @@ router.beforeEach(async (to, from) => {
 
   if (to.name === 'login' && auth.isAuthenticated) {
     return homeRouteFor(auth.user)
+  }
+
+  // Vencido y sin dias de gracia: solo se puede pagar. El API ya lo hace
+  // cumplir (402, ver EnsureSubscriptionActive); esto evita abrir pantallas
+  // que van a fallar. El superadmin no tiene negocio propio.
+  if (to.meta.requiresAuth && auth.user && !auth.user.roles?.includes('superadmin')) {
+    const business = await queryClient
+      .ensureQueryData({ queryKey: ['business'], queryFn: fetchBusiness })
+      .catch(() => null)
+    if (business?.access_locked && to.name !== 'subscription.index' && to.name !== 'subscription.locked') {
+      return { name: 'subscription.locked' }
+    }
   }
 
   if (to.meta.requiresSuperAdmin && !auth.user?.roles?.includes('superadmin')) {

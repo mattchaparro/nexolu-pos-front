@@ -72,6 +72,7 @@ export function useDirectCheckout(cycle: Ref<BillingCycle> = ref('monthly')) {
         verifying.value = false
         activated.value = true
         queryClient.invalidateQueries({ queryKey: ['subscription', 'status'] })
+        queryClient.invalidateQueries({ queryKey: ['business'] })
         return
       }
       if (status.status === 'failed' || status.status === 'cancelled') {

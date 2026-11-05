@@ -26,7 +26,11 @@ const alert = computed(() => {
   }
   const planLabel = b.subscription_status === 'trial' ? 'prueba gratuita' : 'suscripción'
   if (b.subscription_status === 'expired') {
-    return { expired: true, message: `Tu ${planLabel} ya venció. Realiza el pago para restablecer el acceso.` }
+    if (b.grace_ends_at) {
+      const until = new Date(b.grace_ends_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })
+      return { expired: true, message: `Tu ${planLabel} venció. Tienes hasta el ${until} para pagar; después el sistema se bloquea.` }
+    }
+    return { expired: true, message: `Tu ${planLabel} venció y el sistema está bloqueado. Realiza el pago para seguir usándolo.` }
   }
   if (b.days_remaining > b.subscription_warning_days) {
     return null

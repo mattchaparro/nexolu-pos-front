@@ -1,6 +1,7 @@
 import axios from 'axios'
 
 import router from '@/router'
+import { queryClient } from '@/services/query/queryClient'
 import { useFlashStore } from '@/stores/flash.store'
 
 import { branchStorage } from './branchStorage'
@@ -77,6 +78,15 @@ httpClient.interceptors.response.use(
       // El detalle de por que esto limpia el store y no solo el storage vive
       // en handleExpiredSession(), compartido con el cliente SSE del chat.
       handleExpiredSession()
+    } else if (status === 402 && error.response?.data?.code === 'subscription_locked') {
+      // Vencido y sin dias de gracia: el API solo deja pagar. Se refresca el
+      // negocio (el guard del router lee access_locked) y se manda a la
+      // pantalla de pago.
+      queryClient.invalidateQueries({ queryKey: ['business'] })
+      const current = router.currentRoute.value.name
+      if (current !== 'subscription.index' && current !== 'subscription.locked') {
+        router.push({ name: 'subscription.locked' })
+      }
     } else if (status === 403 && !onLogin) {
       // El guard del router (ver router/index.ts) ya bloquea la mayoria de
       // estos casos antes de llegar aca, pero no cubre acciones dentro de

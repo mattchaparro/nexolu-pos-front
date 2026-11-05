@@ -5,13 +5,14 @@
 // historial de pagos. Sin la seccion de addon de IA del legacy (ya no se
 // factura aparte, ver docs/MIGRATION_BACKLOG.md) ni el fallback de pago
 // manual/WhatsApp (no hay precedente de esos datos en este repo todavia).
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useBusiness } from '@/composables/useBusiness'
 import { useAuthStore } from '@/stores/auth.store'
 import type { BillingCycle, SubscriptionPayment, SubscriptionStatus } from '@/types/subscription'
-import { NxButton, NxCard, NxPageHeader } from '@/ui'
+import { NxButton, NxCard, NxPageHeader, NxSwitch } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
 import BillingConfirmModal from '../components/BillingConfirmModal.vue'
@@ -20,6 +21,8 @@ import { useDirectCheckout } from '../composables/useDirectCheckout'
 import { usePaymentMethodsCatalog } from '../composables/usePaymentMethodsCatalog'
 import { useSubscriptionCheckout } from '../composables/useSubscriptionCheckout'
 import { useSubscriptionStatus } from '../composables/useSubscriptionStatus'
+import { usePaymentSources } from '../composables/usePaymentSources'
+import { updateSubscriptionAutoRenew } from '../services/subscriptionService'
 
 const route = useRoute()
 const router = useRouter()
@@ -36,6 +39,20 @@ const widgetEnabled = computed(() => catalogQuery.data.value?.widget_enabled ?? 
 const statusQuery = useSubscriptionStatus()
 const data = computed(() => statusQuery.data.value ?? null)
 const isActive = computed(() => data.value?.status === 'paid' || data.value?.status === 'trial')
+
+// Renovacion automatica: el dia que vence se cobra al medio guardado (ver
+// subscriptions:renew en el API). Sin medio guardado no hay a que cobrar.
+const queryClient = useQueryClient()
+const sourcesQuery = usePaymentSources()
+const hasSavedSource = computed(() => (sourcesQuery.data.value?.length ?? 0) > 0)
+const autoRenewMutation = useMutation({
+  mutationFn: (value: boolean) => updateSubscriptionAutoRenew(value),
+  onSuccess: () => queryClient.invalidateQueries({ queryKey: ['subscription', 'status'] }),
+})
+const autoRenew = computed({
+  get: () => data.value?.auto_renew ?? true,
+  set: (value: boolean) => autoRenewMutation.mutate(value),
+})
 
 // Colapsado por defecto: en mobile, el detalle (dias, fechas, plan, promo)
 // empujaba fuera de la primera pantalla tanto el boton de pagar como el
@@ -239,14 +256,53 @@ onUnmounted(() => {
         </div>
       </div>
 
+      <!-- Vencida: bloqueada o en los dias de gracia -->
+      <div
+        v-else-if="data.access_locked"
+        class="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-5"
+      >
+        <i class="pi pi-lock mt-0.5 text-2xl text-red-500" />
+        <div>
+          <p class="font-semibold text-red-800">El sistema está bloqueado</p>
+          <p class="mt-0.5 text-sm text-red-700">
+            Tu suscripción venció<span v-if="data.paid_until"> el <strong>{{ formatDate(data.paid_until) }}</strong></span>.
+            Apenas pagues se desbloquea, con todos tus datos.
+          </p>
+        </div>
+      </div>
+      <div v-else-if="data.grace_ends_at" class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-5">
+        <i class="pi pi-exclamation-triangle mt-0.5 text-2xl text-amber-500" />
+        <div>
+          <p class="font-semibold text-amber-800">Tu suscripción venció</p>
+          <p class="mt-0.5 text-sm text-amber-700">
+            Tienes hasta el <strong>{{ formatDate(data.grace_ends_at) }}</strong> para pagar. Después el sistema se bloquea
+            hasta que pagues.
+          </p>
+        </div>
+      </div>
+
+      <!-- Renovacion automatica -->
+      <NxCard v-if="hasSavedSource">
+        <label class="flex items-start justify-between gap-4">
+          <span>
+            <span class="block text-sm font-semibold text-slate-900">Renovación automática</span>
+            <span class="mt-0.5 block text-xs text-slate-500">
+              El día que vence cobramos {{ formatCop(data.renewal_amount_cop) }} a tu medio de pago guardado y te avisamos por
+              WhatsApp. Si el cobro no pasa, lo reintentamos.
+            </span>
+          </span>
+          <NxSwitch v-model="autoRenew" :disabled="autoRenewMutation.isPending.value" />
+        </label>
+      </NxCard>
+
       <!-- Pago en linea -->
       <NxCard v-if="!anyVerifying && !anyActivated">
         <p class="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
           {{ isActive ? 'Pagar siguiente periodo' : 'Realizar pago' }}
         </p>
-        <p v-if="isActive && data.paid_until" class="mb-4 text-xs text-slate-400">
-          Los días se acumulan a partir del <strong>{{ formatDate(data.paid_until) }}</strong
-          >.
+        <p v-if="data.paid_until && (isActive || data.grace_ends_at || data.access_locked)" class="mb-4 text-xs text-slate-400">
+          {{ isActive ? 'Los días se acumulan' : 'El nuevo periodo cuenta' }} a partir del
+          <strong>{{ formatDate(data.paid_until) }}</strong>.
         </p>
 
         <div

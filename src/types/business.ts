@@ -102,4 +102,8 @@ export interface Business {
   subscription_status: 'trial' | 'paid' | 'expired' | 'inactive'
   days_remaining: number
   subscription_warning_days: number
+  // Vencido: hasta cuando sigue funcionando (null si no esta en gracia), y si
+  // ya se bloqueo por falta de pago (el API responde 402 a todo menos pagar).
+  grace_ends_at: string | null
+  access_locked: boolean
 }
