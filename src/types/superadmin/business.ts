@@ -28,7 +28,21 @@ export interface SuperAdminBusiness {
   product_categories_count?: number
   admin_user: { id: number; name: string } | null
   last_activity_at: string | null
+  /** Ultima venta (abierta o cerrada): solo viene en el listado. */
+  last_sale_at?: string | null
   created_at: string
+}
+
+/** Conteo de todos los negocios, sin los filtros del listado. */
+export interface SuperAdminBusinessesSummary {
+  total: number
+  /** Con al menos una venta en los ultimos `in_use_days` dias. */
+  in_use: number
+  in_use_days: number
+  paid: number
+  trial: number
+  expired: number
+  inactive: number
 }
 
 export interface SuperAdminBusinessTeamMember {

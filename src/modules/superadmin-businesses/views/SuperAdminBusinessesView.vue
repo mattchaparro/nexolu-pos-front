@@ -24,6 +24,8 @@ let debounce: number | undefined
 
 const statusOptions = [
   { value: '', label: 'Todos los estados' },
+  { value: 'in_use', label: 'En uso (vendieron esta semana)' },
+  { value: 'idle', label: 'Sin ventas esta semana' },
   { value: 'trial', label: 'Prueba' },
   { value: 'paid', label: 'Pagando' },
   { value: 'expired', label: 'Vencido' },
@@ -44,6 +46,51 @@ watch(status, () => {
 
 const businessesQuery = useBusinesses(search, status, page)
 const meta = computed(() => businessesQuery.data.value?.meta)
+const summary = computed(() => businessesQuery.data.value?.summary)
+
+// Resumen de arriba: cada casilla filtra la lista; tocarla otra vez la limpia.
+const summaryTiles = computed(() => {
+  const s = summary.value
+  if (!s) {
+    return []
+  }
+  return [
+    { status: 'in_use', label: `En uso (últimos ${s.in_use_days} días)`, value: s.in_use, hint: `de ${s.total} negocios`, accent: 'text-emerald-700' },
+    { status: 'paid', label: 'Pagando', value: s.paid, hint: 'suscripción al día', accent: 'text-slate-900' },
+    { status: 'trial', label: 'En prueba', value: s.trial, hint: 'periodo gratis', accent: 'text-slate-900' },
+    { status: 'expired', label: 'Vencidos', value: s.expired, hint: 'sin pagar', accent: 'text-red-700' },
+    { status: 'inactive', label: 'Apagados', value: s.inactive, hint: 'desactivados', accent: 'text-slate-500' },
+  ]
+})
+
+function toggleStatus(value: string): void {
+  status.value = status.value === value ? '' : value
+}
+
+const IN_USE_MS = 7 * 24 * 60 * 60 * 1000
+
+function isInUse(business: SuperAdminBusiness): boolean {
+  return !!business.last_sale_at && Date.now() - new Date(business.last_sale_at).getTime() < IN_USE_MS
+}
+
+/** "Hoy", "Ayer", "Hace 5 días", "Hace 2 meses" o "Nunca". */
+function lastSaleLabel(business: SuperAdminBusiness): string {
+  if (!business.last_sale_at) {
+    return 'Nunca'
+  }
+  const sale = new Date(business.last_sale_at)
+  const days = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(sale).setHours(0, 0, 0, 0)) / 86_400_000)
+  if (days <= 0) {
+    return 'Hoy'
+  }
+  if (days === 1) {
+    return 'Ayer'
+  }
+  if (days < 60) {
+    return `Hace ${days} días`
+  }
+  return `Hace ${Math.floor(days / 30)} meses`
+}
 
 function onPage(event: { page: number }): void {
   page.value = event.page + 1
@@ -103,6 +150,22 @@ function statusBadge(business: SuperAdminBusiness): { label: string; class: stri
 
     <BusinessFormModal v-model="createModalOpen" @created="openBusiness" />
 
+    <!-- Cuantos usan de verdad el POS, sobre todos los negocios. -->
+    <div v-if="summaryTiles.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+      <button
+        v-for="tile in summaryTiles"
+        :key="tile.status"
+        type="button"
+        class="rounded-xl border bg-white p-3 text-left transition-colors hover:border-indigo-300"
+        :class="status === tile.status ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-200'"
+        @click="toggleStatus(tile.status)"
+      >
+        <p class="text-xs font-medium text-slate-500">{{ tile.label }}</p>
+        <p class="text-2xl font-bold" :class="tile.accent">{{ tile.value }}</p>
+        <p class="text-[11px] text-slate-400">{{ tile.hint }}</p>
+      </button>
+    </div>
+
     <div class="flex flex-col gap-2 sm:flex-row">
       <NxInput
         v-model="searchInput"
@@ -155,6 +218,14 @@ function statusBadge(business: SuperAdminBusiness): { label: string; class: stri
         <NxColumn header="Dueño">
           <template #body="{ data }: { data: SuperAdminBusiness }">
             {{ data.owner_name }}
+          </template>
+        </NxColumn>
+        <NxColumn header="Última venta">
+          <template #body="{ data }: { data: SuperAdminBusiness }">
+            <span class="inline-flex items-center gap-1.5 text-sm" :class="isInUse(data) ? 'text-emerald-700' : 'text-slate-400'">
+              <span class="h-2 w-2 shrink-0 rounded-full" :class="isInUse(data) ? 'bg-emerald-500' : 'bg-slate-300'" />
+              {{ lastSaleLabel(data) }}
+            </span>
           </template>
         </NxColumn>
         <NxColumn header="Estado">
