@@ -10,11 +10,6 @@ import { extractFieldErrors } from '@/utils/extractFieldErrors'
 import { useExpenseTypes } from '../composables/useExpenseTypes'
 import { useFixedExpenseTemplateMutations } from '../composables/useFixedExpenseTemplateMutations'
 
-const SCOPES = [
-  { label: 'Operacional', value: 'operacional' },
-  { label: 'Administrativo', value: 'administrativo' },
-]
-
 const props = defineProps<{
   modelValue: boolean
   template: FixedExpenseTemplate | null
@@ -31,7 +26,6 @@ const amount = ref<number | null>(null)
 const expenseTypeId = ref<number | null>(null)
 const active = ref(true)
 const dayOfMonth = ref<number | null>(null)
-const scope = ref<string>('operacional')
 const fieldErrors = ref<Record<string, string>>({})
 const formError = ref<string | null>(null)
 
@@ -49,7 +43,6 @@ function resetForm(): void {
   expenseTypeId.value = props.template?.expense_type?.id ?? null
   active.value = props.template?.active ?? true
   dayOfMonth.value = props.template?.day_of_month ?? null
-  scope.value = props.template?.scope ?? 'operacional'
   fieldErrors.value = {}
   formError.value = null
 }
@@ -81,7 +74,6 @@ async function submit(): Promise<void> {
     expense_type_id: expenseTypeId.value ?? null,
     active: active.value,
     day_of_month: dayOfMonth.value ?? null,
-    scope: scope.value as 'operacional' | 'administrativo',
   }
 
   try {
@@ -131,13 +123,6 @@ async function submit(): Promise<void> {
         option-label="label"
         option-value="value"
         :error="fieldErrors.day_of_month"
-      />
-      <NxSelect
-        v-model="scope"
-        label="Clasificación"
-        :options="SCOPES"
-        option-label="label"
-        option-value="value"
       />
       <div class="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2.5">
         <NxSwitch v-model="active" />

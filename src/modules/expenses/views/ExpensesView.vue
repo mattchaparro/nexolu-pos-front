@@ -302,6 +302,7 @@ async function removeTemplate(template: FixedExpenseTemplate): Promise<void> {
                 <NxColumn header="Pago" style="width: 100px">
                   <template #body="{ data }: { data: Expense }">
                     <span class="text-xs text-slate-500">{{ data.payment_method ?? '—' }}</span>
+                    <span v-if="data.paid_from_cash_register" class="block text-[11px] font-medium text-amber-700">De la caja</span>
                   </template>
                 </NxColumn>
 

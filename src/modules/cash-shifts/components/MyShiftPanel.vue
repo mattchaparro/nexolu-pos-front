@@ -48,7 +48,7 @@ const expectedOpening = computed(() => currentShiftQuery.data.value?.expected_op
     <div v-if="totals" class="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <NxStatCard label="Base inicial" :value="formatCop(totals.opening_cash)" icon="pi pi-wallet" />
       <NxStatCard label="Ventas en efectivo" :value="formatCop(totals.total_cash)" icon="pi pi-dollar" />
-      <NxStatCard label="Gastos" :value="formatCop(totals.total_expenses)" icon="pi pi-money-bill" />
+      <NxStatCard label="Gastos de la caja" :value="formatCop(totals.total_expenses)" icon="pi pi-money-bill" />
       <NxStatCard label="Efectivo esperado ahora" :value="formatCop(totals.expected_cash)" icon="pi pi-calculator" />
     </div>
 

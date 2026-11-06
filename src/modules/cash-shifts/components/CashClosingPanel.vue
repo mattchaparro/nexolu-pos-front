@@ -196,7 +196,7 @@ async function submit(): Promise<void> {
           </p>
         </div>
         <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p class="text-xs font-medium text-slate-500">Gastos</p>
+          <p class="text-xs font-medium text-slate-500">Gastos de la caja</p>
           <p class="text-lg font-bold text-slate-900">
             {{ formatCop(previewQuery.data.value.totals.total_expenses) }}
           </p>

@@ -81,4 +81,6 @@ export interface PurchasePayload {
 export interface PayPurchasePayload {
   amount: number
   payment_method: string
+  /** El abono salio del efectivo de la caja del dia (solo con efectivo). */
+  paid_from_cash_register?: boolean
 }

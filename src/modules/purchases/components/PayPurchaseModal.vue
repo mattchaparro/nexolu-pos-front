@@ -8,9 +8,9 @@ import { useBusiness } from '@/composables/useBusiness'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import PaymentMethodPicker from '@/components/PaymentMethodPicker.vue'
 import type { Purchase } from '@/types/purchase'
-import { NxButton, NxInputNumber, NxModal } from '@/ui'
+import { NxButton, NxInputNumber, NxModal, NxSwitch } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
-import { isCreditPaymentMethodId } from '@/utils/paymentMethod'
+import { isCashPaymentMethodId, isCreditPaymentMethodId } from '@/utils/paymentMethod'
 import { formatCop } from '@/utils/formatCop'
 
 import { usePurchaseMutations } from '../composables/usePurchaseMutations'
@@ -32,6 +32,10 @@ const nonCreditPaymentMethods = computed(
 
 const amount = ref<number | null>(null)
 const paymentMethod = ref<string | null>(null)
+// Igual que en Gastos: nace apagado, el abono a un proveedor suele salir de la
+// cuenta del local y no del efectivo del dia.
+const paidFromCashRegister = ref(false)
+const isCash = computed(() => isCashPaymentMethodId(paymentMethod.value))
 const formError = ref<string | null>(null)
 
 watch(
@@ -40,6 +44,7 @@ watch(
     if (open) {
       amount.value = props.purchase?.balance ?? null
       paymentMethod.value = nonCreditPaymentMethods.value[0]?.id ?? null
+      paidFromCashRegister.value = false
       formError.value = null
     }
   },
@@ -56,7 +61,11 @@ async function submit(): Promise<void> {
   try {
     await payMutation.mutateAsync({
       id: props.purchase.id,
-      payload: { amount: amount.value, payment_method: paymentMethod.value },
+      payload: {
+        amount: amount.value,
+        payment_method: paymentMethod.value,
+        paid_from_cash_register: isCash.value && paidFromCashRegister.value,
+      },
     })
     notify('Abono registrado')
     emit('update:modelValue', false)
@@ -89,6 +98,14 @@ async function submit(): Promise<void> {
         <p class="mb-2 text-sm font-medium text-slate-700">Método de pago</p>
         <PaymentMethodPicker :methods="nonCreditPaymentMethods" :model-value="paymentMethod" @update:model-value="paymentMethod = $event" />
       </div>
+
+      <label v-if="isCash" class="flex items-start gap-3 rounded-lg border border-slate-200 px-3 py-2.5">
+        <NxSwitch v-model="paidFromCashRegister" class="mt-0.5 shrink-0" />
+        <span>
+          <span class="block text-sm font-medium text-slate-700">Salió de la caja del día</span>
+          <span class="block text-xs text-slate-500">Se descuenta del cierre y del turno. Si fue de otra plata, déjalo apagado.</span>
+        </span>
+      </label>
     </div>
 
     <template #footer>

@@ -1,9 +1,13 @@
 <script setup lang="ts">
+// "Salio de la caja del dia" nace apagado: un gasto pagado de la cuenta del
+// local es gasto del mes igual, pero no debe descuadrar el cierre ni el turno.
+// Reemplaza a la vieja "Clasificacion" (operacional/administrativo), que era lo
+// unico que decidia si se descontaba de la caja y nadie entendia.
 import { computed, ref, watch } from 'vue'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { Expense } from '@/types/expense'
-import { NxButton, NxDatePicker, NxInput, NxInputNumber, NxModal, NxSelect } from '@/ui'
+import { NxButton, NxDatePicker, NxInput, NxInputNumber, NxModal, NxSelect, NxSwitch } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 import { toLocalDateIso } from '@/utils/toLocalDateIso'
@@ -12,10 +16,6 @@ import { useExpenseMutations } from '../composables/useExpenseMutations'
 import { useExpenseTypes } from '../composables/useExpenseTypes'
 
 const PAYMENT_METHODS = ['Efectivo', 'Nequi', 'Daviplata', 'Transferencia', 'Tarjeta']
-const SCOPES = [
-  { label: 'Operacional', value: 'operacional' },
-  { label: 'Administrativo', value: 'administrativo' },
-]
 const PAYMENT_METHOD_OPTIONS = PAYMENT_METHODS.map((m) => ({ label: m, value: m }))
 
 const props = defineProps<{
@@ -34,7 +34,7 @@ const description = ref('')
 const value = ref<number | null>(null)
 const typeId = ref<number | null>(null)
 const paymentMethod = ref<string>('Efectivo')
-const scope = ref<string>('operacional')
+const paidFromCashRegister = ref(false)
 const fieldErrors = ref<Record<string, string>>({})
 const formError = ref<string | null>(null)
 
@@ -48,8 +48,8 @@ function resetForm(): void {
   description.value = props.expense?.description ?? ''
   value.value = props.expense ? parseFloat(props.expense.value) : null
   typeId.value = props.expense?.type?.id ?? null
-  paymentMethod.value = props.expense?.payment_method ?? 'Efectivo'
-  scope.value = props.expense?.scope ?? 'operacional'
+  paymentMethod.value = props.expense?.payment_method ?? 'Transferencia'
+  paidFromCashRegister.value = props.expense?.paid_from_cash_register ?? false
   fieldErrors.value = {}
   formError.value = null
 }
@@ -92,8 +92,9 @@ async function submit(): Promise<void> {
     description: description.value.trim(),
     value: value.value,
     type_id: typeId.value,
-    payment_method: paymentMethod.value,
-    scope: scope.value as 'operacional' | 'administrativo',
+    // La caja solo tiene efectivo (el API hace lo mismo).
+    payment_method: paidFromCashRegister.value ? 'Efectivo' : paymentMethod.value,
+    paid_from_cash_register: paidFromCashRegister.value,
   }
 
   try {
@@ -138,17 +139,21 @@ async function submit(): Promise<void> {
         required
         :error="fieldErrors.type_id"
       />
+      <label class="flex items-start gap-3 rounded-lg border border-slate-200 px-3 py-2.5">
+        <NxSwitch v-model="paidFromCashRegister" class="mt-0.5 shrink-0" />
+        <span>
+          <span class="block text-sm font-medium text-slate-700">Salió de la caja del día</span>
+          <span class="block text-xs text-slate-500">
+            Márcalo solo si pagaste con el efectivo de la caja: se descuenta del cierre y del turno. Si lo pagaste
+            de la cuenta del local u otra plata, déjalo apagado.
+          </span>
+        </span>
+      </label>
       <NxSelect
+        v-if="!paidFromCashRegister"
         v-model="paymentMethod"
         label="Medio de pago"
         :options="PAYMENT_METHOD_OPTIONS"
-        option-label="label"
-        option-value="value"
-      />
-      <NxSelect
-        v-model="scope"
-        label="Clasificación"
-        :options="SCOPES"
         option-label="label"
         option-value="value"
       />

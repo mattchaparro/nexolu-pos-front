@@ -16,6 +16,8 @@ export interface Expense {
   value: string
   scope: 'operacional' | 'administrativo' | null
   payment_method: string | null
+  /** Salio del efectivo de la caja del dia: solo esos descuentan del cierre y del turno. */
+  paid_from_cash_register: boolean
   type: ExpenseType | null
   linkable_type: string | null
   linkable_id: number | null
@@ -44,6 +46,7 @@ export interface ExpensePayload {
   type_id: number
   scope?: 'operacional' | 'administrativo' | null
   payment_method?: string | null
+  paid_from_cash_register?: boolean
   linkable_type?: string | null
   linkable_id?: number | null
   reminder_date?: string | null
