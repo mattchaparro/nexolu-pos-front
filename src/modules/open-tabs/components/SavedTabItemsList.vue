@@ -13,6 +13,8 @@ import type { SaleItem } from '@/types/sale'
 import { NxInput, NxQuantityStepper } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
+import { optionsLabel } from '../../sales/support/productOptions'
+
 const props = defineProps<{
   items: SaleItem[]
   syncing: boolean
@@ -91,8 +93,8 @@ const visibleItems = computed<SaleItem[]>(() => {
       <div class="flex items-center gap-2">
       <div class="min-w-0 flex-1">
         <p class="truncate text-slate-700">{{ item.product.name }}</p>
-        <p v-if="item.options?.length" class="truncate text-xs text-slate-500">
-          {{ item.options.map((o) => o.name).join(', ') }}
+        <p v-if="item.options?.length" class="text-xs font-medium leading-snug text-indigo-700">
+          + {{ optionsLabel(item.options) }}
         </p>
       </div>
       <!-- Los +/- editan un BORRADOR local (instantaneo, sin red - ver

@@ -137,6 +137,9 @@ export interface ProductOptionGroup {
   name: string
   min_choices: number
   max_choices: number
+  // Repetible: la misma opcion se elige varias veces (doble porcion) y el
+  // maximo cuenta porciones. En Vender se muestra con contador.
+  allow_repeat: boolean
   options: ProductOption[]
   // Solo en la biblioteca (GET /product-option-groups): productos que lo usan.
   products?: { id: number; name: string }[]
@@ -226,6 +229,7 @@ export interface ProductOptionGroupInput {
   name: string
   min_choices: number
   max_choices: number
+  allow_repeat: boolean
   options: ProductOptionInput[]
 }
 

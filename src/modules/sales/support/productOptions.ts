@@ -29,6 +29,21 @@ export function optionsKey(options: ChosenOption[] | undefined): string {
     .join(',')
 }
 
+/** «Jack Daniels ×2, Tamarindo»: junta las porciones repetidas, en el orden en que se eligieron. */
+export function optionsLabel(options: { group: string; name: string }[] | undefined): string {
+  const tally = new Map<string, { name: string; count: number }>()
+  for (const option of options ?? []) {
+    const key = `${option.group}|${option.name}`
+    const entry = tally.get(key)
+    if (entry) {
+      entry.count++
+    } else {
+      tally.set(key, { name: option.name, count: 1 })
+    }
+  }
+  return [...tally.values()].map((o) => (o.count > 1 ? `${o.name} ×${o.count}` : o.name)).join(', ')
+}
+
 export function optionsExtraTotal(options: ChosenOption[] | undefined): number {
   return (options ?? []).reduce((sum, o) => sum + o.extraPrice, 0)
 }

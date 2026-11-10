@@ -3,6 +3,7 @@ import type { Discount } from '@/types/discount'
 import { NxInputNumber, NxQuantityStepper } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
+import { optionsLabel } from '../support/productOptions'
 import type { CartLineTotals } from '../support/saleMath'
 
 const props = defineProps<{
@@ -31,8 +32,8 @@ function applicableDiscounts(): Discount[] {
         <p class="truncate text-sm font-medium leading-tight text-slate-900">
           {{ line.product.name }}
         </p>
-        <p v-if="line.options?.length" class="mt-0.5 truncate text-xs text-slate-500">
-          {{ line.options.map((o) => o.name).join(', ') }}
+        <p v-if="line.options?.length" class="mt-0.5 text-xs font-medium leading-snug text-indigo-700">
+          + {{ optionsLabel(line.options) }}
         </p>
         <span
           v-if="line.variant"

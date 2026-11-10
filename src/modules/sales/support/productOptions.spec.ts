@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Product } from '@/types/product'
 
-import { optionsExtraTotal, optionsKey, resolveChosenOptions } from './productOptions'
+import { optionsExtraTotal, optionsKey, optionsLabel, resolveChosenOptions } from './productOptions'
 
 const product = {
   option_groups: [
@@ -37,5 +37,17 @@ describe('productOptions', () => {
     const b = resolveChosenOptions(product, [11, 10]) ?? []
     expect(optionsKey(a)).toBe(optionsKey(b))
     expect(optionsKey([])).toBe('')
+  })
+
+  it('groups repeated portions in the short label, keeping the order they were chosen', () => {
+    const jack = { group: 'Tragos', name: 'Jack Daniels' }
+    const tamarindo = { group: 'Tragos', name: 'Tamarindo' }
+    expect(optionsLabel([jack, tamarindo, jack])).toBe('Jack Daniels ×2, Tamarindo')
+    expect(optionsLabel([])).toBe('')
+  })
+
+  it('keeps repeated portions in the merge key so a double shot is its own line', () => {
+    expect(optionsKey([{ id: 10 }, { id: 10 }] as never)).toBe('10,10')
+    expect(optionsKey([{ id: 10 }] as never)).not.toBe(optionsKey([{ id: 10 }, { id: 10 }] as never))
   })
 })

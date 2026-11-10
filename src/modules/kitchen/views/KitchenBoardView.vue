@@ -93,7 +93,7 @@ function ticketLabel(ticket: KitchenTicket): string {
                 <span v-if="item.is_deleted" class="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">Eliminado</span>
               </div>
               <p v-if="item.options.length" class="pl-6 text-xs font-medium text-amber-700">
-                {{ item.options.map((o) => o.name).join(' · ') }}
+                {{ item.options.map((o) => (o.quantity > 1 ? `${o.name} ×${o.quantity}` : o.name)).join(' · ') }}
               </p>
             </li>
           </ul>

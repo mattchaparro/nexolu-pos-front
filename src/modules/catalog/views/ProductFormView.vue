@@ -272,6 +272,7 @@ watch(
       name: g.name,
       min_choices: g.min_choices,
       max_choices: g.max_choices,
+      allow_repeat: g.allow_repeat,
       options: g.options.map((o) => ({
         id: o.id,
         name: o.name,

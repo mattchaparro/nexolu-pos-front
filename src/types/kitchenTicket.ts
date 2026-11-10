@@ -8,7 +8,8 @@ export interface KitchenTicketItem {
   name: string
   is_deleted: boolean
   quantity: number
-  options: { group: string; name: string }[]
+  // Las porciones repetidas llegan juntas: quantity 2 = «Jack Daniels ×2».
+  options: { group: string; name: string; quantity: number }[]
   kitchen_status: KitchenStatus
 }
 

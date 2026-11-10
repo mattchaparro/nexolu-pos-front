@@ -259,6 +259,7 @@ async function exportCsv(): Promise<void> {
                   {{ item.name }}
                   <span v-if="item.is_deleted" class="text-red-400">(eliminado)</span>
                   <span class="text-slate-400">x{{ item.quantity }}</span>
+                  <span v-if="item.options_label" class="block font-medium text-indigo-700">+ {{ item.options_label }}</span>
                 </span>
                 <span>{{ formatCop(item.subtotal) }}</span>
               </p>

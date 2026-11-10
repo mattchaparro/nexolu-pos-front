@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 
 import type { Ingredient, ProductOptionGroup, ProductOptionGroupInput } from '@/types/product'
-import { NxInput, NxInputNumber, NxSelect } from '@/ui'
+import { NxInput, NxInputNumber, NxSelect, NxSwitch } from '@/ui'
 
 const props = defineProps<{
   modelValue: ProductOptionGroupInput[]
@@ -27,7 +27,7 @@ function blankOption(): ProductOptionGroupInput['options'][number] {
 }
 
 function addGroup(): void {
-  update([...props.modelValue, { name: '', min_choices: 1, max_choices: 1, options: [blankOption()] }])
+  update([...props.modelValue, { name: '', min_choices: 1, max_choices: 1, allow_repeat: false, options: [blankOption()] }])
 }
 
 function removeGroup(index: number): void {
@@ -53,6 +53,7 @@ function toInput(group: ProductOptionGroup, keepIds: boolean): ProductOptionGrou
     name: group.name,
     min_choices: group.min_choices,
     max_choices: group.max_choices,
+    allow_repeat: group.allow_repeat,
     options: group.options.map((o) => ({
       id: keepIds ? o.id : undefined,
       name: o.name,
@@ -144,6 +145,13 @@ function unitFor(ingredientId: number | null | undefined): string {
           @update:model-value="group.max_choices = $event ?? 1"
         />
       </div>
+      <label class="flex items-start gap-2 rounded-md bg-white px-2 py-1.5">
+        <NxSwitch v-model="group.allow_repeat" class="mt-0.5 shrink-0" />
+        <span class="text-xs text-slate-600">
+          <span class="font-semibold text-slate-800">Se puede repetir</span><br />
+          Al vender cada opción lleva contador (ej. doble porción de licor) y el máximo cuenta porciones. Apagado se marca y desmarca, una vez cada una.
+        </span>
+      </label>
 
       <div v-for="(option, oi) in group.options" :key="option.id ?? `new-${oi}`" class="flex flex-col gap-1.5 rounded-lg bg-white p-2">
         <div class="flex items-center gap-2">

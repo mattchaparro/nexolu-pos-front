@@ -1,6 +1,8 @@
 export interface SaleHistoryItem {
   name: string
   is_deleted: boolean
+  // Opciones elegidas en texto corto («Jack Daniels ×2, Tamarindo»); '' si no hay.
+  options_label: string
   quantity: number
   subtotal: number
 }
