@@ -7,6 +7,10 @@ export function useUpdateBusinessMutation() {
 
   return useMutation({
     mutationFn: updateBusiness,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['business'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['business'] })
+      // La página de enlaces toma WhatsApp, Instagram y TikTok de aquí.
+      queryClient.invalidateQueries({ queryKey: ['link-page'] })
+    },
   })
 }

@@ -21,7 +21,6 @@ import { usePermissions } from '@/composables/usePermissions'
 import { useAuthStore } from '@/stores/auth.store'
 import { NxPageHeader, NxStatCard } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
-import { hasFeature } from '@/utils/hasFeature'
 
 import AiInsightCard from '../components/AiInsightCard.vue'
 import ShareStoreCard from '../components/ShareStoreCard.vue'
@@ -46,11 +45,9 @@ const canUseAi = computed(
   () => hasPermission('ai_chat.use') || auth.user?.roles?.includes('admin') === true,
 )
 
-// Compartir la tienda: solo el admin (la configuración de la tienda es suya,
-// y su endpoint exige business-admin) y solo con el módulo encendido.
-const canShareStore = computed(
-  () => hasFeature(business.value, 'online_store') && auth.user?.roles?.includes('admin') === true,
-)
+// Compartir el negocio (página de enlaces y, si tiene, el catálogo): solo el
+// admin, porque publicar la página es decisión suya (endpoint business-admin).
+const canShareStore = computed(() => auth.user?.roles?.includes('admin') === true)
 
 const customizerOpen = ref(false)
 const shortcuts = computed(() => resolveShortcuts(stats.value?.shortcuts ?? null, navItems.value))

@@ -20,6 +20,7 @@ import { useWhatsappLinkStatus } from '@/composables/useWhatsappLinkStatus'
 import { useAiMessagePackCheckout } from '@/modules/ai-message-packs/composables/useAiMessagePackCheckout'
 import { useAiQuotaState } from '@/modules/ai-message-packs/composables/useAiQuotaState'
 import BranchesPanel from '@/modules/branches/components/BranchesPanel.vue'
+import LinkPageCard from '@/modules/link-page/components/LinkPageCard.vue'
 import { useCategories } from '@/modules/catalog/composables/useCategories'
 import {
   NxButton,
@@ -517,9 +518,17 @@ const { gatewaysQuery } = usePaymentGateways()
           <NxTab v-if="business?.can_access_services" value="5">Ordenes de servicio</NxTab>
           <NxTab value="6">Notificaciones</NxTab>
           <NxTab value="7">Asistente de IA</NxTab>
+          <NxTab value="enlaces">Página de enlaces</NxTab>
         </NxTabList>
 
         <NxTabPanels>
+          <!-- ================= Página de enlaces ================= -->
+          <NxTabPanel value="enlaces">
+            <div class="mt-3">
+              <LinkPageCard />
+            </div>
+          </NxTabPanel>
+
           <!-- ================= Sedes ================= -->
           <NxTabPanel v-if="showBranchesTab" value="sedes">
             <BranchesPanel />
