@@ -57,7 +57,7 @@ async function remove(): Promise<void> {
          comerciante ve lo que subió y no un recorte que la tienda no hace. -->
     <div
       class="overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
-      :class="aspect === 'wide' ? (url ? '' : 'aspect-[3/1]') : 'h-24 w-24'"
+      :class="aspect === 'wide' ? (url ? '' : 'aspect-[3/1]') : 'h-24 w-fit min-w-24'"
     >
       <img
         v-if="url && aspect === 'wide'"
@@ -65,7 +65,7 @@ async function remove(): Promise<void> {
         :alt="label"
         class="block h-auto max-h-40 w-full object-contain"
       />
-      <img v-else-if="url" :src="url" :alt="label" class="h-full w-full object-cover" />
+      <img v-else-if="url" :src="url" :alt="label" class="h-full w-auto max-w-56 object-contain p-1.5" />
       <div v-else class="flex h-full w-full items-center justify-center text-slate-300">
         <i class="pi pi-image" />
       </div>

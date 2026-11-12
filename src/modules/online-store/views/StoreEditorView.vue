@@ -557,7 +557,7 @@ async function save(): Promise<void> {
               label="Logo"
               :url="settings.logo_url"
               aspect="square"
-              hint="Cuadrado, se ve pequeño."
+              hint="Sirve cuadrado (ícono) u horizontal (con el nombre escrito). Si es horizontal, ocupa el lugar del nombre en la tienda. Mejor en PNG con fondo transparente."
             />
             <StoreImageField
               image-slot="banner"
