@@ -19,6 +19,7 @@ import { useUpdateBusinessPaymentMethodsMutation } from '@/composables/useUpdate
 import { useWhatsappLinkStatus } from '@/composables/useWhatsappLinkStatus'
 import { useAiMessagePackCheckout } from '@/modules/ai-message-packs/composables/useAiMessagePackCheckout'
 import { useAiQuotaState } from '@/modules/ai-message-packs/composables/useAiQuotaState'
+import BranchesPanel from '@/modules/branches/components/BranchesPanel.vue'
 import { useCategories } from '@/modules/catalog/composables/useCategories'
 import {
   NxButton,
@@ -40,6 +41,7 @@ import {
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 import { formatCop } from '@/utils/formatCop'
+import { hasFeature } from '@/utils/hasFeature'
 
 import PaymentGatewayCard from '../components/PaymentGatewayCard.vue'
 import { usePaymentGateways } from '../composables/usePaymentGateways'
@@ -54,7 +56,19 @@ const canEdit = computed(
   () => auth.user?.is_business_owner === true || auth.user?.roles?.includes('admin') === true,
 )
 
-const activeTab = ref('0')
+// La pestaña se puede abrir directo con ?tab= (por ejemplo /sedes, que
+// redirige a ?tab=sedes desde que Sedes dejó el menú lateral).
+const activeTab = ref(typeof route.query.tab === 'string' ? route.query.tab : '0')
+const showBranchesTab = computed(() => hasFeature(business.value, 'multi_branch'))
+watch(
+  business,
+  (value) => {
+    if (value && activeTab.value === 'sedes' && !showBranchesTab.value) {
+      activeTab.value = '0'
+    }
+  },
+  { immediate: true },
+)
 
 // ---------- Negocio ----------------------------------------------------
 const negocio = reactive({
@@ -494,6 +508,7 @@ const { gatewaysQuery } = usePaymentGateways()
       <NxTabs v-model:value="activeTab">
         <NxTabList>
           <NxTab value="0">Negocio</NxTab>
+          <NxTab v-if="showBranchesTab" value="sedes">Sedes</NxTab>
           <NxTab value="1">Facturacion</NxTab>
           <NxTab value="2">Ventas</NxTab>
           <NxTab value="8">Medios de pago</NxTab>
@@ -505,6 +520,11 @@ const { gatewaysQuery } = usePaymentGateways()
         </NxTabList>
 
         <NxTabPanels>
+          <!-- ================= Sedes ================= -->
+          <NxTabPanel v-if="showBranchesTab" value="sedes">
+            <BranchesPanel />
+          </NxTabPanel>
+
           <!-- ================= Negocio ================= -->
           <NxTabPanel value="0">
             <NxCard class="mt-3">

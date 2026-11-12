@@ -1,11 +1,11 @@
 <script setup lang="ts">
 // Franja de navegacion entre las secciones del "hub" de Catalogo/Compras -
 // puerto de CatalogHubLayout.vue del legacy (mismas 5 pestañas: Articulos,
-// Compras, Servicios, Proveedores, Categorias). Articulos por dentro tiene
+// Compras, Servicios, Proveedores, Categorias), mas Atributos y Traslados. Articulos por dentro tiene
 // sus propias sub-tabs Productos/Ingredientes (ver CatalogView.vue), pero
 // Categorias es una pagina de nivel superior aca, igual que en el legacy -
 // no una sub-tab mas de Articulos.
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useBusiness } from '@/composables/useBusiness'
@@ -31,12 +31,16 @@ const showServicesTab = computed(() => business.value?.can_access_services === t
 // catalog.attributes.index (gateada con requiresFeature -> hasFeature) lo
 // dejaba entrar mientras esta pestaña se quedaba oculta.
 const showAttributesTab = computed(() => hasFeature(business.value, 'variants') && hasPermission('inventory.view'))
+// Traslados entre sedes: mismo gate que sus rutas (multi_branch + inventory.view).
+const showTransfersTab = computed(() => hasFeature(business.value, 'multi_branch') && hasPermission('inventory.view'))
 
 // El formulario de "Nuevo servicio" (catalog.services.create) vive bajo el
 // prefijo de rutas 'catalog.' pero pertenece visualmente a la seccion
 // Servicios, no a Articulos - se resuelve la seccion activa explicito en
 // vez de un simple startsWith(prefijo) para no marcar las dos tabs a la vez.
-const activeSection = computed<'catalog' | 'purchases' | 'suppliers' | 'services' | 'categories' | 'attributes' | null>(() => {
+const activeSection = computed<
+  'catalog' | 'purchases' | 'suppliers' | 'services' | 'categories' | 'attributes' | 'transfers' | null
+>(() => {
   const name = route.name
   if (typeof name !== 'string') {
     return null
@@ -50,6 +54,9 @@ const activeSection = computed<'catalog' | 'purchases' | 'suppliers' | 'services
   if (name === 'catalog.attributes.index') {
     return 'attributes'
   }
+  if (name.startsWith('stock-transfers.')) {
+    return 'transfers'
+  }
   if (name.startsWith('catalog.')) {
     return 'catalog'
   }
@@ -61,13 +68,45 @@ const activeSection = computed<'catalog' | 'purchases' | 'suppliers' | 'services
   }
   return null
 })
+
+// Con siete pestañas la franja se desborda en pantallas angostas: se lleva
+// la activa a la vista para que no quede escondida a la derecha. Se vuelve a
+// medir cuando la pestaña cambia de tamaño, porque al montar todavia no han
+// cargado la fuente ni los iconos y el ancho sale corto.
+const nav = ref<HTMLElement | null>(null)
+let observer: ResizeObserver | null = null
+
+function revealActiveTab(): void {
+  const active = nav.value?.querySelector<HTMLElement>('[data-active="true"]')
+  if (!nav.value || !active) {
+    return
+  }
+  const tab = active.getBoundingClientRect()
+  const strip = nav.value.getBoundingClientRect()
+  if (tab.right > strip.right) {
+    nav.value.scrollLeft += tab.right - strip.right + 8
+  }
+}
+
+onMounted(() => {
+  const active = nav.value?.querySelector<HTMLElement>('[data-active="true"]')
+  if (!active) {
+    return
+  }
+  revealActiveTab()
+  observer = new ResizeObserver(revealActiveTab)
+  observer.observe(active)
+})
+
+onBeforeUnmount(() => observer?.disconnect())
 </script>
 
 <template>
-  <nav class="flex gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1.5" aria-label="Secciones del catálogo">
+  <nav ref="nav" class="flex gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1.5" aria-label="Secciones del catálogo">
     <RouterLink
       :to="{ name: 'catalog.index' }"
       class="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors sm:px-4"
+      :data-active="activeSection === 'catalog'"
       :class="activeSection === 'catalog' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:bg-white/60'"
     >
       <i class="pi pi-box text-sm" />
@@ -77,6 +116,7 @@ const activeSection = computed<'catalog' | 'purchases' | 'suppliers' | 'services
       v-if="showPurchasesTabs"
       :to="{ name: 'purchases.index' }"
       class="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors sm:px-4"
+      :data-active="activeSection === 'purchases'"
       :class="activeSection === 'purchases' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:bg-white/60'"
     >
       <i class="pi pi-shopping-cart text-sm" />
@@ -86,6 +126,7 @@ const activeSection = computed<'catalog' | 'purchases' | 'suppliers' | 'services
       v-if="showServicesTab"
       :to="{ name: 'services.index' }"
       class="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors sm:px-4"
+      :data-active="activeSection === 'services'"
       :class="activeSection === 'services' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:bg-white/60'"
     >
       <i class="pi pi-wrench text-sm" />
@@ -95,6 +136,7 @@ const activeSection = computed<'catalog' | 'purchases' | 'suppliers' | 'services
       v-if="showPurchasesTabs"
       :to="{ name: 'suppliers.index' }"
       class="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors sm:px-4"
+      :data-active="activeSection === 'suppliers'"
       :class="activeSection === 'suppliers' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:bg-white/60'"
     >
       <i class="pi pi-truck text-sm" />
@@ -103,6 +145,7 @@ const activeSection = computed<'catalog' | 'purchases' | 'suppliers' | 'services
     <RouterLink
       :to="{ name: 'catalog.categories.index' }"
       class="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors sm:px-4"
+      :data-active="activeSection === 'categories'"
       :class="activeSection === 'categories' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:bg-white/60'"
     >
       <i class="pi pi-tags text-sm" />
@@ -112,10 +155,21 @@ const activeSection = computed<'catalog' | 'purchases' | 'suppliers' | 'services
       v-if="showAttributesTab"
       :to="{ name: 'catalog.attributes.index' }"
       class="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors sm:px-4"
+      :data-active="activeSection === 'attributes'"
       :class="activeSection === 'attributes' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:bg-white/60'"
     >
       <i class="pi pi-sliders-h text-sm" />
       Atributos
+    </RouterLink>
+    <RouterLink
+      v-if="showTransfersTab"
+      :to="{ name: 'stock-transfers.index' }"
+      class="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors sm:px-4"
+      :data-active="activeSection === 'transfers'"
+      :class="activeSection === 'transfers' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:bg-white/60'"
+    >
+      <i class="pi pi-arrow-right-arrow-left text-sm" />
+      Traslados
     </RouterLink>
   </nav>
 </template>

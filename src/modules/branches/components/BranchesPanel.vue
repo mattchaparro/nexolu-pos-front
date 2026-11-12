@@ -1,6 +1,7 @@
 <script setup lang="ts">
-// Sedes del negocio. Solo existe con multisede encendida (ver el guard de
-// la ruta) - un negocio de una sola sede no tiene nada que administrar aca.
+// Sedes del negocio: la pestaña "Sedes" de Ajustes (antes era una pantalla
+// propia en el menu lateral). Solo aparece con multisede encendida - un
+// negocio de una sola sede no tiene nada que administrar aca.
 //
 // No hay "eliminar": una sede tiene ventas, cajas e inventario colgando y
 // borrarla se llevaria la historia del negocio. Se desactiva, que es lo que
@@ -10,7 +11,7 @@ import { computed, ref } from 'vue'
 import { useBusiness } from '@/composables/useBusiness'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import type { Branch } from '@/types/branch'
-import { NxButton, NxCard, NxColumn, NxDataTable, NxPageHeader } from '@/ui'
+import { NxButton, NxCard, NxColumn, NxDataTable } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
 import BranchFormModal from '../components/BranchFormModal.vue'
@@ -38,7 +39,9 @@ function openEdit(branch: Branch): void {
 }
 
 async function deactivate(branch: Branch): Promise<void> {
-  if (!window.confirm(`¿Desactivar "${branch.name}"? Dejará de aparecer para vender y abrir caja.`)) {
+  if (
+    !window.confirm(`¿Desactivar "${branch.name}"? Dejará de aparecer para vender y abrir caja.`)
+  ) {
     return
   }
 
@@ -54,7 +57,10 @@ async function deactivate(branch: Branch): Promise<void> {
 
 async function reactivate(branch: Branch): Promise<void> {
   try {
-    await updateMutation.mutateAsync({ id: branch.id, payload: { name: branch.name, is_active: true } })
+    await updateMutation.mutateAsync({
+      id: branch.id,
+      payload: { name: branch.name, is_active: true },
+    })
     notify('Sede reactivada.', 'success')
   } catch (error) {
     notify(extractErrorMessage(error, 'No pudimos reactivar la sede.'), 'error')
@@ -63,13 +69,11 @@ async function reactivate(branch: Branch): Promise<void> {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
+  <div class="mt-3 flex flex-col gap-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <NxPageHeader
-        title="Sedes"
-        subtitle="Cada sede lleva su propio inventario, caja y numeración de facturas."
-        icon="pi pi-map-marker"
-      />
+      <p class="text-sm text-slate-600">
+        Cada sede lleva su propio inventario, caja y numeración de facturas.
+      </p>
       <NxButton icon="pi pi-plus" @click="openNew">Nueva sede</NxButton>
     </div>
 

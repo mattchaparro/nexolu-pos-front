@@ -489,29 +489,27 @@ const router = createRouter({
           },
         },
         {
-          // Sin requiresFeature/requiresPermission: a diferencia de los modulos
-          // de arriba, Ajustes no depende de un feature flag propio - cada
-          // seccion adentro decide si aplica segun el negocio (ver
-          // BusinessSettingsView.vue). requiresAdmin: configuracion del
-          // negocio no es delegable via permisos de empleado (ver
-          // EnsureBusinessAdmin en nexolu-pos-api) - mismo criterio que
-          // Usuarios, mas abajo.
-          // Administrar sedes. requiresAdmin y no un permiso de empleado:
-          // abrir o cerrar un local no es una tarea delegable del dia a dia,
-          // mismo criterio que Ajustes aqui abajo.
+          // Sedes es una pestaña de Ajustes (requiresAdmin, como Ajustes):
+          // abrir o cerrar un local no es una tarea delegable del dia a dia.
+          // La URL vieja sigue funcionando y abre esa pestaña.
           path: 'sedes',
           name: 'branches.index',
-          component: () => import('@/modules/branches/views/BranchesView.vue'),
-          meta: { requiresAdmin: true, requiresFeature: 'multi_branch' },
+          redirect: { name: 'business-settings.index', query: { tab: 'sedes' } },
         },
         {
-          path: 'traslados-de-inventario',
+          // Traslados es una pestaña de Catalogo (ver CatalogHubTabs). Las
+          // URLs viejas redirigen por si alguien las tenia guardadas.
+          path: 'traslados-de-inventario/:rest(.*)*',
+          redirect: (to) => `/catalogo/traslados${to.path.replace('/traslados-de-inventario', '')}`,
+        },
+        {
+          path: 'catalogo/traslados',
           name: 'stock-transfers.index',
           component: () => import('@/modules/stock-transfers/views/StockTransfersView.vue'),
           meta: { requiresFeature: 'multi_branch', requiresPermission: 'inventory.view' },
         },
         {
-          path: 'traslados-de-inventario/nuevo',
+          path: 'catalogo/traslados/nuevo',
           name: 'stock-transfers.create',
           component: () => import('@/modules/stock-transfers/views/StockTransferFormView.vue'),
           meta: { requiresFeature: 'multi_branch', requiresPermission: 'inventory.adjust' },
@@ -523,6 +521,13 @@ const router = createRouter({
           meta: { requiresAdmin: true, requiresFeature: 'multi_branch' },
         },
         {
+          // Sin requiresFeature/requiresPermission: a diferencia de los modulos
+          // de arriba, Ajustes no depende de un feature flag propio - cada
+          // seccion adentro decide si aplica segun el negocio (ver
+          // BusinessSettingsView.vue). requiresAdmin: configuracion del
+          // negocio no es delegable via permisos de empleado (ver
+          // EnsureBusinessAdmin en nexolu-pos-api) - mismo criterio que
+          // Usuarios, mas abajo.
           path: 'ajustes',
           name: 'business-settings.index',
           component: () => import('@/modules/settings/views/BusinessSettingsView.vue'),

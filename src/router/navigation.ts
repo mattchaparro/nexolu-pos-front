@@ -49,21 +49,8 @@ export const adminNavItems: NavItem[] = [
     routeName: 'financing.index',
     featureKey: 'financing',
   },
-  // Crear y editar sedes. Antes no habia como llegar a esta pantalla: el
-  // selector de sede de la barra solo aparece con 2 sedes o mas, asi que la
-  // segunda no se podia crear. Solo la ve el dueño (la ruta es requiresAdmin).
-  {
-    label: 'Sedes',
-    icon: 'pi pi-map-marker',
-    routeName: 'branches.index',
-    featureKey: 'multi_branch',
-  },
-  {
-    label: 'Traslados',
-    icon: 'pi pi-arrow-right-arrow-left',
-    routeName: 'stock-transfers.index',
-    featureKey: 'multi_branch',
-  },
+  // Sedes y Traslados ya no estan en el menu (a pedido, 2026-11-12): Sedes
+  // es una pestaña de Ajustes y Traslados una de Catalogo.
   {
     label: 'Apartados',
     icon: 'pi pi-bookmark',

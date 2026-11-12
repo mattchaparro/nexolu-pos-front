@@ -17,6 +17,7 @@ import { useRouter } from 'vue-router'
 
 import { useBranches } from '@/composables/useBranches'
 import { useSystemAlert } from '@/composables/useSystemAlert'
+import CatalogHubTabs from '@/modules/catalog/components/CatalogHubTabs.vue'
 import type { Product } from '@/types/product'
 import { NxButton, NxCard, NxInput, NxInputNumber, NxPageHeader, NxSelect } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
@@ -150,12 +151,14 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
-    <NxPageHeader
-      title="Nuevo traslado"
-      subtitle="El inventario sale de una sede y entra a la otra al confirmar."
-      icon="pi pi-arrow-right-arrow-left"
-    />
+  <div class="flex flex-col gap-4 pb-20 lg:pb-0">
+    <NxPageHeader title="Nuevo traslado" icon="pi pi-arrow-right-arrow-left" compact />
+
+    <CatalogHubTabs />
+
+    <p class="text-sm text-slate-600">
+      El inventario sale de una sede y entra a la otra al confirmar.
+    </p>
 
     <NxCard>
       <div class="grid gap-4 sm:grid-cols-2">

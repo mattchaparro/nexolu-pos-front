@@ -7,6 +7,7 @@
 // salio lo que le entro al inventario.
 import { computed, ref } from 'vue'
 
+import CatalogHubTabs from '@/modules/catalog/components/CatalogHubTabs.vue'
 import type { StockTransfer } from '@/types/stockTransfer'
 import { NxButton, NxCard, NxColumn, NxDataTable, NxPageHeader } from '@/ui'
 
@@ -42,17 +43,17 @@ function itemsSummary(transfer: StockTransfer): string {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
+  <div class="flex flex-col gap-4 pb-20 lg:pb-0">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <NxPageHeader
-        title="Traslados"
-        subtitle="Movimientos de inventario entre sedes."
-        icon="pi pi-arrow-right-arrow-left"
-      />
+      <NxPageHeader title="Traslados" icon="pi pi-arrow-right-arrow-left" compact />
       <NxButton icon="pi pi-plus" @click="$router.push({ name: 'stock-transfers.create' })">
         Nuevo traslado
       </NxButton>
     </div>
+
+    <CatalogHubTabs />
+
+    <p class="text-sm text-slate-600">Movimientos de inventario entre sedes.</p>
 
     <NxCard>
       <NxDataTable
