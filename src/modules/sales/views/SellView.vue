@@ -11,12 +11,14 @@ import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import GuidedTour from '@/components/GuidedTour.vue'
+import { useBranches } from '@/composables/useBranches'
 import { useBusiness } from '@/composables/useBusiness'
 import { useGuidedTour } from '@/composables/useGuidedTour'
 import { usePermissions } from '@/composables/usePermissions'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import { useCurrentShift } from '@/modules/cash-shifts/composables/useCurrentShift'
 import { useAuthStore } from '@/stores/auth.store'
+import { useBranchStore } from '@/stores/branch.store'
 import type { Product, ProductVariant } from '@/types/product'
 import type { Sale } from '@/types/sale'
 import type { BusinessTable } from '@/types/table'
@@ -513,11 +515,42 @@ function handleNewSale(): void {
   checkout.reset()
   successOpen.value = false
 }
+
+// Con «Todas las sedes» puesto no se vende: la venta no tendria local donde
+// caer (el API ya la rechaza). Se pide elegir la sede antes de empezar, en
+// vez de dejar armar el carrito y fallar al cobrar.
+const branchStore = useBranchStore()
+const { branches: sellableBranches } = useBranches()
 </script>
 
 <template>
   <div class="flex h-[calc(100dvh-4rem)] flex-col lg:h-[calc(100dvh-4rem-3rem)]">
     <NxPageHeader title="Vender" icon="pi pi-shopping-cart" compact />
+
+    <div
+      v-if="branchStore.isAllBranches"
+      class="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4"
+    >
+      <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+        <p class="text-base font-semibold text-slate-900">¿En qué sede vas a vender?</p>
+        <p class="mt-1 text-sm text-slate-500">
+          Estás viendo todas las sedes juntas. Para vender elige el local: ahí quedan la venta, la
+          caja y el inventario.
+        </p>
+        <div class="mt-4 flex flex-col gap-2">
+          <button
+            v-for="branch in sellableBranches"
+            :key="branch.id"
+            type="button"
+            class="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-medium text-slate-800 hover:border-indigo-300 hover:bg-indigo-50"
+            @click="branchStore.setActive(branch.id, branch)"
+          >
+            <span>{{ branch.name }}</span>
+            <i class="pi pi-arrow-right text-xs text-indigo-600" />
+          </button>
+        </div>
+      </div>
+    </div>
 
     <div
       v-if="blockedForNoOpenShift"

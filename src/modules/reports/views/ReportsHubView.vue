@@ -12,12 +12,15 @@
 import { computed } from 'vue'
 
 import { useBusiness } from '@/composables/useBusiness'
+import { useAuthStore } from '@/stores/auth.store'
 import { usePermissions } from '@/composables/usePermissions'
 import { hasFeature } from '@/utils/hasFeature'
 import { NxPageHeader } from '@/ui'
 
 const { hasPermission } = usePermissions()
 const { data: business } = useBusiness()
+const auth = useAuthStore()
+const isAdmin = computed(() => auth.user?.roles?.includes('admin') === true)
 
 interface ReportCard {
   routeName: string
@@ -28,6 +31,15 @@ interface ReportCard {
 }
 
 const cards = computed<ReportCard[]>(() => [
+  // Lo del negocio entero: las sedes lado a lado. El resto de reportes sale
+  // de la sede elegida arriba (o de todas juntas, con «Todas las sedes»).
+  {
+    routeName: 'reports.branches',
+    label: 'Comparativo de sedes',
+    description: 'Ventas, gastos y resultado de cada sede lado a lado, con su peso en el total.',
+    icon: 'pi pi-map-marker',
+    visible: isAdmin.value && hasFeature(business.value, 'multi_branch'),
+  },
   {
     routeName: 'inventory-reports.index',
     label: 'Inventario',

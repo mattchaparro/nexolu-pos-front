@@ -4,11 +4,14 @@
 // precio y costo, inventario, receta de insumos) para un modal sin que se
 // sienta apretado, y el legacy tambien lo resolvia como pagina propia
 // (Products/Save.vue), no un dialog.
+import { useQuery } from '@tanstack/vue-query'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useBranches } from '@/composables/useBranches'
 import { useBusiness } from '@/composables/useBusiness'
 import { useSystemAlert } from '@/composables/useSystemAlert'
+import { fetchBranchPrices, updateBranchPrices } from '@/services/branches'
 import type {
   PendingProductImage,
   Product,
@@ -35,7 +38,6 @@ import { hasFeature } from '@/utils/hasFeature'
 
 import ProductImagesEditor from '../components/ProductImagesEditor.vue'
 import ProductQuickViewModal from '../components/ProductQuickViewModal.vue'
-import BranchPricesEditor from '../components/BranchPricesEditor.vue'
 import ProductComponentsEditor from '../components/ProductComponentsEditor.vue'
 import ProductIngredientsEditor from '../components/ProductIngredientsEditor.vue'
 import ProductOptionGroupsEditor from '../components/ProductOptionGroupsEditor.vue'
@@ -73,11 +75,6 @@ const ingredientOptionsQuery = useIngredientOptions(ingredientsEnabled)
 const variantsEnabled = computed(() => hasFeature(business.value, 'variants'))
 const productOptionsEnabled = computed(() => hasFeature(business.value, 'product_options'))
 const optionLibraryQuery = useOptionGroupLibrary(productOptionsEnabled)
-// El precio por sede solo tiene sentido sobre un producto que ya existe (su
-// endpoint cuelga del id) y en un negocio con varias sedes.
-const branchPricesEnabled = computed(
-  () => hasFeature(business.value, 'multi_branch') && isEdit.value && !isService.value,
-)
 // Las fotos del catalogo existen para publicarlas en la tienda online, asi
 // que la seccion entera vive detras de ese modulo (las rutas de imagenes
 // tambien estan gateadas por `feature:online_store` en el backend).
@@ -151,15 +148,91 @@ const variantPhotoTargets = computed<VariantPhotoTarget[]>(() => {
   }))
 })
 
-// Variaciones ya guardadas (con id): el precio por sede se fija por variacion,
-// que es donde vive el precio de un producto con tallas/colores.
-const branchPriceVariants = computed(() =>
-  (productQuery.data.value?.variants ?? []).map((variant) => ({
-    id: variant.id,
-    label: variant.attribute_values.map((value) => value.value).join(' / ') || variant.sku,
-    price: Number(variant.price),
-  })),
+// --- Precio por sede ---
+// Vive junto al precio general (en Variaciones o bajo "Precio de venta"), no
+// en un cuadro aparte: antes el mismo precio se tocaba en dos sitios. La sede
+// principal usa el precio general; las demas pueden tener uno propio, y vacio
+// = el general. Se guarda despues del producto (su endpoint cuelga del id),
+// asi que tambien sirve al crear.
+const { branches } = useBranches()
+const pricedBranches = computed(() =>
+  hasFeature(business.value, 'multi_branch') && !isService.value
+    ? branches.value.filter((b) => !b.is_main).map((b) => ({ id: b.id, name: b.name }))
+    : [],
 )
+/** "sede:objetivo" -> precio propio; objetivo = combinacion de la variante, o 'product'. */
+const branchPrices = ref<Record<string, number | null>>({})
+const PRODUCT_TARGET = 'product'
+
+function branchPriceKey(branchId: number, target: string): string {
+  return `${branchId}:${target}`
+}
+
+const branchPricesQuery = useQuery({
+  queryKey: computed(() => ['products', productId.value, 'branch-prices'] as const),
+  queryFn: () => fetchBranchPrices(productId.value as number),
+  enabled: computed(() => isEdit.value && !!productId.value && pricedBranches.value.length > 0),
+})
+
+watch(
+  () => [branchPricesQuery.data.value, productQuery.data.value] as const,
+  ([data, product]) => {
+    if (!data || !product) {
+      return
+    }
+    const comboByVariant = new Map(
+      (product.variants ?? []).map((v) => [
+        v.id,
+        variantComboKey(v.attribute_values.map((av) => av.product_attribute_value_id)),
+      ]),
+    )
+    const next: Record<string, number | null> = {}
+    for (const row of data.branch_prices) {
+      const target =
+        row.product_variant_id === null ? PRODUCT_TARGET : comboByVariant.get(row.product_variant_id)
+      if (target) {
+        next[branchPriceKey(row.branch_id, target)] = row.price
+      }
+    }
+    branchPrices.value = next
+  },
+  { immediate: true },
+)
+
+async function saveBranchPrices(saved: Product): Promise<void> {
+  if (pricedBranches.value.length === 0) {
+    return
+  }
+  const savedVariants = saved.variants ?? []
+  type BranchPriceRow = { branch_id: number; product_variant_id: number | null; price: number | null }
+  const rows = pricedBranches.value.flatMap((branch): BranchPriceRow[] =>
+    savedVariants.length > 0
+      ? savedVariants.map((v) => ({
+          branch_id: branch.id,
+          product_variant_id: v.id,
+          price:
+            branchPrices.value[
+              branchPriceKey(
+                branch.id,
+                variantComboKey(v.attribute_values.map((av) => av.product_attribute_value_id)),
+              )
+            ] ?? null,
+        }))
+      : [
+          {
+            branch_id: branch.id,
+            product_variant_id: null,
+            price: branchPrices.value[branchPriceKey(branch.id, PRODUCT_TARGET)] ?? null,
+          },
+        ],
+  )
+  try {
+    await updateBranchPrices(saved.id, rows)
+  } catch (error) {
+    // El producto ya quedo guardado: no se pierde por un precio de sede.
+    notify(extractErrorMessage(error, 'El producto se guardó, pero no los precios por sede.'), 'error')
+  }
+}
 
 // --- Vista previa ---
 // Mismo modal que usa el listado del Catalogo. Las fotos salen de las
@@ -474,7 +547,8 @@ async function submit(): Promise<void> {
 
   try {
     if (isEdit.value && productId.value) {
-      await updateMutation.mutateAsync({ id: productId.value, payload })
+      const updated = await updateMutation.mutateAsync({ id: productId.value, payload })
+      await saveBranchPrices(updated)
       // Despues del producto: es una relacion aparte, y si fallara no debe
       // impedir que el producto se guarde.
       if (onlineStoreEnabled.value) {
@@ -483,6 +557,7 @@ async function submit(): Promise<void> {
       notify('Producto actualizado')
     } else {
       const created = await createMutation.mutateAsync(payload)
+      await saveBranchPrices(created)
       notify('Producto creado')
       await uploadPendingImages(created)
     }
@@ -600,6 +675,24 @@ async function submit(): Promise<void> {
             <p v-if="variants.length > 0" class="-mt-2 text-[11px] text-slate-400">
               Cada variante tiene su propio precio, más abajo.
             </p>
+            <div
+              v-else-if="pricedBranches.length > 0"
+              class="-mt-1 flex flex-col gap-2 rounded-lg bg-slate-50 p-2.5"
+            >
+              <p class="text-[11px] text-slate-500">
+                El precio de venta es el de la sede principal. En las otras sedes, déjalo vacío
+                para cobrar lo mismo.
+              </p>
+              <NxInputNumber
+                v-for="branch in pricedBranches"
+                :key="branch.id"
+                v-model="branchPrices[branchPriceKey(branch.id, PRODUCT_TARGET)]"
+                :label="`Precio en ${branch.name}`"
+                size="sm"
+                :min="0"
+                placeholder="Igual al de venta"
+              />
+            </div>
             <template v-if="!isService">
               <NxInputNumber
                 :model-value="recipeCost ?? costPrice"
@@ -718,15 +811,6 @@ async function submit(): Promise<void> {
           />
         </div>
 
-        <div v-if="branchPricesEnabled" class="rounded-xl border border-slate-200 bg-white p-4">
-          <p class="mb-3 text-sm font-semibold text-slate-700">Precio por sede (opcional)</p>
-          <BranchPricesEditor
-            :product-id="productId as number"
-            :base-price="price ?? 0"
-            :variants="branchPriceVariants"
-          />
-        </div>
-
         <div
           v-if="variantsEnabled && !isService && !isSingleSale"
           class="rounded-xl border border-slate-200 bg-white p-4"
@@ -734,7 +818,9 @@ async function submit(): Promise<void> {
           <p class="mb-3 text-sm font-semibold text-slate-700">Variaciones (opcional)</p>
           <ProductVariantsEditor
             v-model="variants"
+            v-model:branch-prices="branchPrices"
             :attributes="productAttributesQuery.data.value ?? []"
+            :branches="pricedBranches"
           />
         </div>
       </div>

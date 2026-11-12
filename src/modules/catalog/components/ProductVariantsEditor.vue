@@ -15,10 +15,24 @@ import { NxInput, NxInputNumber, NxToggleButton } from '@/ui'
 
 import { variantComboKey } from '../support/variantCombo'
 
-const props = defineProps<{
-  modelValue: ProductVariantInput[]
-  attributes: ProductAttribute[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: ProductVariantInput[]
+    attributes: ProductAttribute[]
+    /** Sedes (menos la principal) que pueden tener precio propio por variacion. */
+    branches?: { id: number; name: string }[]
+  }>(),
+  { branches: () => [] },
+)
+
+/** "sede:combinacion" -> precio propio de la variacion en esa sede; vacio = el general. */
+const branchPrices = defineModel<Record<string, number | null>>('branchPrices', {
+  default: () => ({}),
+})
+
+function setBranchPrice(branchId: number, key: string, price: number | null): void {
+  branchPrices.value = { ...branchPrices.value, [`${branchId}:${key}`]: price }
+}
 
 const emit = defineEmits<{ 'update:modelValue': [value: ProductVariantInput[]] }>()
 
@@ -202,6 +216,10 @@ function updateRow(combination: Combination, patch: Partial<ProductVariantInput>
           <p class="text-xs font-semibold tracking-wide text-slate-400 uppercase">Combinaciones</p>
           <span class="text-xs text-slate-400">{{ activeCount }} de {{ combinations.length }} activas</span>
         </div>
+        <p v-if="branches.length > 0" class="-mt-1 text-[11px] text-slate-500">
+          «Precio» es el de la sede principal. En {{ branches.map((b) => b.name).join(', ') }} déjalo
+          vacío para cobrar lo mismo.
+        </p>
         <NxInput
           v-if="combinations.length > 5"
           v-model="search"
@@ -254,6 +272,16 @@ function updateRow(combination: Combination, patch: Partial<ProductVariantInput>
               :min="0"
               :currency="false"
               @update:model-value="updateRow(combination, { stock: $event ?? 0 })"
+            />
+            <NxInputNumber
+              v-for="branch in branches"
+              :key="branch.id"
+              :model-value="branchPrices[`${branch.id}:${combination.key}`] ?? null"
+              :label="`Precio ${branch.name}`"
+              size="sm"
+              :min="0"
+              placeholder="Igual"
+              @update:model-value="setBranchPrice(branch.id, combination.key, $event ?? null)"
             />
           </div>
           <div v-if="activeRow(combination.key)" class="mt-2 flex items-center justify-between gap-2">
