@@ -4,6 +4,7 @@ import type { SalesHistoryResponse } from '@/types/salesHistory'
 export interface SalesHistoryFilters {
   status?: string
   payment_method?: string
+  source?: string
   search?: string
   sort?: string
   direction?: 'asc' | 'desc'

@@ -12,8 +12,17 @@ export interface SaleHistoryPaymentSplit {
   amount: number
 }
 
+/** De donde entro la plata: el historial no son solo ventas. */
+export type IncomeSource = 'sale' | 'layaway' | 'service' | 'receivable' | 'financing'
+
 export interface SaleHistoryRow {
-  id: number
+  /** Unica entre fuentes ("sale-12", "layaway-3"). */
+  row_key: string
+  /** Id de la venta; null en abonos y cobros (no se reversan desde aca). */
+  id: number | null
+  source: IncomeSource
+  /** "Venta", "Venta a crédito", "Abono a apartado", "Cobro de fiado"... */
+  source_label: string
   invoice_number: string | null
   total: number
   payment_method: string | null

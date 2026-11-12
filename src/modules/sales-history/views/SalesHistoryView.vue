@@ -31,6 +31,7 @@ const dateFrom = ref(queryFrom ?? toLocalDateIso())
 const dateTo = ref(queryTo ?? toLocalDateIso())
 const status = ref('')
 const paymentMethod = ref('')
+const source = ref('')
 const searchInput = ref('')
 const search = ref('')
 const page = ref(1)
@@ -49,13 +50,14 @@ watch(searchInput, (value) => {
 const sortField = ref<string | undefined>(undefined)
 const sortOrder = ref<number | null>(null)
 
-watch([dateFrom, dateTo, status, paymentMethod, sortField, sortOrder], () => {
+watch([dateFrom, dateTo, status, paymentMethod, source, sortField, sortOrder], () => {
   page.value = 1
 })
 
 const filters = computed(() => ({
   status: status.value || undefined,
   payment_method: paymentMethod.value || undefined,
+  source: source.value || undefined,
   search: search.value || undefined,
   sort: sortField.value,
   direction: sortOrder.value === 1 ? ('asc' as const) : sortOrder.value === -1 ? ('desc' as const) : undefined,
@@ -68,6 +70,25 @@ function onSort(event: DataTableSortEvent): void {
 
 const historyQuery = useSalesHistory(dateFrom, dateTo, page, filters)
 const meta = computed(() => historyQuery.data.value?.meta)
+
+// Todo lo que entra al negocio, no solo ventas: un apartado se paga por
+// abonos, un fiado se cobra despues, una financiera gira despues.
+const sourceOptions = [
+  { id: '', label: 'Todas las fuentes' },
+  { id: 'sale', label: 'Ventas' },
+  { id: 'layaway', label: 'Abonos a apartados' },
+  { id: 'service', label: 'Pagos de servicios' },
+  { id: 'receivable', label: 'Cobros de fiados' },
+  { id: 'financing', label: 'Pagos de financieras' },
+]
+
+const SOURCE_TONE: Record<string, string> = {
+  sale: 'bg-slate-100 text-slate-700',
+  layaway: 'bg-indigo-50 text-indigo-700',
+  service: 'bg-indigo-50 text-indigo-700',
+  receivable: 'bg-emerald-50 text-emerald-700',
+  financing: 'bg-emerald-50 text-emerald-700',
+}
 
 const statusOptions = [
   { id: '', label: 'Todos los estados' },
@@ -99,6 +120,10 @@ const expandedRows = ref<Record<string, boolean>>({})
 
 // "2 Cerveza, Papas, 3 Agua": lo que se vendio, de un vistazo, sin abrir la fila.
 function itemsSummary(row: SaleHistoryRow): string {
+  // Un abono o un cobro no tiene productos: dice que se pago.
+  if (row.source !== 'sale') {
+    return row.items_preview
+  }
   if (row.items.length === 0) {
     return 'Sin productos'
   }
@@ -124,6 +149,11 @@ const queryClient = useQueryClient()
 const reversingId = ref<number | null>(null)
 
 async function reverseSaleRow(row: SaleHistoryRow): Promise<void> {
+  // Solo las ventas se reversan desde aca; un abono se anula en su modulo.
+  const saleId = row.id
+  if (saleId === null) {
+    return
+  }
   const confirmText =
     row.status === 'closed'
       ? 'Se restaurará el stock y la venta se eliminará permanentemente. ¿Continuar?'
@@ -131,14 +161,14 @@ async function reverseSaleRow(row: SaleHistoryRow): Promise<void> {
   if (!window.confirm(confirmText)) {
     return
   }
-  reversingId.value = row.id
+  reversingId.value = saleId
   try {
     if (row.status === 'closed') {
-      await reverseMutation.mutateAsync(row.id)
+      await reverseMutation.mutateAsync(saleId)
     } else {
       // deleteMutation (useOpenTabMutations) invalida tables/open-tabs/products/dashboard
       // pero no sales-history - esta vista necesita su propia invalidacion.
-      await deleteOpenTabMutation.mutateAsync(row.id)
+      await deleteOpenTabMutation.mutateAsync(saleId)
       queryClient.invalidateQueries({ queryKey: ['sales-history'] })
     }
     notify('Venta reversada correctamente')
@@ -169,7 +199,7 @@ async function exportCsv(): Promise<void> {
 
 <template>
   <div class="flex flex-col gap-4 pb-20 lg:pb-0">
-    <NxPageHeader title="Historial de ventas" icon="pi pi-receipt" compact />
+    <NxPageHeader title="Historial de ventas" subtitle="Ventas, abonos y cobros: todo lo que entró." icon="pi pi-receipt" compact />
 
     <div class="grid grid-cols-2 items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:flex lg:flex-wrap">
       <NxDateRangePicker v-model:from="dateFrom" v-model:to="dateTo" class="col-span-2 lg:w-64" />
@@ -182,6 +212,7 @@ async function exportCsv(): Promise<void> {
         label="Medio de pago"
         class="w-full lg:w-48"
       />
+      <NxSelect v-model="source" :options="sourceOptions" option-label="label" option-value="id" label="Fuente" class="w-full lg:w-48" />
       <NxInput
         v-model="searchInput"
         label="Buscar factura, cliente, teléfono o producto"
@@ -204,12 +235,12 @@ async function exportCsv(): Promise<void> {
         :first="((meta?.current_page ?? 1) - 1) * 20"
         :sort-field="sortField"
         :sort-order="sortOrder"
-        data-key="id"
+        data-key="row_key"
         @page="onPage"
         @sort="onSort"
       >
         <template #empty>
-          <p class="py-6 text-center text-sm text-slate-400">Sin ventas en este rango con los filtros actuales.</p>
+          <p class="py-6 text-center text-sm text-slate-400">Sin ingresos en este rango con los filtros actuales.</p>
         </template>
         <NxColumn expander style="width: 2.5rem" />
         <NxColumn header="Fecha" field="date" sortable>
@@ -217,7 +248,20 @@ async function exportCsv(): Promise<void> {
             <p class="text-sm text-slate-700">{{ data.created_at }}</p>
           </template>
         </NxColumn>
-        <NxColumn header="Productos">
+        <NxColumn header="Fuente">
+          <template #body="{ data }: { data: SaleHistoryRow }">
+            <span
+              class="whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium"
+              :class="SOURCE_TONE[data.source] ?? SOURCE_TONE.sale"
+            >
+              {{ data.source_label }}
+            </span>
+            <p v-if="data.source !== 'sale' && data.invoice_number" class="mt-0.5 text-[11px] text-slate-400">
+              {{ data.invoice_number }}
+            </p>
+          </template>
+        </NxColumn>
+        <NxColumn header="Detalle">
           <template #body="{ data }: { data: SaleHistoryRow }">
             <p class="line-clamp-2 min-w-[12rem] max-w-[26rem] text-sm text-slate-900">{{ itemsSummary(data) }}</p>
           </template>
@@ -240,6 +284,7 @@ async function exportCsv(): Promise<void> {
         <NxColumn v-if="canReverse" header="Acciones">
           <template #body="{ data }: { data: SaleHistoryRow }">
             <NxButton
+              v-if="data.source === 'sale'"
               size="sm"
               variant="outline"
               icon="pi pi-replay"
