@@ -557,14 +557,14 @@ async function save(): Promise<void> {
               label="Logo"
               :url="settings.logo_url"
               aspect="square"
-              hint="Sirve cuadrado (ícono) u horizontal (con el nombre escrito). Si es horizontal, ocupa el lugar del nombre en la tienda. Mejor en PNG con fondo transparente."
+              hint="Va solo, arriba de la tienda (sin el nombre en texto al lado). Lo ideal: horizontal con el nombre escrito, en PNG con fondo transparente. Si no tienes logo, se muestra el nombre."
             />
             <StoreImageField
               image-slot="banner"
               label="Portada"
               :url="settings.banner_url"
               aspect="wide"
-              hint="Banda ancha arriba de la tienda; ideal unos 1600 × 400 px. Si es muy alargada, en celular se recortan los lados: deja lo importante al centro."
+              hint="Una foto o imagen de tu marca debajo del menú, solo en la portada; ideal unos 1600 × 400 px. No subas aquí tu logo: ya va en la barra de arriba."
             />
           </div>
         </div>
