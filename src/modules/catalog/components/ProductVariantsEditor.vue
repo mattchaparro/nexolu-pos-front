@@ -6,7 +6,8 @@
 // producto cartesiano de sus valores como SUGERENCIAS tildables (decision
 // de negocio: ninguna combinacion se crea sola, el comerciante elige cuales
 // activar) y cada una tildada se vuelve una fila editable con su propio
-// sku/precio/costo/stock.
+// sku/precio/costo/stock. Con muchas combinaciones (3 tallas x 8 colores)
+// trae buscador, y las ya tildadas van primero.
 import { computed, ref, watch } from 'vue'
 
 import type { ProductAttribute, ProductVariantInput } from '@/types/product'
@@ -29,6 +30,15 @@ const rows = computed({
 // Compartida con ProductFormView, que la usa para mapear las fotos pendientes
 // a la variante que les toco al crearse - ver support/variantCombo.ts.
 const comboKey = variantComboKey
+
+// Las tildadas van arriba, pero el orden se fija al abrir, al cambiar de
+// atributos o al buscar - no en cada clic: si una fila saltara arriba al
+// tildarla, la lista se moveria debajo del dedo mientras se van marcando.
+const pinnedKeys = ref<Set<string>>(new Set())
+
+function pinActiveFirst(): void {
+  pinnedKeys.value = new Set(rows.value.map((r) => comboKey(r.attribute_value_ids)))
+}
 
 function attributeIdForValue(valueId: number): number | null {
   for (const attribute of props.attributes) {
@@ -63,6 +73,7 @@ watch(
     if (ids.size > 0) {
       selectedAttributeIds.value = [...ids]
       derivedFromExisting = true
+      pinActiveFirst()
     }
   },
   { immediate: true },
@@ -72,6 +83,15 @@ function toggleAttribute(attributeId: number): void {
   selectedAttributeIds.value = selectedAttributeIds.value.includes(attributeId)
     ? selectedAttributeIds.value.filter((id) => id !== attributeId)
     : [...selectedAttributeIds.value, attributeId]
+  pinActiveFirst()
+}
+
+const search = ref('')
+
+watch(search, pinActiveFirst)
+
+function normalize(text: string): string {
+  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
 }
 
 interface Combination {
@@ -105,6 +125,25 @@ const combinations = computed<Combination[]>(() => {
     label: combo.labels.join(' / '),
   }))
 })
+
+// Cada palabra buscada debe ser el comienzo de una palabra de la combinacion:
+// «rojo m» encuentra «Rojo / M» y «azul l» solo «Azul Marino / L» (no XL ni,
+// por la «l» de «azul», todas las azules).
+const visibleCombinations = computed<Combination[]>(() => {
+  const terms = normalize(search.value).split(/\s+/).filter(Boolean)
+  const matching = terms.length
+    ? combinations.value.filter((c) => {
+        const words = normalize(c.label).split(/[^a-z0-9]+/).filter(Boolean)
+        return terms.every((term) => words.some((word) => word.startsWith(term)))
+      })
+    : combinations.value
+  return [
+    ...matching.filter((c) => pinnedKeys.value.has(c.key)),
+    ...matching.filter((c) => !pinnedKeys.value.has(c.key)),
+  ]
+})
+
+const activeCount = computed(() => combinations.value.filter((c) => activeRow(c.key)).length)
 
 function activeRow(key: string): ProductVariantInput | undefined {
   return rows.value.find((r) => comboKey(r.attribute_value_ids) === key)
@@ -159,9 +198,21 @@ function updateRow(combination: Combination, patch: Partial<ProductVariantInput>
       </div>
 
       <div v-if="combinations.length > 0" class="flex flex-col gap-2">
-        <p class="text-xs font-semibold tracking-wide text-slate-400 uppercase">Combinaciones</p>
+        <div class="flex items-baseline justify-between gap-2">
+          <p class="text-xs font-semibold tracking-wide text-slate-400 uppercase">Combinaciones</p>
+          <span class="text-xs text-slate-400">{{ activeCount }} de {{ combinations.length }} activas</span>
+        </div>
+        <NxInput
+          v-if="combinations.length > 5"
+          v-model="search"
+          placeholder="Buscar combinación (ej. rojo M)"
+          size="sm"
+        />
+        <p v-if="visibleCombinations.length === 0" class="py-2 text-center text-xs text-slate-400">
+          Ninguna combinación coincide con «{{ search.trim() }}».
+        </p>
         <div
-          v-for="combination in combinations"
+          v-for="combination in visibleCombinations"
           :key="combination.key"
           class="rounded-lg border border-slate-200 p-2.5"
         >

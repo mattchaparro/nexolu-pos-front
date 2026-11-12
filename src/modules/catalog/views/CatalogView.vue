@@ -191,6 +191,33 @@ function variantLabel(variant: ProductVariant): string {
   return variant.attribute_values.map((value) => value.value).join(' / ') || variant.sku
 }
 
+function copRange(amounts: number[]): string | null {
+  if (amounts.length === 0) {
+    return null
+  }
+  const min = Math.min(...amounts)
+  const max = Math.max(...amounts)
+  return min === max ? formatCop(min) : `${formatCop(min)} – ${formatCop(max)}`
+}
+
+// Precio y costo de la fila del producto. Con variaciones, el precio y el
+// costo viven en cada variación (el del producto queda en $0 y confundia):
+// se muestra el rango de las activas (o de todas, si estan todas pausadas).
+function priceSummary(product: Product): { price: string; cost: string | null } {
+  if (product.has_variants && product.variants?.length) {
+    const active = product.variants.filter((v) => v.is_active)
+    const variants = active.length ? active : product.variants
+    return {
+      price: copRange(variants.map((v) => Number(v.price))) ?? formatCop(0),
+      cost: copRange(variants.map((v) => Number(v.cost_price ?? 0)).filter((c) => c > 0)),
+    }
+  }
+  return {
+    price: product.price_varies_at_sale ? 'Variable' : formatCop(product.price),
+    cost: Number(product.cost_price) > 0 ? formatCop(product.cost_price) : null,
+  }
+}
+
 async function togglePublished(product: Product): Promise<void> {
   try {
     await togglePublishedMutation.mutateAsync({ id: product.id, isPublished: product.is_published })
@@ -518,9 +545,9 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                             </p>
                             <p class="truncate text-xs text-slate-400">
                               {{ data.category?.name ?? 'Sin categoría' }}
-                              {{ data.price_varies_at_sale ? 'Variable' : formatCop(data.price) }}
-                              <span v-if="data.cost_price"
-                                >· costo: {{ formatCop(data.cost_price) }}</span
+                              {{ priceSummary(data).price }}
+                              <span v-if="priceSummary(data).cost"
+                                >· costo: {{ priceSummary(data).cost }}</span
                               >
                             </p>
                           </div>
@@ -744,6 +771,9 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                               </p>
                               <p class="truncate text-[11px] text-slate-400">
                                 {{ variant.sku }} · {{ formatCop(variant.price) }}
+                                <template v-if="Number(variant.cost_price) > 0">
+                                  · costo: {{ formatCop(variant.cost_price) }}</template
+                                >
                               </p>
                             </div>
 
