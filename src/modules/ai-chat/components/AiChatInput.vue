@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { NxTextarea } from '@/ui'
 
@@ -16,6 +16,21 @@ function submit(): void {
   emit('send', trimmed)
   text.value = ''
 }
+
+// Una pregunta sugerida en modo borrador ("Registra un gasto de $50.000...")
+// se escribe aca para que la persona cambie el monto o el nombre antes de
+// enviarla, en vez de mandar un ejemplo.
+const root = ref<HTMLElement | null>(null)
+
+async function fill(value: string): Promise<void> {
+  text.value = value
+  await nextTick()
+  const field = root.value?.querySelector('textarea')
+  field?.focus()
+  field?.setSelectionRange(value.length, value.length)
+}
+
+defineExpose({ fill })
 
 // Enter envia, Shift+Enter agrega un salto de linea - el keydown del
 // textarea interno de NxTextarea burbujea hasta este listener via el
@@ -36,7 +51,7 @@ function handleKeydown(event: KeyboardEvent): void {
     (no items-end) para que quede centrado contra el campo en vez de colgado
     del borde inferior.
   -->
-  <div class="flex items-center gap-2">
+  <div ref="root" class="flex items-center gap-2">
     <div class="min-w-0 flex-1">
       <NxTextarea
         v-model="text"
