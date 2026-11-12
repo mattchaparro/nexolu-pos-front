@@ -9,6 +9,7 @@ import { useRouter } from 'vue-router'
 
 import { homeRouteFor } from '@/router'
 import logo from '@/assets/nexolu-logo.png'
+import AnnouncementModal from '@/components/AnnouncementModal.vue'
 import AutoPayNoticeModal from '@/components/AutoPayNoticeModal.vue'
 import BranchSwitcher from '@/components/BranchSwitcher.vue'
 import SubscriptionRenewalBanner from '@/components/SubscriptionRenewalBanner.vue'
@@ -54,6 +55,7 @@ async function stopImpersonating(): Promise<void> {
       </button>
     </div>
     <SubscriptionRenewalBanner />
+    <AnnouncementModal />
     <div class="flex min-h-0 flex-1">
       <NxSidebar :items="navItems" :logo="logo" />
       <div class="flex min-w-0 flex-1 flex-col">
