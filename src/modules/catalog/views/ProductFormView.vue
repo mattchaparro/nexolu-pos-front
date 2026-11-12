@@ -5,7 +5,7 @@
 // sienta apretado, y el legacy tambien lo resolvia como pagina propia
 // (Products/Save.vue), no un dialog.
 import { useQuery } from '@tanstack/vue-query'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useBranches } from '@/composables/useBranches'
@@ -21,21 +21,16 @@ import type {
   ProductVariantInput,
   VariantPhotoTarget,
 } from '@/types/product'
-import {
-  NxButton,
-  NxInput,
-  NxInputNumber,
-  NxPageHeader,
-  NxSelect,
-  NxTextarea,
-  NxToggleButton,
-} from '@/ui'
+import { NxButton, NxInput, NxInputNumber, NxSelect, NxTextarea, NxToggleButton } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
+import { formatCop } from '@/utils/formatCop'
 import CrossSellPicker from '../components/CrossSellPicker.vue'
 import { fetchCrossSells, saveCrossSells } from '../services/catalogService'
 import { hasFeature } from '@/utils/hasFeature'
 
+import ProductFormExtra from '../components/ProductFormExtra.vue'
+import ProductFormSection from '../components/ProductFormSection.vue'
 import ProductImagesEditor from '../components/ProductImagesEditor.vue'
 import ProductQuickViewModal from '../components/ProductQuickViewModal.vue'
 import ProductComponentsEditor from '../components/ProductComponentsEditor.vue'
@@ -94,7 +89,6 @@ const categoryOptions = computed(() => {
 
 const name = ref('')
 const description = ref('')
-const showDescription = ref(false)
 const crossSellIds = ref<number[]>([])
 const MAX_CROSS_SELLS = 6
 
@@ -331,7 +325,6 @@ watch(
     }
     name.value = product.name
     description.value = product.description ?? ''
-    showDescription.value = Boolean(product.description)
     howToUse.value = product.how_to_use ?? ''
     showHowToUse.value = Boolean(product.how_to_use)
     price.value = Number(product.price)
@@ -370,6 +363,7 @@ watch(
       ingredient_id: c.ingredient_id,
       quantity: Number(c.quantity),
     }))
+    priceMode.value = (product.variants ?? []).length > 0 ? 'variants' : 'single'
     variants.value = (product.variants ?? []).map((v) => ({
       id: v.id,
       sku: v.sku,
@@ -438,6 +432,47 @@ watch(
   { deep: true },
 )
 
+// --- Un solo precio o por variaciones ---
+// Se elige ANTES de escribir el precio. Antes el campo "Precio" estaba arriba
+// y las variaciones al final: al marcar una, el precio de arriba se ponía
+// gris sin explicar por qué. Ahora el comerciante dice primero cómo vende el
+// producto y solo ve los campos de ese modo.
+const priceMode = ref<'single' | 'variants'>('single')
+
+const canHaveVariants = computed(
+  () =>
+    variantsEnabled.value &&
+    !isService.value &&
+    !isSingleSale.value &&
+    ingredients.value.length === 0 &&
+    components.value.length === 0,
+)
+
+// Servicio, venta única, receta o combo no admiten variaciones: si se activan
+// después, el modo vuelve a un solo precio (los watchers de arriba ya
+// vaciaron las variantes).
+watch(canHaveVariants, (allowed) => {
+  if (!allowed) {
+    priceMode.value = 'single'
+  }
+})
+
+function setPriceMode(mode: 'single' | 'variants'): void {
+  if (mode === priceMode.value) {
+    return
+  }
+  if (mode === 'single' && variants.value.length > 0) {
+    const ok = window.confirm(
+      `Se quitarán las ${variants.value.length} combinaciones que marcaste. ¿Pasar a un solo precio?`,
+    )
+    if (!ok) {
+      return
+    }
+    variants.value = []
+  }
+  priceMode.value = mode
+}
+
 // Con receta, el costo se calcula solo (Σ insumo.cost_price × cantidad) -
 // mismo criterio que Product::syncRecipeCost() en el backend, que
 // sobreescribe cualquier cost_price manual apenas hay ingredientes.
@@ -463,6 +498,39 @@ const recipeCost = computed(() => {
     const ingredient = options.find((i) => i.id === row.ingredient_id)
     return sum + Number(ingredient?.cost_price ?? 0) * row.quantity
   }, 0)
+})
+
+// Los números de las secciones se corren cuando una no aplica (sin tienda
+// online no hay Fotos; un servicio no lleva Inventario).
+const sectionSteps = computed(() => {
+  let step = 1
+  return {
+    info: step++,
+    photos: onlineStoreEnabled.value ? step++ : 0,
+    price: step++,
+    stock: !isService.value ? step++ : 0,
+    extras: step++,
+  }
+})
+
+const hasExtras = computed(
+  () =>
+    onlineStoreEnabled.value ||
+    (ingredientsEnabled.value && !isService.value && !isSingleSale.value) ||
+    (productOptionsEnabled.value && !isService.value),
+)
+
+/** Ganancia por unidad con un solo precio, para que el costo diga algo. */
+const margin = computed(() => {
+  if (isService.value || priceVariesAtSale.value) {
+    return null
+  }
+  const sale = Number(price.value) || 0
+  const cost = Number(recipeCost.value ?? costPrice.value) || 0
+  if (sale <= 0 || cost <= 0) {
+    return null
+  }
+  return { amount: sale - cost, percent: Math.round(((sale - cost) / sale) * 100) }
 })
 
 const isSaving = computed(() => createMutation.isPending.value || updateMutation.isPending.value)
@@ -493,18 +561,41 @@ const INLINE_ERROR_FIELDS = [
   'how_to_use',
 ]
 
+/** Lleva la pantalla a la sección con el error: en el celular quedaba fuera de vista. */
+function revealSection(id: string): void {
+  void nextTick(() => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+}
+
 async function submit(): Promise<void> {
   fieldErrors.value = {}
   formError.value = null
 
   if (!name.value.trim()) {
     fieldErrors.value.name = 'El nombre es obligatorio.'
+    revealSection('product-info')
     return
   }
   if (!categoryId.value) {
     fieldErrors.value.category_id = 'Elige una categoría.'
+    revealSection('product-info')
     return
   }
+  if (priceMode.value === 'variants') {
+    if (variants.value.length === 0) {
+      fieldErrors.value.variants =
+        'Marca al menos una combinación, o elige «Un solo precio».'
+      revealSection('product-price')
+      return
+    }
+    if (variants.value.some((variant) => !(Number(variant.price) > 0))) {
+      fieldErrors.value.variants = 'Ponle precio a todas las combinaciones marcadas.'
+      revealSection('product-price')
+      return
+    }
+  }
+
   // Con variantes, el precio del producto NO se escribe a mano: sale de la
   // variante mas barata y su campo esta deshabilitado (ver el template), asi
   // que `price` se queda en null aunque la pantalla muestre un valor.
@@ -516,12 +607,14 @@ async function submit(): Promise<void> {
   const effectivePrice = cheapestVariantPrice.value ?? price.value
   if (effectivePrice === null) {
     fieldErrors.value.price = 'El precio es obligatorio.'
+    revealSection('product-price')
     return
   }
 
   const payload = {
     name: name.value.trim(),
-    description: showDescription.value ? description.value.trim() || null : null,
+    // La descripción ya no se esconde detrás de un botón: lo escrito se guarda.
+    description: description.value.trim() || null,
     how_to_use: showHowToUse.value ? howToUse.value.trim() || null : null,
     price: effectivePrice,
     ...(recipeCost.value === null && cheapestVariantPrice.value === null
@@ -580,109 +673,267 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4 pb-20 lg:pb-0">
+  <div class="mx-auto flex w-full max-w-3xl flex-col gap-5 pb-24 sm:pb-4">
+    <!-- Encabezado: en computador las acciones también van arriba, como en
+         cualquier editor; en el celular quedan en la barra de abajo. -->
     <div class="flex items-center gap-2">
       <button
         type="button"
         class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+        aria-label="Volver"
         @click="router.push(returnRoute)"
       >
         <i class="pi pi-arrow-left" />
       </button>
-      <NxPageHeader :title="pageTitle" :icon="isService ? 'pi pi-wrench' : 'pi pi-box'" compact />
+      <h1 class="min-w-0 flex-1 truncate text-lg font-bold text-slate-800 sm:text-xl">
+        {{ pageTitle }}
+      </h1>
+      <div class="hidden items-center gap-2 sm:flex">
+        <NxButton variant="outline" size="sm" icon="pi pi-eye" @click="previewOpen = true">
+          Vista previa
+        </NxButton>
+        <NxButton size="sm" :loading="isSaving" @click="submit">Guardar</NxButton>
+      </div>
     </div>
 
     <p v-if="formError" class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
       {{ formError }}
     </p>
 
-    <template v-if="isEdit && productQuery.isPending.value">
-      <div class="h-64 animate-pulse rounded-xl bg-slate-100" />
-    </template>
+    <div v-if="isEdit && productQuery.isPending.value" class="h-64 animate-pulse rounded-xl bg-slate-100" />
 
-    <div v-else class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <div class="flex flex-col gap-4">
-        <div class="rounded-xl border border-slate-200 bg-white p-4">
-          <p class="mb-3 text-sm font-semibold text-slate-700">Datos básicos</p>
-          <div class="flex flex-col gap-3">
-            <NxInput v-model="name" label="Nombre" required :error="fieldErrors.name" />
-            <NxSelect
-              :model-value="categoryId"
-              :options="categoryOptions"
-              option-label="label"
-              option-value="id"
-              label="Categoría"
-              required
-              :error="fieldErrors.category_id"
-              @update:model-value="categoryId = $event as number | null"
+    <template v-else>
+      <!-- 1. Qué es -->
+      <ProductFormSection
+        id="product-info"
+        :step="sectionSteps.info"
+        title="¿Qué vas a vender?"
+        subtitle="Lo que identifica al producto: tipo, nombre, categoría y descripción."
+        class="scroll-mt-4"
+      >
+        <!-- El tipo va primero porque decide qué se pide después: un servicio
+             no lleva inventario ni variaciones. -->
+        <div v-if="!forcedService" class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Tipo">
+          <button
+            v-for="option in [
+              { value: false, label: 'Producto', hint: 'Algo que se entrega', icon: 'pi pi-box' },
+              { value: true, label: 'Servicio', hint: 'Algo que se hace', icon: 'pi pi-wrench' },
+            ]"
+            :key="option.label"
+            type="button"
+            role="radio"
+            :aria-checked="isService === option.value"
+            class="flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors"
+            :class="
+              isService === option.value
+                ? 'border-indigo-400 bg-indigo-50 ring-1 ring-indigo-400'
+                : 'border-slate-200 hover:border-indigo-300'
+            "
+            @click="isService = option.value"
+          >
+            <i
+              :class="[option.icon, isService === option.value ? 'text-indigo-600' : 'text-slate-400']"
             />
-            <NxToggleButton v-model="showDescription" label="Descripción" icon="pi pi-align-left" />
-            <NxTextarea
-              v-if="showDescription"
-              v-model="description"
-              label="Descripción"
-              :rows="2"
-            />
-            <NxToggleButton v-model="showHowToUse" label="Cómo usarlo" icon="pi pi-info-circle" />
-            <NxTextarea v-if="showHowToUse" v-model="howToUse" label="Cómo usarlo" :rows="2" />
-
-            <!-- Solo con tienda online: desde 2026-09-04 las ventas cruzadas
-                 son exclusivas de la tienda (antes tambien alimentaban las
-                 sugerencias del cajero en Vender). Sin tienda no hay donde se
-                 muestren, asi que configurarlas seria trabajo perdido. -->
-            <div v-if="onlineStoreEnabled" class="mt-4 border-t border-slate-100 pt-4">
-              <p class="text-sm font-semibold text-slate-700">Se vende bien con</p>
-              <p class="mb-2 text-xs text-slate-400">
-                Lo que aparece como “Va bien con” en la ficha de este producto en tu tienda online.
-              </p>
-              <CrossSellPicker
-                v-model="crossSellIds"
-                :product-id="isEdit ? productId : null"
-                :max="MAX_CROSS_SELLS"
-              />
-            </div>
-            <NxInput v-if="isEdit" v-model="sku" label="SKU" disabled />
-          </div>
+            <span class="min-w-0">
+              <span class="block text-sm font-semibold text-slate-800">{{ option.label }}</span>
+              <span class="block text-xs text-slate-500">{{ option.hint }}</span>
+            </span>
+          </button>
         </div>
 
-        <div v-if="onlineStoreEnabled" class="rounded-xl border border-slate-200 bg-white p-4">
-          <p class="mb-3 text-sm font-semibold text-slate-700">Fotos</p>
-          <ProductImagesEditor
-            v-model:pending="pendingImages"
-            :product-id="productId"
-            :variant-targets="variantPhotoTargets"
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <NxInput v-model="name" label="Nombre" required :error="fieldErrors.name" />
+          <NxSelect
+            :model-value="categoryId"
+            :options="categoryOptions"
+            option-label="label"
+            option-value="id"
+            label="Categoría"
+            required
+            :error="fieldErrors.category_id"
+            @update:model-value="categoryId = $event as number | null"
           />
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-4">
-          <p class="mb-3 text-sm font-semibold text-slate-700">Precio y costo</p>
-          <div class="flex flex-col gap-3">
+        <NxInputNumber
+          v-if="isService"
+          v-model="durationMinutes"
+          label="Duración en minutos (opcional)"
+          :min="0"
+          :currency="false"
+          class="sm:max-w-xs"
+        />
+
+        <NxTextarea
+          v-model="description"
+          label="Descripción (opcional)"
+          :rows="3"
+          placeholder="Material, medidas, para quién es…"
+        />
+
+        <NxTextarea
+          v-if="showHowToUse"
+          v-model="howToUse"
+          label="Cómo se usa (opcional)"
+          :rows="2"
+        />
+        <button
+          v-else
+          type="button"
+          class="-mt-1 self-start text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+          @click="showHowToUse = true"
+        >
+          + Agregar modo de uso
+        </button>
+
+        <div class="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4">
+          <NxToggleButton
+            v-model="isActive"
+            :label="isService ? 'Servicio activo' : 'Producto activo'"
+            icon="pi pi-check-circle"
+          />
+          <p class="min-w-0 flex-1 text-xs text-slate-500">
+            {{
+              isActive
+                ? 'Se puede vender y aparece en el catálogo.'
+                : 'Queda guardado, pero no aparece para vender.'
+            }}
+          </p>
+          <NxInput v-if="isEdit && sku" v-model="sku" label="SKU" size="sm" disabled class="w-40" />
+        </div>
+      </ProductFormSection>
+
+      <!-- 2. Fotos -->
+      <ProductFormSection
+        v-if="onlineStoreEnabled"
+        :step="sectionSteps.photos"
+        title="Fotos"
+        subtitle="La primera es la portada en tu tienda online."
+      >
+        <ProductImagesEditor
+          v-model:pending="pendingImages"
+          :product-id="productId"
+          :variant-targets="variantPhotoTargets"
+        />
+      </ProductFormSection>
+
+      <!-- 3. Precio (y variaciones) -->
+      <ProductFormSection
+        id="product-price"
+        :step="sectionSteps.price"
+        title="Precio"
+        :subtitle="
+          canHaveVariants
+            ? 'Primero dinos si tiene un solo precio o si cambia por talla, color u otra opción.'
+            : 'Lo que cobras y lo que te cuesta.'
+        "
+        class="scroll-mt-4"
+      >
+        <div
+          v-if="canHaveVariants"
+          class="grid grid-cols-1 gap-2 sm:grid-cols-2"
+          role="radiogroup"
+          aria-label="Cómo se vende"
+        >
+          <button
+            v-for="option in [
+              {
+                value: 'single' as const,
+                label: 'Un solo precio',
+                hint: 'Todas las unidades son iguales',
+                icon: 'pi pi-tag',
+              },
+              {
+                value: 'variants' as const,
+                label: 'Con variaciones',
+                hint: 'Cambia por talla, color, tamaño…',
+                icon: 'pi pi-th-large',
+              },
+            ]"
+            :key="option.value"
+            type="button"
+            role="radio"
+            :aria-checked="priceMode === option.value"
+            class="flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors"
+            :class="
+              priceMode === option.value
+                ? 'border-indigo-400 bg-indigo-50 ring-1 ring-indigo-400'
+                : 'border-slate-200 hover:border-indigo-300'
+            "
+            @click="setPriceMode(option.value)"
+          >
+            <i
+              :class="[option.icon, priceMode === option.value ? 'text-indigo-600' : 'text-slate-400']"
+            />
+            <span class="min-w-0">
+              <span class="block text-sm font-semibold text-slate-800">{{ option.label }}</span>
+              <span class="block text-xs text-slate-500">{{ option.hint }}</span>
+            </span>
+          </button>
+        </div>
+
+        <!-- Con variaciones: cada combinación trae su precio, costo y stock. -->
+        <template v-if="priceMode === 'variants' && canHaveVariants">
+          <ProductVariantsEditor
+            v-model="variants"
+            v-model:branch-prices="branchPrices"
+            :attributes="productAttributesQuery.data.value ?? []"
+            :branches="pricedBranches"
+          />
+          <p
+            v-if="fieldErrors.variants"
+            class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
+          >
+            {{ fieldErrors.variants }}
+          </p>
+          <p
+            v-else-if="cheapestVariantPrice !== null && cheapestVariantPrice > 0"
+            class="text-xs text-slate-500"
+          >
+            En el catálogo y la tienda se muestra
+            <strong class="text-slate-700">desde {{ formatCop(cheapestVariantPrice) }}</strong>.
+          </p>
+        </template>
+
+        <!-- Un solo precio -->
+        <template v-else>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <NxInputNumber
-              :model-value="cheapestVariantPrice ?? price"
-              :label="
-                variants.length > 0
-                  ? 'Precio (desde)'
-                  : priceVariesAtSale
-                    ? 'Precio de referencia'
-                    : 'Precio de venta'
-              "
+              :model-value="price"
+              :label="priceVariesAtSale ? 'Precio de referencia' : 'Precio de venta'"
               :min="0"
               required
-              :disabled="variants.length > 0"
               :error="fieldErrors.price"
               @update:model-value="price = $event ?? 0"
             />
-            <p v-if="variants.length > 0" class="-mt-2 text-[11px] text-slate-400">
-              Cada variante tiene su propio precio, más abajo.
+            <template v-if="!isService">
+              <NxInputNumber
+                v-if="recipeCost === null"
+                v-model="costPrice"
+                label="Costo (opcional)"
+                :min="0"
+              />
+              <div v-else class="rounded-lg bg-slate-50 px-3 py-2">
+                <p class="text-xs text-slate-500">Costo según la receta</p>
+                <p class="text-sm font-semibold text-slate-800">{{ formatCop(recipeCost) }}</p>
+              </div>
+            </template>
+          </div>
+
+          <p v-if="margin !== null" class="-mt-1 text-xs text-slate-500">
+            Ganas <strong class="text-slate-700">{{ formatCop(margin.amount) }}</strong> por unidad
+            ({{ margin.percent }}% del precio).
+          </p>
+
+          <div
+            v-if="pricedBranches.length > 0"
+            class="flex flex-col gap-2 rounded-lg bg-slate-50 p-3"
+          >
+            <p class="text-xs text-slate-500">
+              Ese es el precio de la sede principal. En las otras sedes, déjalo vacío para cobrar lo
+              mismo.
             </p>
-            <div
-              v-else-if="pricedBranches.length > 0"
-              class="-mt-1 flex flex-col gap-2 rounded-lg bg-slate-50 p-2.5"
-            >
-              <p class="text-[11px] text-slate-500">
-                El precio de venta es el de la sede principal. En las otras sedes, déjalo vacío
-                para cobrar lo mismo.
-              </p>
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <NxInputNumber
                 v-for="branch in pricedBranches"
                 :key="branch.id"
@@ -693,115 +944,121 @@ async function submit(): Promise<void> {
                 placeholder="Igual al de venta"
               />
             </div>
-            <template v-if="!isService">
-              <NxInputNumber
-                :model-value="recipeCost ?? costPrice"
-                label="Costo"
-                :min="0"
-                :disabled="recipeCost !== null || variants.length > 0"
-                @update:model-value="costPrice = $event"
-              />
-              <p v-if="recipeCost !== null" class="-mt-2 text-[11px] text-slate-400">
-                Se calcula automático según la receta de insumos.
-              </p>
-            </template>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
             <NxToggleButton
               v-model="priceVariesAtSale"
-              label="Precio varía al vender"
+              label="El precio se pone al vender"
               icon="pi pi-sliders-h"
-              :disabled="variants.length > 0"
             />
-          </div>
-        </div>
-      </div>
-
-      <div class="flex flex-col gap-4">
-        <div class="rounded-xl border border-slate-200 bg-white p-4">
-          <p class="mb-3 text-sm font-semibold text-slate-700">Tipo de producto</p>
-          <div class="flex flex-col gap-3">
-            <div class="grid grid-cols-2 gap-2">
-              <NxToggleButton
-                v-model="isService"
-                label="Es un servicio"
-                icon="pi pi-wrench"
-                :disabled="forcedService"
-              />
-              <template v-if="!isService">
-                <NxToggleButton v-model="isSingleSale" label="Venta única" icon="pi pi-verified" />
-                <NxToggleButton
-                  v-model="trackStock"
-                  label="Controla inventario"
-                  icon="pi pi-box"
-                  :disabled="isSingleSale || ingredients.length > 0 || variants.length > 0 || components.length > 0"
-                />
-              </template>
-              <NxToggleButton
-                v-model="isActive"
-                :label="isService ? 'Servicio activo' : 'Producto activo'"
-                icon="pi pi-check-circle"
-              />
-            </div>
-            <NxInputNumber
-              v-if="isService"
-              v-model="durationMinutes"
-              label="Duración (minutos, opcional)"
-              :min="0"
-              :currency="false"
-            />
-          </div>
-        </div>
-
-        <div
-          v-if="!isService && trackStock && variants.length === 0"
-          class="rounded-xl border border-slate-200 bg-white p-4"
-        >
-          <p class="mb-3 text-sm font-semibold text-slate-700">Inventario</p>
-          <div class="flex flex-col gap-3">
-            <NxInputNumber
-              v-if="!isEdit"
-              v-model="stock"
-              label="Stock inicial"
-              :min="0"
-              :currency="false"
-              :disabled="ingredients.length > 0"
-            />
-            <p v-else class="text-xs text-slate-400">
-              El stock se ajusta con movimientos de inventario, no editando el producto.
+            <p class="min-w-0 flex-1 text-xs text-slate-500">
+              Para lo que se cobra distinto cada vez (por peso, a convenir…).
             </p>
-            <NxInputNumber
-              v-model="lowStockAlertThreshold"
-              label="Alerta de stock bajo (opcional)"
-              :min="0"
-              :currency="false"
-            />
           </div>
-        </div>
+        </template>
+      </ProductFormSection>
 
-        <div
-          v-if="ingredientsEnabled && !isService && !isSingleSale"
-          class="rounded-xl border border-slate-200 bg-white p-4"
+      <!-- 4. Inventario -->
+      <ProductFormSection
+        v-if="!isService"
+        :step="sectionSteps.stock"
+        title="Inventario"
+        subtitle="Cuántas unidades tienes y cuándo avisarte que se acaban."
+      >
+        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <NxToggleButton
+            v-model="trackStock"
+            label="Controlar inventario"
+            icon="pi pi-box"
+            :disabled="isSingleSale || ingredients.length > 0 || variants.length > 0 || components.length > 0"
+          />
+          <NxToggleButton v-model="isSingleSale" label="Venta única" icon="pi pi-verified" />
+        </div>
+        <p v-if="isSingleSale" class="-mt-2 text-xs text-slate-500">
+          Venta única: un artículo que se vende una sola vez. No lleva variaciones ni receta.
+        </p>
+
+        <p
+          v-if="priceMode === 'variants' && canHaveVariants"
+          class="rounded-lg bg-slate-50 px-3 py-2.5 text-sm text-slate-600"
         >
-          <p class="mb-3 text-sm font-semibold text-slate-700">Receta de insumos (opcional)</p>
+          El stock se lleva por combinación: lo pones en cada una, en <strong>Precio</strong>.
+        </p>
+        <p
+          v-else-if="components.length > 0"
+          class="rounded-lg bg-slate-50 px-3 py-2.5 text-sm text-slate-600"
+        >
+          Un combo no lleva stock propio: se descuenta de sus piezas al venderlo.
+        </p>
+        <div v-else-if="trackStock" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <NxInputNumber
+            v-if="!isEdit"
+            v-model="stock"
+            label="Unidades que tienes hoy"
+            :min="0"
+            :currency="false"
+            :disabled="ingredients.length > 0"
+          />
+          <p v-else class="self-center text-xs text-slate-500">
+            El stock se ajusta con movimientos de inventario, no editando el producto.
+          </p>
+          <NxInputNumber
+            v-model="lowStockAlertThreshold"
+            label="Avisarme cuando queden (opcional)"
+            :min="0"
+            :currency="false"
+          />
+        </div>
+      </ProductFormSection>
+
+      <!-- 5. Extras opcionales -->
+      <ProductFormSection
+        v-if="hasExtras"
+        :step="sectionSteps.extras"
+        title="Extras (opcional)"
+        subtitle="La mayoría de productos no los necesita. Ábrelos solo si aplican."
+      >
+        <ProductFormExtra
+          v-if="ingredientsEnabled && !isService && !isSingleSale"
+          title="Receta de insumos"
+          hint="Descuenta insumos del inventario al vender y calcula el costo solo."
+          icon="pi pi-list"
+          :in-use="ingredients.length > 0"
+        >
           <ProductIngredientsEditor
             v-model="ingredients"
             :ingredients="ingredientOptionsQuery.data.value ?? []"
           />
-        </div>
+        </ProductFormExtra>
 
-        <div
-          v-if="productOptionsEnabled && !isService && !isSingleSale && ingredients.length === 0 && variants.length === 0"
-          class="rounded-xl border border-slate-200 bg-white p-4"
+        <ProductFormExtra
+          v-if="
+            productOptionsEnabled &&
+            !isService &&
+            !isSingleSale &&
+            ingredients.length === 0 &&
+            variants.length === 0
+          "
+          title="Combo"
+          hint="Un producto armado con otros (ej. hamburguesa + papas + gaseosa)."
+          icon="pi pi-th-large"
+          :in-use="components.length > 0"
         >
-          <p class="mb-3 text-sm font-semibold text-slate-700">Combo (opcional)</p>
           <ProductComponentsEditor
             v-model="components"
             :ingredients="ingredientOptionsQuery.data.value ?? []"
             :current-product-id="productId"
           />
-        </div>
+        </ProductFormExtra>
 
-        <div v-if="productOptionsEnabled && !isService" class="rounded-xl border border-slate-200 bg-white p-4">
-          <p class="mb-3 text-sm font-semibold text-slate-700">Opciones de elección (opcional)</p>
+        <ProductFormExtra
+          v-if="productOptionsEnabled && !isService"
+          title="Opciones para elegir al vender"
+          hint="Lo que el cliente escoge: término de la carne, salsas, adiciones…"
+          icon="pi pi-check-square"
+          :in-use="optionGroups.length > 0"
+        >
           <ProductOptionGroupsEditor
             v-model="optionGroups"
             :library="optionLibraryQuery.data.value ?? []"
@@ -809,31 +1066,42 @@ async function submit(): Promise<void> {
             :ingredients="ingredientOptionsQuery.data.value ?? []"
             :ingredients-enabled="ingredientsEnabled"
           />
-        </div>
+        </ProductFormExtra>
 
-        <div
-          v-if="variantsEnabled && !isService && !isSingleSale"
-          class="rounded-xl border border-slate-200 bg-white p-4"
+        <!-- Solo con tienda online: las ventas cruzadas son exclusivas de la
+             tienda (desde 2026-09-04). Sin tienda no hay donde se muestren. -->
+        <ProductFormExtra
+          v-if="onlineStoreEnabled"
+          title="Se vende bien con"
+          hint="Lo que aparece como «Va bien con» en la ficha de tu tienda online."
+          icon="pi pi-link"
+          :in-use="crossSellIds.length > 0"
         >
-          <p class="mb-3 text-sm font-semibold text-slate-700">Variaciones (opcional)</p>
-          <ProductVariantsEditor
-            v-model="variants"
-            v-model:branch-prices="branchPrices"
-            :attributes="productAttributesQuery.data.value ?? []"
-            :branches="pricedBranches"
+          <CrossSellPicker
+            v-model="crossSellIds"
+            :product-id="isEdit ? productId : null"
+            :max="MAX_CROSS_SELLS"
           />
-        </div>
-      </div>
-    </div>
+        </ProductFormExtra>
+      </ProductFormSection>
+    </template>
 
-    <div class="flex gap-2">
-      <NxButton variant="outline" class="flex-1" @click="router.push({ name: 'catalog.index' })"
-        >Cancelar</NxButton
-      >
-      <NxButton variant="outline" icon="pi pi-eye" @click="previewOpen = true"
-        >Vista previa</NxButton
-      >
-      <NxButton class="flex-1" :loading="isSaving" @click="submit">Guardar</NxButton>
+    <!-- Acciones. En el celular quedan fijas abajo, encima del menú
+         inferior, para no tener que bajar hasta el final a guardar. Es
+         `fixed` y no `sticky`: el body del POS tiene overflow-x oculto y con
+         eso `sticky` nunca se pega. -->
+    <div
+      class="fixed inset-x-3 bottom-[78px] z-10 flex gap-2 rounded-xl border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none"
+    >
+      <NxButton variant="outline" class="flex-1 sm:flex-none" @click="router.push(returnRoute)">
+        Cancelar
+      </NxButton>
+      <NxButton variant="outline" icon="pi pi-eye" aria-label="Vista previa" @click="previewOpen = true">
+        <span class="hidden sm:inline">Vista previa</span>
+      </NxButton>
+      <NxButton class="flex-1 sm:ml-auto sm:flex-none sm:px-8" :loading="isSaving" @click="submit">
+        Guardar
+      </NxButton>
     </div>
 
     <ProductQuickViewModal

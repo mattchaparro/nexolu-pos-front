@@ -11,7 +11,7 @@
 import { computed, ref, watch } from 'vue'
 
 import type { ProductAttribute, ProductVariantInput } from '@/types/product'
-import { NxInput, NxInputNumber, NxToggleButton } from '@/ui'
+import { NxButton, NxInput, NxInputNumber, NxToggleButton } from '@/ui'
 
 import { variantComboKey } from '../support/variantCombo'
 
@@ -179,6 +179,24 @@ function removeCombination(combination: Combination): void {
   rows.value = rows.value.filter((r) => comboKey(r.attribute_value_ids) !== combination.key)
 }
 
+// Llenar todas: con 3 tallas x 4 colores son 12 precios iguales escritos a
+// mano. Se aplica a las marcadas y solo los campos que se llenaron aquí.
+const bulkPrice = ref<number | null>(null)
+const bulkCost = ref<number | null>(null)
+const bulkStock = ref<number | null>(null)
+
+function applyBulk(): void {
+  rows.value = rows.value.map((row) => ({
+    ...row,
+    ...(bulkPrice.value !== null ? { price: bulkPrice.value } : {}),
+    ...(bulkCost.value !== null ? { cost_price: bulkCost.value } : {}),
+    ...(bulkStock.value !== null ? { stock: bulkStock.value } : {}),
+  }))
+  bulkPrice.value = null
+  bulkCost.value = null
+  bulkStock.value = null
+}
+
 function updateRow(combination: Combination, patch: Partial<ProductVariantInput>): void {
   rows.value = rows.value.map((r) => (comboKey(r.attribute_value_ids) === combination.key ? { ...r, ...patch } : r))
 }
@@ -188,11 +206,13 @@ function updateRow(combination: Combination, patch: Partial<ProductVariantInput>
   <div class="flex flex-col gap-3">
     <div v-if="attributes.length === 0" class="rounded-lg border border-dashed border-slate-300 p-3 text-center text-xs text-slate-400">
       Todavía no hay atributos creados. Ve a Catálogo → Atributos para crear Talla, Color, etc.
+      y vuelve aquí.
     </div>
 
     <template v-else>
       <div class="flex flex-col gap-1.5">
-        <p class="text-xs font-semibold tracking-wide text-slate-400 uppercase">¿Qué atributos usa?</p>
+        <p class="text-sm font-semibold text-slate-700">¿En qué cambia?</p>
+        <p class="-mt-1 text-xs text-slate-500">Elige uno o varios. Ej.: Talla y Color.</p>
         <div class="flex flex-wrap gap-1.5">
           <button
             v-for="attribute in attributes"
@@ -213,13 +233,36 @@ function updateRow(combination: Combination, patch: Partial<ProductVariantInput>
 
       <div v-if="combinations.length > 0" class="flex flex-col gap-2">
         <div class="flex items-baseline justify-between gap-2">
-          <p class="text-xs font-semibold tracking-wide text-slate-400 uppercase">Combinaciones</p>
+          <p class="text-sm font-semibold text-slate-700">Marca las combinaciones que vendes</p>
           <span class="text-xs text-slate-400">{{ activeCount }} de {{ combinations.length }} activas</span>
         </div>
         <p v-if="branches.length > 0" class="-mt-1 text-[11px] text-slate-500">
           «Precio» es el de la sede principal. En {{ branches.map((b) => b.name).join(', ') }} déjalo
           vacío para cobrar lo mismo.
         </p>
+        <!-- Llenar todas las marcadas de una vez -->
+        <div
+          v-if="activeCount > 1"
+          class="flex flex-col gap-2 rounded-lg border border-dashed border-indigo-200 bg-indigo-50/40 p-2.5"
+        >
+          <p class="text-xs font-semibold text-indigo-700">
+            Llenar las {{ activeCount }} marcadas de una vez
+          </p>
+          <div class="grid grid-cols-2 items-end gap-2 sm:grid-cols-4">
+            <NxInputNumber v-model="bulkPrice" label="Precio" size="sm" :min="0" />
+            <NxInputNumber v-model="bulkCost" label="Costo" size="sm" :min="0" />
+            <NxInputNumber v-model="bulkStock" label="Stock" size="sm" :min="0" :currency="false" />
+            <NxButton
+              size="sm"
+              variant="outline"
+              :disabled="bulkPrice === null && bulkCost === null && bulkStock === null"
+              @click="applyBulk"
+            >
+              Aplicar
+            </NxButton>
+          </div>
+        </div>
+
         <NxInput
           v-if="combinations.length > 5"
           v-model="search"
