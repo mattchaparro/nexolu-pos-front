@@ -1,8 +1,9 @@
 <script setup lang="ts">
 // Elegir qué categorías van en el bloque de atajos del home.
 //
-// Solo ofrece las PUBLICADAS: enlazar desde el home a una categoría que no
-// está en la tienda lleva al comprador a una página vacía.
+// Solo ofrece las que salen en la tienda (con productos publicados, propios
+// o de una subcategoría): enlazar desde el home a una categoría que no está
+// en la tienda lleva al comprador a una página vacía.
 //
 // El orden de selección importa — es el orden en que se pintan —, así que se
 // agrega al final en vez de reordenar por el catálogo.
@@ -19,7 +20,14 @@ const selected = computed<number[]>(() =>
   Array.isArray(props.value) ? (props.value as number[]) : [],
 )
 
-const available = computed(() => (data.value ?? []).filter((category) => category.is_published))
+const available = computed(() => {
+  const categories = data.value ?? []
+  const inStore = (id: number): boolean =>
+    categories.some(
+      (c) => (c.id === id || c.parent_id === id) && (c.published_products_count ?? 0) > 0,
+    )
+  return categories.filter((category) => inStore(category.id))
+})
 
 function toggle(id: number): void {
   if (selected.value.includes(id)) {
@@ -41,7 +49,8 @@ function toggle(id: number): void {
 <template>
   <div class="flex flex-col gap-2">
     <p v-if="available.length === 0" class="text-xs text-slate-400">
-      No tienes categorías publicadas todavía. Publícalas desde Catálogo → Categorías.
+      Todavía ninguna categoría tiene productos publicados en la tienda. Publica productos desde
+      Catálogo y su categoría aparece aquí.
     </p>
 
     <div v-else class="flex max-h-56 flex-col gap-1 overflow-y-auto">

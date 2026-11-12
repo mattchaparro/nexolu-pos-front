@@ -151,6 +151,16 @@ const variantPhotoTargets = computed<VariantPhotoTarget[]>(() => {
   }))
 })
 
+// Variaciones ya guardadas (con id): el precio por sede se fija por variacion,
+// que es donde vive el precio de un producto con tallas/colores.
+const branchPriceVariants = computed(() =>
+  (productQuery.data.value?.variants ?? []).map((variant) => ({
+    id: variant.id,
+    label: variant.attribute_values.map((value) => value.value).join(' / ') || variant.sku,
+    price: Number(variant.price),
+  })),
+)
+
 // --- Vista previa ---
 // Mismo modal que usa el listado del Catalogo. Las fotos salen de las
 // pendientes (previews locales, producto sin guardar) o de las ya subidas.
@@ -710,7 +720,11 @@ async function submit(): Promise<void> {
 
         <div v-if="branchPricesEnabled" class="rounded-xl border border-slate-200 bg-white p-4">
           <p class="mb-3 text-sm font-semibold text-slate-700">Precio por sede (opcional)</p>
-          <BranchPricesEditor :product-id="productId as number" :base-price="price ?? 0" />
+          <BranchPricesEditor
+            :product-id="productId as number"
+            :base-price="price ?? 0"
+            :variants="branchPriceVariants"
+          />
         </div>
 
         <div

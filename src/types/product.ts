@@ -9,9 +9,11 @@ export interface ProductCategory {
   name: string
   description: string | null
   icon: string | null
-  /** Si sale en la tienda online. */
+  /** Marca vieja que el POS nunca pudo encender; la tienda ya no la mira. */
   is_published: boolean
   sort_order: number
+  /** Productos publicados en la tienda: la categoria sale en ella si tiene alguno (o una subcategoria). */
+  published_products_count?: number
 }
 
 // Solo se llena cuando el producto viene de Product.ingredients (recipe) -
