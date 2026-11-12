@@ -802,4 +802,31 @@ router.beforeEach(async (to, from) => {
   }
 })
 
+// Una pestaña abierta durante un deploy puede pedir el código de una pantalla
+// que ya no existe: el import falla, o (si `vite:preloadError` ya lo
+// atrapó para recargar) resuelve vacío y Vue Router lanza "Couldn't resolve
+// component". En los dos casos se carga la pantalla DESTINO completa, con el
+// build nuevo, en vez de dejar la pestaña en blanco o recargar la anterior
+// (Sentry NEXOLU-POS-FRONT-7: /resumen-del-dia desde un iPhone tras un
+// deploy). Mismo resguardo de 10 s que reloadOnMissingChunks contra bucles.
+const STALE_CHUNK_ERROR =
+  /Couldn't resolve component|Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i
+const STALE_CHUNK_RELOAD_KEY = 'nexolu_stale_chunk_reload_at'
+
+router.onError((error, to) => {
+  if (!STALE_CHUNK_ERROR.test(String((error as Error)?.message ?? error))) {
+    return
+  }
+  try {
+    const last = Number(sessionStorage.getItem(STALE_CHUNK_RELOAD_KEY) ?? 0)
+    if (Date.now() - last < 10_000) {
+      return
+    }
+    sessionStorage.setItem(STALE_CHUNK_RELOAD_KEY, String(Date.now()))
+  } catch {
+    // sessionStorage bloqueado: igual se intenta una vez.
+  }
+  window.location.assign(to.fullPath)
+})
+
 export default router
