@@ -30,9 +30,8 @@ import {
 } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
-import LinkPageCard from '@/modules/link-page/components/LinkPageCard.vue'
 
-import ShareLinkPanel from '../components/ShareLinkPanel.vue'
+import ShareCatalogModal from '../components/ShareCatalogModal.vue'
 import { useStoreSettings } from '../composables/useStoreSettings'
 
 const router = useRouter()
@@ -208,12 +207,8 @@ function toggleStore(): Promise<void> {
   return save({ is_active: opening }, opening ? 'Tienda abierta al público' : 'Tienda cerrada')
 }
 
-async function copyPublicUrl(): Promise<void> {
-  if (settings.value) {
-    await navigator.clipboard.writeText(settings.value.public_url)
-    notify('Enlace copiado')
-  }
-}
+// Ventana de compartir el catálogo (enlace, WhatsApp, QR).
+const shareOpen = ref(false)
 
 // La página de inicio: una lista de bloques que el comerciante ordena.
 // Reemplaza a las tres ranuras fijas (portada/confianza/historia) que hacían
@@ -262,24 +257,28 @@ async function copyPublicUrl(): Promise<void> {
           </NxButton>
         </div>
 
-        <div class="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
-          <span class="min-w-0 flex-1 truncate font-mono text-xs text-slate-600">{{
-            settings.public_url
-          }}</span>
-          <button
-            type="button"
-            class="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
-            @click="copyPublicUrl"
+        <!-- Compartir, compacto: el QR y los botones viven en la ventana de
+             compartir y en «Compartir mi negocio», no ocupando esta pantalla. -->
+        <div v-if="isOpen" class="mt-3 flex flex-wrap items-center gap-2">
+          <NxButton size="sm" icon="pi pi-share-alt" @click="shareOpen = true">
+            Compartir catálogo
+          </NxButton>
+          <NxButton
+            size="sm"
+            variant="outline"
+            icon="pi pi-link"
+            @click="router.push({ name: 'share-business.index' })"
           >
-            Copiar
-          </button>
+            Mis enlaces
+          </NxButton>
           <a
             :href="settings.public_url"
             target="_blank"
             rel="noopener"
-            class="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+            class="ml-auto flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
           >
-            Abrir
+            Ver mi tienda
+            <i class="pi pi-external-link text-[10px]" />
           </a>
         </div>
 
@@ -293,24 +292,6 @@ async function copyPublicUrl(): Promise<void> {
           pasarela de pago, tú los contactas para cobrar.
         </p>
       </div>
-
-      <!-- La tienda tambien es el catalogo: esto es lo que el comerciante
-           comparte. Va al listado completo (/tienda), no al inicio: quien
-           recibe "mi catalogo" espera ver productos, no una portada. -->
-      <div v-if="isOpen" class="rounded-xl border border-slate-200 bg-white p-4">
-        <p class="text-sm font-semibold text-slate-800">Tu catálogo virtual</p>
-        <p class="mt-1 mb-3 text-xs text-slate-500">
-          Compártelo en tus estados de WhatsApp, en Instagram o imprime el QR para el mostrador. Los
-          pedidos que te hagan llegan a Pedidos online y te avisamos por WhatsApp.
-        </p>
-        <ShareLinkPanel
-          :url="`${settings.public_url}/tienda`"
-          :share-text="`Mira el catálogo de ${settings.store_name || 'mi tienda'}, con precios al día. Haz tu pedido aquí:`"
-          qr-file-name="qr-catalogo"
-        />
-      </div>
-
-      <LinkPageCard v-if="isOpen" />
 
       <p v-if="formError" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
         {{ formError }}
@@ -514,6 +495,8 @@ async function copyPublicUrl(): Promise<void> {
           </NxTabPanel>
         </NxTabPanels>
       </NxTabs>
+
+      <ShareCatalogModal v-if="shareOpen" v-model="shareOpen" initial-target="catalog" />
     </template>
   </div>
 </template>

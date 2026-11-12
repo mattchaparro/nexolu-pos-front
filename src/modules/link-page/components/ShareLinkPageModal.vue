@@ -35,7 +35,7 @@ onMounted(async () => {
       <p class="text-sm text-slate-600">
         Ponla en la bio de Instagram o TikTok. Reúne tu WhatsApp, tus redes{{
           state.has_store ? ' y tu catálogo' : ''
-        }}. Agregas más enlaces en Ajustes → Página de enlaces.
+        }}. Agregas más enlaces en Compartir mi negocio, en el menú de tu perfil.
       </p>
       <ShareLinkPanel
         :url="state.public_url"

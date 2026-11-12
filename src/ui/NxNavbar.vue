@@ -137,6 +137,15 @@ const initials = computed(() => {
             Ajustes
           </RouterLink>
           <RouterLink
+            v-if="showSettingsLink"
+            :to="{ name: 'share-business.index' }"
+            class="flex items-center gap-2.5 px-4 py-2 text-sm hover:bg-slate-50"
+            @click="closeMenu"
+          >
+            <i class="pi pi-share-alt w-4 text-slate-400" />
+            Compartir mi negocio
+          </RouterLink>
+          <RouterLink
             v-if="showSubscriptionLink"
             :to="{ name: 'subscription.index' }"
             class="flex items-center gap-2.5 px-4 py-2 text-sm hover:bg-slate-50"

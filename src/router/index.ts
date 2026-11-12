@@ -521,6 +521,14 @@ const router = createRouter({
           meta: { requiresAdmin: true, requiresFeature: 'multi_branch' },
         },
         {
+          // Pagina de enlaces (para todos) y catalogo: en el menu del perfil,
+          // debajo de Ajustes. requiresAdmin: publicarla es decision del dueño.
+          path: 'compartir-mi-negocio',
+          name: 'share-business.index',
+          component: () => import('@/modules/link-page/views/ShareBusinessView.vue'),
+          meta: { requiresAdmin: true },
+        },
+        {
           // Sin requiresFeature/requiresPermission: a diferencia de los modulos
           // de arriba, Ajustes no depende de un feature flag propio - cada
           // seccion adentro decide si aplica segun el negocio (ver
