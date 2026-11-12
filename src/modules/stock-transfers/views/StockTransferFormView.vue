@@ -8,6 +8,10 @@
 // El stock que se muestra por linea es el de la sede ORIGEN, no el total del
 // negocio: mandar 10 unidades desde un local que solo tiene 3 es el error
 // que hay que hacer imposible de cometer, y el total no ayuda a evitarlo.
+//
+// Un producto con variaciones (tallas, colores) se traslada por variacion:
+// el stock vive en cada una, y el del producto padre no significa nada. Antes
+// solo se ofrecia el producto y el traslado de ropa con tallas fallaba.
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -32,11 +36,12 @@ const formError = ref<string | null>(null)
 
 interface Line {
   key: string
-  productId: number | null
+  /** 'p:12' (producto) o 'v:34' (variacion). */
+  target: string | null
   quantity: number | null
 }
 
-const lines = ref<Line[]>([{ key: crypto.randomUUID(), productId: null, quantity: null }])
+const lines = ref<Line[]>([{ key: crypto.randomUUID(), target: null, quantity: null }])
 
 // El catalogo se pide CON la sede de origen, para que cada producto traiga
 // el stock de ese local.
@@ -50,23 +55,42 @@ const destinationOptions = computed(() =>
   branchOptions.value.filter((option) => option.value !== fromBranchId.value),
 )
 
-const productOptions = computed(() =>
-  products.value.map((product: Product) => ({
-    label: `${product.name} — ${Number(product.stock)} disp.`,
-    value: product.id,
-  })),
+interface TransferOption {
+  label: string
+  value: string
+  stock: number
+}
+
+const productOptions = computed<TransferOption[]>(() =>
+  products.value.flatMap((product: Product): TransferOption[] => {
+    const variants = (product.variants ?? []).filter((variant) => variant.is_active)
+    if (variants.length > 0) {
+      return variants.map((variant) => {
+        const name = variant.attribute_values.map((value) => value.value).join(' / ') || variant.sku
+        return {
+          label: `${product.name} · ${name} — ${Number(variant.stock)} disp.`,
+          value: `v:${variant.id}`,
+          stock: Number(variant.stock),
+        }
+      })
+    }
+    return [
+      {
+        label: `${product.name} — ${Number(product.stock)} disp.`,
+        value: `p:${product.id}`,
+        stock: Number(product.stock),
+      },
+    ]
+  }),
 )
 
-function stockOf(productId: number | null): number {
-  if (!productId) {
-    return 0
-  }
-  return Number(products.value.find((product: Product) => product.id === productId)?.stock ?? 0)
+function stockOf(target: string | null): number {
+  return productOptions.value.find((option) => option.value === target)?.stock ?? 0
 }
 
 /** Una linea que pide mas de lo que hay en origen: el backend la rechaza. */
 function exceedsStock(line: Line): boolean {
-  return line.productId !== null && (line.quantity ?? 0) > stockOf(line.productId)
+  return line.target !== null && (line.quantity ?? 0) > stockOf(line.target)
 }
 
 const canSubmit = computed(
@@ -74,7 +98,7 @@ const canSubmit = computed(
     fromBranchId.value !== null &&
     toBranchId.value !== null &&
     fromBranchId.value !== toBranchId.value &&
-    lines.value.some((line) => line.productId && (line.quantity ?? 0) > 0) &&
+    lines.value.some((line) => line.target && (line.quantity ?? 0) > 0) &&
     !lines.value.some(exceedsStock),
 )
 
@@ -82,14 +106,14 @@ const canSubmit = computed(
 // ya escritas dejan de significar lo mismo. Se limpian en vez de arrastrar
 // un numero que ahora puede exceder lo disponible.
 watch(fromBranchId, () => {
-  lines.value = [{ key: crypto.randomUUID(), productId: null, quantity: null }]
+  lines.value = [{ key: crypto.randomUUID(), target: null, quantity: null }]
   if (toBranchId.value === fromBranchId.value) {
     toBranchId.value = null
   }
 })
 
 function addLine(): void {
-  lines.value.push({ key: crypto.randomUUID(), productId: null, quantity: null })
+  lines.value.push({ key: crypto.randomUUID(), target: null, quantity: null })
 }
 
 function removeLine(key: string): void {
@@ -108,8 +132,14 @@ async function submit(): Promise<void> {
       to_branch_id: toBranchId.value as number,
       notes: notes.value.trim() || null,
       items: lines.value
-        .filter((line) => line.productId && (line.quantity ?? 0) > 0)
-        .map((line) => ({ product_id: line.productId, quantity: line.quantity as number })),
+        .filter((line) => line.target && (line.quantity ?? 0) > 0)
+        .map((line) => {
+          const [kind, id] = (line.target as string).split(':')
+          return {
+            ...(kind === 'v' ? { product_variant_id: Number(id) } : { product_id: Number(id) }),
+            quantity: line.quantity as number,
+          }
+        }),
     })
     notify('Traslado realizado.', 'success')
     router.push({ name: 'stock-transfers.index' })
@@ -152,8 +182,8 @@ async function submit(): Promise<void> {
         <div v-for="line in lines" :key="line.key" class="flex items-end gap-2">
           <div class="min-w-0 flex-1">
             <NxSelect
-              v-model="line.productId"
-              label="Producto"
+              v-model="line.target"
+              label="Producto o variación"
               :options="productOptions"
               option-label="label"
               option-value="value"
@@ -162,7 +192,7 @@ async function submit(): Promise<void> {
             />
           </div>
           <div class="w-32">
-            <NxInputNumber v-model="line.quantity" label="Cantidad" :min="0" />
+            <NxInputNumber v-model="line.quantity" label="Cantidad" :min="0" :currency="false" />
           </div>
           <NxButton
             variant="secondary"
