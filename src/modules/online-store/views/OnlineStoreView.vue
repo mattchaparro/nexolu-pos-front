@@ -31,6 +31,7 @@ import {
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 
+import ShareLinkPanel from '../components/ShareLinkPanel.vue'
 import { useStoreSettings } from '../composables/useStoreSettings'
 
 const router = useRouter()
@@ -284,6 +285,28 @@ async function copyPublicUrl(): Promise<void> {
         <p v-if="isOpen && publishedCount === 0" class="mt-2 text-xs text-amber-700">
           La tienda está abierta pero no hay productos publicados: quien entre no verá nada.
         </p>
+        <p v-if="!isOpen" class="mt-3 text-sm text-slate-600">
+          Al abrirla tienes un <strong>catálogo virtual</strong> con tus productos, precios y fotos
+          al día, para mandar por WhatsApp, poner en Instagram o imprimir en un QR. Tus clientes te
+          dejan el pedido ahí mismo y te llega a <strong>Pedidos online</strong>; si no tienes
+          pasarela de pago, tú los contactas para cobrar.
+        </p>
+      </div>
+
+      <!-- La tienda tambien es el catalogo: esto es lo que el comerciante
+           comparte. Va al listado completo (/tienda), no al inicio: quien
+           recibe "mi catalogo" espera ver productos, no una portada. -->
+      <div v-if="isOpen" class="rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-sm font-semibold text-slate-800">Tu catálogo virtual</p>
+        <p class="mt-1 mb-3 text-xs text-slate-500">
+          Compártelo en tus estados de WhatsApp, en Instagram o imprime el QR para el mostrador. Los
+          pedidos que te hagan llegan a Pedidos online y te avisamos por WhatsApp.
+        </p>
+        <ShareLinkPanel
+          :url="`${settings.public_url}/tienda`"
+          :share-text="`Mira el catálogo de ${settings.store_name || 'mi tienda'}, con precios al día. Haz tu pedido aquí:`"
+          qr-file-name="qr-catalogo"
+        />
       </div>
 
       <p v-if="formError" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">

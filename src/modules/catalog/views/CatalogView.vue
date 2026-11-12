@@ -43,7 +43,9 @@ import {
 } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
+import { useAuthStore } from '@/stores/auth.store'
 import { hasFeature } from '@/utils/hasFeature'
+import ShareCatalogModal from '@/modules/online-store/components/ShareCatalogModal.vue'
 
 import CatalogHubTabs from '../components/CatalogHubTabs.vue'
 import IngredientFormModal from '../components/IngredientFormModal.vue'
@@ -78,7 +80,6 @@ const { hasPermission } = usePermissions()
 const ingredientsEnabled = computed(() => business.value?.feature_flags?.ingredients === true)
 const canAdd = computed(() => hasPermission('inventory.add'))
 const canAdjust = computed(() => hasPermission('inventory.adjust'))
-
 
 // --- Productos ---
 let productDebounce: number | undefined
@@ -157,6 +158,20 @@ const {
 
 // La columna de publicar solo tiene sentido si el negocio tiene tienda.
 const onlineStoreEnabled = computed(() => hasFeature(business.value, 'online_store'))
+
+// Compartir el catalogo: la configuracion de la tienda es solo del admin
+// (business-admin en la API), asi que a un cajero no se le ofrece.
+const auth = useAuthStore()
+const canShareCatalog = computed(
+  () => onlineStoreEnabled.value && auth.user?.roles?.includes('admin') === true,
+)
+const shareOpen = ref(false)
+const shareProduct = ref<{ id: number; name: string } | null>(null)
+
+function openShare(product: Product | null = null): void {
+  shareProduct.value = product ? { id: product.id, name: product.name } : null
+  shareOpen.value = true
+}
 const productMeta = computed(() => productsQuery.data.value?.meta)
 const productsSummaryQuery = useProductsSummary()
 
@@ -274,7 +289,6 @@ watch(ingredientSearchInput, (value) => {
   }, 300)
 })
 
-
 function toggleIngredientFilter(filter: IngredientStockFilter): void {
   ingredientFilter.value = ingredientFilter.value === filter ? null : filter
   ingredientPage.value = 1
@@ -352,6 +366,14 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
     <div class="flex items-center justify-between gap-3">
       <NxPageHeader title="Catálogo" icon="pi pi-shop" compact />
       <div class="flex items-center gap-2">
+        <NxButton
+          v-if="canShareCatalog"
+          variant="outline"
+          icon="pi pi-share-alt"
+          @click="openShare()"
+        >
+          Compartir catálogo
+        </NxButton>
         <NxButton
           v-if="canAdjust"
           variant="outline"
@@ -694,6 +716,16 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                           <span class="text-[11px] font-medium">{{
                             data.is_published ? 'En tienda' : 'Publicar'
                           }}</span>
+                        </button>
+                        <button
+                          v-if="canShareCatalog && data.is_published && !data.is_service"
+                          type="button"
+                          class="flex flex-col items-center gap-0.5 px-1 text-slate-400 hover:text-indigo-600"
+                          title="Compartir el enlace de este producto"
+                          @click="openShare(data)"
+                        >
+                          <i class="pi pi-share-alt" style="font-size: 1.125rem" />
+                          <span class="text-[11px] font-medium">Compartir</span>
                         </button>
                         <button
                           v-if="canAdd"
@@ -1165,5 +1197,6 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
       @dismiss="tour.dismiss"
       @close="tour.close"
     />
+    <ShareCatalogModal v-if="shareOpen" v-model="shareOpen" :product="shareProduct" />
   </div>
 </template>
