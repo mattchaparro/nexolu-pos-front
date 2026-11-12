@@ -31,6 +31,7 @@ import {
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 
+import BioLinksCard from '../components/BioLinksCard.vue'
 import ShareLinkPanel from '../components/ShareLinkPanel.vue'
 import { useStoreSettings } from '../composables/useStoreSettings'
 
@@ -308,6 +309,8 @@ async function copyPublicUrl(): Promise<void> {
           qr-file-name="qr-catalogo"
         />
       </div>
+
+      <BioLinksCard v-if="isOpen" :settings="settings" />
 
       <p v-if="formError" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
         {{ formError }}

@@ -21,8 +21,10 @@ import { usePermissions } from '@/composables/usePermissions'
 import { useAuthStore } from '@/stores/auth.store'
 import { NxPageHeader, NxStatCard } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
+import { hasFeature } from '@/utils/hasFeature'
 
 import AiInsightCard from '../components/AiInsightCard.vue'
+import ShareStoreCard from '../components/ShareStoreCard.vue'
 import ConsejoDelDiaCard from '../components/ConsejoDelDiaCard.vue'
 import ShortcutCustomizer from '../components/ShortcutCustomizer.vue'
 import ShortcutsGrid from '../components/ShortcutsGrid.vue'
@@ -42,6 +44,12 @@ const auth = useAuthStore()
 const { hasPermission } = usePermissions()
 const canUseAi = computed(
   () => hasPermission('ai_chat.use') || auth.user?.roles?.includes('admin') === true,
+)
+
+// Compartir la tienda: solo el admin (la configuración de la tienda es suya,
+// y su endpoint exige business-admin) y solo con el módulo encendido.
+const canShareStore = computed(
+  () => hasFeature(business.value, 'online_store') && auth.user?.roles?.includes('admin') === true,
 )
 
 const customizerOpen = ref(false)
@@ -92,6 +100,8 @@ const shortcuts = computed(() => resolveShortcuts(stats.value?.shortcuts ?? null
         />
       </template>
     </div>
+
+    <ShareStoreCard v-if="canShareStore" class="mt-6" />
 
     <ShortcutsGrid v-if="stats" class="mt-6" :shortcuts="shortcuts" @customize="customizerOpen = true" />
 

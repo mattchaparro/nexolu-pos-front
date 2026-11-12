@@ -84,10 +84,17 @@ export interface StoreSettings {
   opening_hours: string | null
   instagram_url: string | null
   facebook_url: string | null
+  /** Enlaces propios de la página de enlaces (la de la bio): TikTok, Rappi... */
+  bio_links: BioLink[]
   /** Direccion publica ya compuesta ({storefront_url}/{slug}). */
   public_url: string
   /** Publicados Y activos: los que de verdad se ven en la tienda. */
   published_products_count: number
+}
+
+export interface BioLink {
+  label: string
+  url: string
 }
 
 export type StoreSettingsPayload = Partial<
