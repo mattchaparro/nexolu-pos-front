@@ -53,11 +53,19 @@ async function remove(): Promise<void> {
   <div class="flex flex-col gap-2">
     <p class="text-xs font-semibold text-slate-600">{{ label }}</p>
 
+    <!-- Las imágenes anchas se muestran completas, con su proporción: así el
+         comerciante ve lo que subió y no un recorte que la tienda no hace. -->
     <div
       class="overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
-      :class="aspect === 'wide' ? 'aspect-[3/1]' : 'h-24 w-24'"
+      :class="aspect === 'wide' ? (url ? '' : 'aspect-[3/1]') : 'h-24 w-24'"
     >
-      <img v-if="url" :src="url" :alt="label" class="h-full w-full object-cover" />
+      <img
+        v-if="url && aspect === 'wide'"
+        :src="url"
+        :alt="label"
+        class="block h-auto max-h-40 w-full object-contain"
+      />
+      <img v-else-if="url" :src="url" :alt="label" class="h-full w-full object-cover" />
       <div v-else class="flex h-full w-full items-center justify-center text-slate-300">
         <i class="pi pi-image" />
       </div>

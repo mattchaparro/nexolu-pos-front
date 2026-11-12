@@ -564,7 +564,7 @@ async function save(): Promise<void> {
               label="Portada"
               :url="settings.banner_url"
               aspect="wide"
-              hint="Banda ancha arriba de la tienda."
+              hint="Banda ancha arriba de la tienda; ideal unos 1600 × 400 px. Si es muy alargada, en celular se recortan los lados: deja lo importante al centro."
             />
           </div>
         </div>
