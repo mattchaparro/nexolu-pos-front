@@ -95,7 +95,7 @@ async function send(): Promise<void> {
   isSending.value = true
   try {
     await sendReceipt(props.entityType, props.entityId, { channel: channel.value, to: destination.value.trim() })
-    notify(channel.value === 'whatsapp' ? 'Tu comprobante se está enviando por WhatsApp.' : 'Tu comprobante se está enviando por correo.')
+    notify(channel.value === 'whatsapp' ? 'Comprobante enviado por WhatsApp.' : 'Tu comprobante se está enviando por correo.')
     emit('update:modelValue', false)
   } catch (error) {
     sendError.value = extractErrorMessage(error, 'No pudimos enviar el comprobante.')
