@@ -7,12 +7,14 @@ import { computed, ref } from 'vue'
 
 import { NxButton } from '@/ui'
 
+import { useChannelName } from '../composables/useChannelName'
 import { useLinkPage } from '../composables/useLinkPage'
 import PublicProfileModal from './PublicProfileModal.vue'
 
 withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
 
 const { linkPageQuery } = useLinkPage()
+const channel = useChannelName()
 const state = computed(() => linkPageQuery.data.value)
 
 const open = ref(false)
@@ -48,8 +50,8 @@ const initial = computed(() =>
       <div class="min-w-0">
         <p class="text-sm font-semibold text-slate-800">Perfil público</p>
         <p v-if="!compact" class="mt-0.5 text-xs text-slate-500">
-          Tu logo, nombre y contacto. Se usan en tu tienda, en tu página de enlaces y en tus
-          recibos: se llenan una sola vez.
+          Tu logo, nombre y contacto. Se usan en {{ channel }}, en tu página de enlaces y en
+          tus recibos: se llenan una sola vez.
         </p>
       </div>
       <NxButton size="sm" variant="outline" icon="pi pi-pencil" @click="edit()">Editar</NxButton>

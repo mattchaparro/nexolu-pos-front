@@ -10,6 +10,7 @@ import { NxButton, NxInput, NxModal, NxTextarea } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 
+import { useChannelName } from '../composables/useChannelName'
 import { useLinkPage } from '../composables/useLinkPage'
 
 const props = withDefaults(
@@ -32,6 +33,7 @@ const {
   deleteIconMutation,
 } = useLinkPage()
 const state = computed(() => linkPageQuery.data.value)
+const channel = useChannelName()
 
 const name = ref('')
 const description = ref('')
@@ -142,7 +144,7 @@ async function save(): Promise<void> {
   >
     <div v-if="state" class="flex flex-col gap-6">
       <p class="text-xs text-slate-500">
-        Lo ven tus clientes en tu tienda online, en tu página de enlaces y en tus recibos. Lo llenas
+        Lo ven tus clientes en {{ channel }}, en tu página de enlaces y en tus recibos. Lo llenas
         aquí una sola vez.
       </p>
 
@@ -182,8 +184,8 @@ async function save(): Promise<void> {
               </button>
             </div>
             <p class="text-[11px] leading-snug text-slate-400">
-              Horizontal, con el nombre escrito y fondo transparente. Va en la cabecera de tu
-              tienda.
+              Horizontal, con el nombre escrito y fondo transparente. Va en la cabecera de
+              {{ channel }}.
             </p>
             <input
               ref="logoInput"

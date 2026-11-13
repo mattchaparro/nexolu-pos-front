@@ -10,6 +10,7 @@ import { useRouter } from 'vue-router'
 import { useBusiness } from '@/composables/useBusiness'
 import PublicProfileModal from '@/modules/link-page/components/PublicProfileModal.vue'
 import ShareLinkPageModal from '@/modules/link-page/components/ShareLinkPageModal.vue'
+import { useChannelName } from '@/modules/link-page/composables/useChannelName'
 import { useLinkPage } from '@/modules/link-page/composables/useLinkPage'
 import { hasFeature } from '@/utils/hasFeature'
 
@@ -17,6 +18,7 @@ const router = useRouter()
 const { data: business } = useBusiness()
 const { linkPageQuery } = useLinkPage()
 const state = computed(() => linkPageQuery.data.value)
+const channel = useChannelName()
 
 interface SetupStep {
   key: string
@@ -47,7 +49,7 @@ const steps = computed<SetupStep[]>(() => {
     {
       key: 'whatsapp',
       title: 'Agrega tu WhatsApp',
-      hint: 'Es por donde tus clientes te escriben desde tu tienda y tu página de enlaces.',
+      hint: `Es por donde tus clientes te escriben desde ${channel.value} y tu página de enlaces.`,
       action: 'Agregar',
       done: Boolean(settings.whatsapp),
       run: () => openProfile('contact'),
@@ -63,7 +65,7 @@ const steps = computed<SetupStep[]>(() => {
     {
       key: 'logo',
       title: 'Sube tu logo',
-      hint: 'Aparece en tu tienda, en tu página de enlaces y en tus recibos.',
+      hint: `Aparece en ${channel.value}, en tu página de enlaces y en tus recibos.`,
       action: 'Subir',
       done: settings.has_logo || settings.has_icon,
       run: () => openProfile('images'),
@@ -148,7 +150,7 @@ const visible = computed(
       <div class="min-w-0">
         <p class="text-sm font-semibold text-slate-800">Termina de configurar tu negocio</p>
         <p class="mt-0.5 text-xs text-slate-500">
-          Lo llenas una vez y se usa en tu tienda, tu página de enlaces y tus recibos.
+          Lo llenas una vez y se usa en {{ channel }}, tu página de enlaces y tus recibos.
         </p>
       </div>
       <div class="flex shrink-0 items-center gap-3">
