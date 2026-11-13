@@ -74,6 +74,10 @@ const optionLibraryQuery = useOptionGroupLibrary(productOptionsEnabled)
 // que la seccion entera vive detras de ese modulo (las rutas de imagenes
 // tambien estan gateadas por `feature:online_store` en el backend).
 const onlineStoreEnabled = computed(() => hasFeature(business.value, 'online_store'))
+// Sin el módulo de Servicios no hay nada que elegir: todo lo que se crea es un
+// producto, así que el selector de tipo no se muestra. (Un servicio ya
+// existente se sigue editando como servicio: isService lo trae el producto.)
+const servicesEnabled = computed(() => hasFeature(business.value, 'services'))
 const productAttributesQuery = useProductAttributes(variantsEnabled)
 const { createMutation, updateMutation } = useProductMutations()
 
@@ -708,12 +712,21 @@ async function submit(): Promise<void> {
         id="product-info"
         :step="sectionSteps.info"
         title="¿Qué vas a vender?"
-        subtitle="Lo que identifica al producto: tipo, nombre, categoría y descripción."
+        :subtitle="
+          servicesEnabled
+            ? 'Lo que identifica al producto: tipo, nombre, categoría y descripción.'
+            : 'Lo que identifica al producto: nombre, categoría y descripción.'
+        "
         class="scroll-mt-4"
       >
         <!-- El tipo va primero porque decide qué se pide después: un servicio
              no lleva inventario ni variaciones. -->
-        <div v-if="!forcedService" class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Tipo">
+        <div
+          v-if="!forcedService && servicesEnabled"
+          class="grid grid-cols-2 gap-2"
+          role="radiogroup"
+          aria-label="Tipo"
+        >
           <button
             v-for="option in [
               { value: false, label: 'Producto', hint: 'Algo que se entrega', icon: 'pi pi-box' },

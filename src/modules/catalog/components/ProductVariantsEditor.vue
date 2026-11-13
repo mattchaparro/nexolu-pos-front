@@ -11,7 +11,7 @@
 import { computed, ref, watch } from 'vue'
 
 import type { ProductAttribute, ProductVariantInput } from '@/types/product'
-import { NxButton, NxInput, NxInputNumber, NxToggleButton } from '@/ui'
+import { NxButton, NxInput, NxInputNumber } from '@/ui'
 
 import { variantComboKey } from '../support/variantCombo'
 
@@ -234,7 +234,7 @@ function updateRow(combination: Combination, patch: Partial<ProductVariantInput>
       <div v-if="combinations.length > 0" class="flex flex-col gap-2">
         <div class="flex items-baseline justify-between gap-2">
           <p class="text-sm font-semibold text-slate-700">Marca las combinaciones que vendes</p>
-          <span class="text-xs text-slate-400">{{ activeCount }} de {{ combinations.length }} activas</span>
+          <span class="text-xs text-slate-400">{{ activeCount }} de {{ combinations.length }} marcadas</span>
         </div>
         <p v-if="branches.length > 0" class="-mt-1 text-[11px] text-slate-500">
           «Precio» es el de la sede principal. En {{ branches.map((b) => b.name).join(', ') }} déjalo
@@ -328,12 +328,16 @@ function updateRow(combination: Combination, patch: Partial<ProductVariantInput>
             />
           </div>
           <div v-if="activeRow(combination.key)" class="mt-2 flex items-center justify-between gap-2">
-            <NxToggleButton
-              :model-value="activeRow(combination.key)?.is_active ?? true"
-              label="Activa"
-              icon="pi pi-check-circle"
-              @update:model-value="updateRow(combination, { is_active: $event })"
-            />
+            <!-- Aquí no se pregunta si la variación está activa: al crear todas
+                 lo están, y pausar una se hace después desde el índice del
+                 catálogo. Solo se avisa cuando ya viene pausada. -->
+            <p
+              v-if="activeRow(combination.key)?.is_active === false"
+              class="text-xs text-amber-700"
+            >
+              Pausada. Actívala desde el catálogo.
+            </p>
+            <span v-else />
             <button
               type="button"
               class="text-xs font-semibold text-red-500 hover:text-red-700"
