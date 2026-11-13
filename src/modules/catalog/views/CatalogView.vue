@@ -363,34 +363,48 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
 
 <template>
   <div class="flex flex-col pb-20 lg:pb-0">
-    <div class="flex items-center justify-between gap-3">
+    <!-- En el celular el título va solo y los botones en su propia fila:
+         en una sola línea no cabían y "+ Producto" se salía de la pantalla.
+         Los secundarios quedan como íconos; la acción principal toma el resto. -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
       <NxPageHeader title="Catálogo" icon="pi pi-shop" compact />
-      <div class="flex items-center gap-2">
+      <div class="flex w-full items-stretch gap-2 sm:w-auto">
         <NxButton
           v-if="canShareCatalog"
           variant="outline"
           icon="pi pi-share-alt"
+          title="Compartir catálogo"
+          aria-label="Compartir catálogo"
           @click="openShare()"
         >
-          Compartir catálogo
+          <span class="hidden sm:inline">Compartir catálogo</span>
         </NxButton>
         <NxButton
           v-if="canAdjust"
           variant="outline"
           icon="pi pi-table"
+          title="Edición masiva"
+          aria-label="Edición masiva"
           @click="router.push({ name: 'catalog.bulk-update' })"
         >
-          Edición masiva
+          <span class="hidden sm:inline">Edición masiva</span>
         </NxButton>
         <NxButton
           v-if="canAdd && activeArticleTab === 'productos'"
           data-tour="new-product"
           icon="pi pi-plus"
+          class="flex-1 sm:flex-none"
           @click="router.push({ name: 'catalog.products.create' })"
         >
           Producto
         </NxButton>
-        <NxButton v-else-if="canAdd" icon="pi pi-plus" @click="openNewIngredient">Insumo</NxButton>
+        <NxButton
+          v-else-if="canAdd"
+          icon="pi pi-plus"
+          class="flex-1 sm:flex-none"
+          @click="openNewIngredient"
+          >Insumo</NxButton
+        >
       </div>
     </div>
 
