@@ -33,6 +33,8 @@ export interface CreateSalePayload {
   customer_identification?: string
   client_id?: number | null
   is_delivery?: boolean
+  delivery_address?: string | null
+  save_address_to_client?: boolean
   is_non_revenue?: boolean
   non_revenue_reason?: string | null
   cart_discount_id?: number | null
@@ -94,6 +96,8 @@ export interface Sale {
   ipoconsumo_amount: number
   is_delivery: boolean
   delivery_fee: number
+  delivery_address?: string | null
+  delivery_status?: 'pending' | 'on_the_way' | 'delivered' | null
   is_non_revenue: boolean
   non_revenue_reason: string | null
   is_credit: boolean

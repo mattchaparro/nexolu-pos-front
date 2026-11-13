@@ -8,6 +8,8 @@ export interface Client {
   phone: string | null
   identification: string | null
   email: string | null
+  /** Dirección habitual; cada domicilio guarda la suya aparte. */
+  address: string | null
   notes: string | null
 }
 
@@ -16,6 +18,7 @@ export interface ClientPayload {
   phone?: string | null
   identification?: string | null
   email?: string | null
+  address?: string | null
   notes?: string | null
 }
 
@@ -29,4 +32,5 @@ export interface ClientSearchResult {
   phone: string | null
   identification: string | null
   email: string | null
+  address?: string | null
 }

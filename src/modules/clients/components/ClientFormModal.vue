@@ -25,6 +25,7 @@ const name = ref('')
 const phone = ref('')
 const identification = ref('')
 const email = ref('')
+const address = ref('')
 const notes = ref('')
 const fieldErrors = ref<Record<string, string>>({})
 const formError = ref<string | null>(null)
@@ -34,6 +35,7 @@ function resetForm(): void {
   phone.value = props.client?.phone ?? ''
   identification.value = props.client?.identification ?? ''
   email.value = props.client?.email ?? ''
+  address.value = props.client?.address ?? ''
   notes.value = props.client?.notes ?? ''
   fieldErrors.value = {}
   formError.value = null
@@ -66,6 +68,7 @@ async function submit(): Promise<void> {
     phone: phone.value.trim() || null,
     identification: identification.value.trim() || null,
     email: email.value.trim() || null,
+    address: address.value.trim() || null,
     notes: notes.value.trim() || null,
   }
 
@@ -103,6 +106,12 @@ async function submit(): Promise<void> {
       <NxInput v-model="phone" label="Teléfono (opcional)" :error="fieldErrors.phone" />
       <NxInput v-model="identification" label="Cédula (opcional)" :error="fieldErrors.identification" />
       <NxInput v-model="email" label="Correo (opcional)" type="email" :error="fieldErrors.email" />
+      <NxInput
+        v-model="address"
+        label="Dirección (opcional)"
+        placeholder="La habitual: con esta se llenan sus domicilios"
+        :error="fieldErrors.address"
+      />
       <NxTextarea v-model="notes" label="Notas (opcional)" :rows="2" />
     </div>
 

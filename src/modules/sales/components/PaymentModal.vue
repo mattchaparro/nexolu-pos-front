@@ -64,6 +64,8 @@ const props = withDefaults(
     // Valor inicial de la casilla de domicilio en venta directa (la cuenta
     // abierta usa el suyo, sale.is_delivery).
     initialDelivery?: boolean
+    /** Venta directa: la dirección que ya se escribió en Datos del cliente. */
+    initialDeliveryAddress?: string
     existingCustomerName?: string | null
     existingCustomerPhone?: string | null
     existingCustomerIdentification?: string | null
@@ -91,6 +93,7 @@ const props = withDefaults(
   {
     fallbackChargeBase: 0,
     initialDelivery: false,
+    initialDeliveryAddress: '',
     existingCustomerName: null,
     existingCustomerPhone: null,
     existingCustomerIdentification: null,
@@ -145,6 +148,7 @@ const partialMethod = ref<string | null>(null)
 const partialLabel = ref('')
 const receivedInput = ref<number | null>(null)
 const isDelivery = ref(false)
+const deliveryAddress = ref('')
 // Venta financiada: el cliente da una inicial y la financiadora gira el resto.
 const financingProviderId = ref<number | null>(null)
 // 0 por defecto: no todas las financieras piden cuota inicial.
@@ -154,6 +158,7 @@ const approvalNumber = ref('')
 
 function resetForm(): void {
   isDelivery.value = props.sale ? Boolean(props.sale.is_delivery) : props.initialDelivery
+  deliveryAddress.value = props.sale ? (props.sale.delivery_address ?? '') : props.initialDeliveryAddress
   isCourtesy.value = false
   courtesyReason.value = ''
   // El servicio es de la mesa: en un domicilio (p. ej. un pedido del menú
@@ -390,6 +395,9 @@ function submitConfirm(): void {
   if (showDelivery.value) {
     payload.is_delivery = isDelivery.value
   }
+  if (isDelivery.value && deliveryAddress.value.trim()) {
+    payload.delivery_address = deliveryAddress.value.trim()
+  }
 
   if (!isCourtesy.value && isFinancedTab.value && financingProviderId.value !== null) {
     payload.payment_method = (downPayment.value ?? 0) > 0.009 ? downPaymentMethod.value : null
@@ -503,6 +511,12 @@ function applyClient(client: { id: number; name: string; phone: string | null })
         </span>
         <span class="font-semibold">+{{ formatCop(deliveryRate) }}</span>
       </label>
+      <NxInput
+        v-if="showDelivery && isDelivery"
+        v-model="deliveryAddress"
+        label="Dirección de entrega"
+        placeholder="Calle 10 # 5-20, apto 301"
+      />
 
       <div v-if="!receivableMode">
         <NxToggleButton

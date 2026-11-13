@@ -155,6 +155,7 @@ const newTabName = ref('')
 const newTabPhone = ref('')
 const newTabNotes = ref('')
 const newTabIsDelivery = ref(false)
+const newTabAddress = ref('')
 const mobileTabSheetOpen = ref(false)
 const paymentModalOpen = ref(false)
 const tabClosedOpen = ref(false)
@@ -247,6 +248,7 @@ async function selectNewNamedTab(): Promise<void> {
   newTabPhone.value = ''
   newTabNotes.value = ''
   newTabIsDelivery.value = false
+  newTabAddress.value = ''
   tabCart.reset()
 }
 
@@ -277,6 +279,7 @@ async function selectTable(table: BusinessTable): Promise<void> {
     newTabPhone.value = ''
     newTabNotes.value = ''
     newTabIsDelivery.value = false
+    newTabAddress.value = ''
   }
   tabCart.reset()
 }
@@ -357,6 +360,7 @@ async function submitTabCart(): Promise<void> {
         customer_phone: newTabPhone.value || null,
         notes: newTabNotes.value.trim() || null,
         is_delivery: business.value?.delivery_enabled ? newTabIsDelivery.value : false,
+        delivery_address: newTabIsDelivery.value ? newTabAddress.value.trim() || null : null,
         items: tabCart.toItemsPayload(),
       })
       // Vuelve al indice de Vender (mode 'quick') en vez de quedarse
@@ -624,6 +628,7 @@ const { branches: sellableBranches } = useBranches()
           v-model:new-tab-phone="newTabPhone"
           v-model:new-tab-notes="newTabNotes"
           v-model:new-tab-is-delivery="newTabIsDelivery"
+          v-model:new-tab-address="newTabAddress"
           :active-sale="activeSale"
           :pending-table="pendingTable"
           :business="business"
@@ -685,6 +690,7 @@ const { branches: sellableBranches } = useBranches()
         v-model:new-tab-phone="newTabPhone"
         v-model:new-tab-notes="newTabNotes"
         v-model:new-tab-is-delivery="newTabIsDelivery"
+        v-model:new-tab-address="newTabAddress"
         :active-sale="activeSale"
         :pending-table="pendingTable"
         :business="business"
@@ -747,6 +753,7 @@ const { branches: sellableBranches } = useBranches()
       :submitting="mode === 'quick' ? createSaleMutation.isPending.value : tabMutations.closeMutation.isPending.value"
       :fallback-charge-base="checkout.totals.value?.subtotalAfterCartDiscount ?? 0"
       :initial-delivery="checkout.isDelivery.value"
+      :initial-delivery-address="checkout.deliveryAddress.value"
       :existing-customer-name="mode === 'quick' ? checkout.customerName.value : activeSale?.customer_name"
       :existing-customer-phone="mode === 'quick' ? checkout.customerPhone.value : activeSale?.customer_phone"
       @confirm="handlePaymentConfirm"

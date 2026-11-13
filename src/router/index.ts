@@ -398,6 +398,14 @@ const router = createRouter({
           meta: { requiresFeature: 'kitchen_board' },
         },
         {
+          // El domiciliario es un empleado con deliveries.handle (mismo
+          // permiso que la ruta del backend).
+          path: 'domicilios',
+          name: 'deliveries.index',
+          component: () => import('@/modules/deliveries/views/DeliveriesView.vue'),
+          meta: { requiresPermission: 'deliveries.handle' },
+        },
+        {
           // Sin requiresFeature: EmployeeController::store/update/toggle/destroy
           // no estan detras de feature:permissions_management (solo
           // catalog/updatePermissions lo estan, ver EmployeeTest::

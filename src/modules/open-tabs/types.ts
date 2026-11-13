@@ -11,6 +11,7 @@ export interface OpenTabPayload {
   customer_phone?: string | null
   notes?: string | null
   is_delivery?: boolean
+  delivery_address?: string | null
   items: SaleItemInput[]
 }
 
@@ -36,6 +37,8 @@ export interface CloseOpenTabPayload {
   apply_service_charge?: boolean
   apply_ipoconsumo?: boolean
   is_delivery?: boolean
+  delivery_address?: string | null
+  save_address_to_client?: boolean
   /**
    * Cobro ya aprobado en un datáfono. Solo lo acepta POST /sales: el
    * backend comprueba que esté aprobado, sin usar y por el mismo monto que

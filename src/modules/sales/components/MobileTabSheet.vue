@@ -44,6 +44,7 @@ const newTabName = defineModel<string>('newTabName', { default: '' })
 const newTabPhone = defineModel<string>('newTabPhone', { default: '' })
 const newTabNotes = defineModel<string>('newTabNotes', { default: '' })
 const newTabIsDelivery = defineModel<boolean>('newTabIsDelivery', { default: false })
+const newTabAddress = defineModel<string>('newTabAddress', { default: '' })
 </script>
 
 <template>
@@ -58,6 +59,7 @@ const newTabIsDelivery = defineModel<boolean>('newTabIsDelivery', { default: fal
         v-model:new-tab-phone="newTabPhone"
         v-model:new-tab-notes="newTabNotes"
         v-model:new-tab-is-delivery="newTabIsDelivery"
+        v-model:new-tab-address="newTabAddress"
         :active-sale="activeSale"
         :pending-table="pendingTable"
         :business="business"

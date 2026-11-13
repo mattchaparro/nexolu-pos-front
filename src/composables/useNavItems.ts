@@ -79,7 +79,10 @@ export function useNavItems() {
       .filter(
         (item) =>
           (!item.featureKey || hasFeature(business.value, item.featureKey)) &&
-          (!item.routeName || isRouteAccessible(item.routeName)),
+          (!item.routeName || isRouteAccessible(item.routeName)) &&
+          // Domicilios no es un modulo contratado sino la configuracion de
+          // domicilio del negocio.
+          (item.routeName !== 'deliveries.index' || business.value?.delivery_enabled === true),
       )
       .map((item) => {
         if (item.routeName === 'online-store.orders' && (pendingOrders.value ?? 0) > 0) {

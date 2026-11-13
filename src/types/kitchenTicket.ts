@@ -21,6 +21,8 @@ export interface KitchenTicket {
   /** Nota de la cuenta: alergias, "sin cebolla", dirección del domicilio... */
   notes: string | null
   is_delivery: boolean
+  /** A dónde va el domicilio (nulo si no es domicilio o no se escribió). */
+  delivery_address: string | null
   /**
    * Pedido online: su venta ya está registrada (pagó en línea o el negocio
    * verificó el pago). No se cobra en la comandera: sale de ella al

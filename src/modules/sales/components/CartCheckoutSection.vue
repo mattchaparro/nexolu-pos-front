@@ -31,25 +31,38 @@ function submitLabel(): string {
 -->
 <template>
   <div class="flex flex-col gap-3">
+    <label
+      v-if="business.delivery_enabled"
+      class="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700"
+    >
+      <span class="flex items-center gap-2 font-medium">
+        <input
+          v-model="checkout.isDelivery.value"
+          type="checkbox"
+          class="h-4 w-4 rounded accent-indigo-600"
+        />
+        <i class="pi pi-truck text-slate-500" />
+        Domicilio
+      </span>
+      <span class="font-semibold">+{{ formatCop(business.delivery_fee) }}</span>
+    </label>
+
     <CustomerFieldsSection
       :name="checkout.customerName.value"
       :phone="checkout.customerPhone.value"
       :identification="checkout.customerIdentification.value"
+      :address="checkout.deliveryAddress.value"
+      :client-address="checkout.clientId.value !== null ? checkout.clientAddress.value : null"
+      :save-address="checkout.saveAddressToClient.value"
+      :delivery="checkout.isDelivery.value"
       :required="false"
       @update:name="checkout.setCustomerName($event)"
       @update:phone="checkout.setCustomerPhone($event)"
       @update:identification="checkout.setCustomerIdentification($event)"
+      @update:address="checkout.deliveryAddress.value = $event"
+      @update:save-address="checkout.saveAddressToClient.value = $event"
       @select-client="checkout.applyClient($event)"
     />
-
-    <label v-if="business.delivery_enabled" class="flex items-center gap-2 text-sm text-slate-700">
-      <input
-        v-model="checkout.isDelivery.value"
-        type="checkbox"
-        class="h-4 w-4 rounded accent-indigo-600"
-      />
-      Domicilio ({{ formatCop(business.delivery_fee) }})
-    </label>
 
     <div v-if="checkout.cartDiscounts.value.length > 0" class="flex flex-col gap-1">
       <label class="text-xs font-medium text-slate-500">Descuento de la cuenta</label>

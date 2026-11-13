@@ -50,6 +50,7 @@ const newTabName = ref('')
 const newTabPhone = ref('')
 const newTabNotes = ref('')
 const newTabIsDelivery = ref(false)
+const newTabAddress = ref('')
 
 const tableManagerOpen = ref(false)
 const closeModalOpen = ref(false)
@@ -171,6 +172,7 @@ function openNewByName(): void {
   newTabPhone.value = ''
   newTabNotes.value = ''
   newTabIsDelivery.value = false
+  newTabAddress.value = ''
   cart.reset()
   mode.value = 'building'
 }
@@ -250,6 +252,7 @@ async function submitCart(): Promise<void> {
         customer_phone: newTabPhone.value || null,
         notes: newTabNotes.value.trim() || null,
         is_delivery: business.value?.delivery_enabled ? newTabIsDelivery.value : false,
+        delivery_address: newTabIsDelivery.value ? newTabAddress.value.trim() || null : null,
         items: cart.toItemsPayload(),
       })
       goBack()
@@ -393,6 +396,13 @@ async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Prom
             <span class="text-sm font-medium text-slate-700">Pedido para domicilio</span>
             <input v-model="newTabIsDelivery" type="checkbox" class="h-4 w-4 rounded accent-indigo-600" />
           </label>
+          <NxInput
+            v-if="newTabIsDelivery"
+            v-model="newTabAddress"
+            class="mt-3"
+            label="Dirección de entrega"
+            placeholder="Calle 10 # 5-20, apto 301"
+          />
         </div>
 
         <div class="rounded-xl border border-slate-200 bg-white p-4">

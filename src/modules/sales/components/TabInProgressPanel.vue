@@ -55,6 +55,7 @@ const newTabName = defineModel<string>('newTabName', { default: '' })
 const newTabPhone = defineModel<string>('newTabPhone', { default: '' })
 const newTabNotes = defineModel<string>('newTabNotes', { default: '' })
 const newTabIsDelivery = defineModel<boolean>('newTabIsDelivery', { default: false })
+const newTabAddress = defineModel<string>('newTabAddress', { default: '' })
 
 /** Hay algo sin guardar: cantidades tocadas, productos nuevos, o ambos. */
 const hasPendingChanges = computed(() => props.hasDraftChanges || props.cart.lines.value.length > 0)
@@ -122,6 +123,13 @@ function title(): string {
         <span class="text-sm font-medium text-slate-700">Pedido para domicilio</span>
         <input v-model="newTabIsDelivery" type="checkbox" class="h-4 w-4 rounded accent-indigo-600" />
       </label>
+      <NxInput
+        v-if="newTabIsDelivery"
+        v-model="newTabAddress"
+        label="Dirección de entrega"
+        placeholder="Calle 10 # 5-20, apto 301"
+        size="sm"
+      />
     </div>
 
     <TabDetailsEditor

@@ -38,6 +38,12 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
   const customerPhone = ref('')
   const customerIdentification = ref('')
   const clientId = ref<number | null>(null)
+  // La dirección de ESTA entrega. Arranca con la habitual del cliente, pero
+  // si pidió a otra parte se cambia aquí sin tocar su ficha (salvo que se
+  // marque "guardar como su dirección").
+  const deliveryAddress = ref('')
+  const clientAddress = ref<string | null>(null)
+  const saveAddressToClient = ref(false)
 
   /** Vincula la venta a un Client real (ClientQuickAssociate) y prellena nombre/telefono/cedula. */
   function applyClient(client: ClientSearchResult): void {
@@ -45,6 +51,9 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     customerPhone.value = client.phone ?? ''
     customerIdentification.value = client.identification ?? ''
     clientId.value = client.id
+    clientAddress.value = client.address ?? null
+    deliveryAddress.value = client.address ?? ''
+    saveAddressToClient.value = false
   }
 
   /**
@@ -228,6 +237,8 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
       customer_identification: customerIdentification.value || undefined,
       client_id: clientId.value,
       is_delivery: isDelivery.value,
+      delivery_address: isDelivery.value ? deliveryAddress.value.trim() || null : null,
+      save_address_to_client: isDelivery.value && clientId.value !== null && saveAddressToClient.value,
       cart_discount_id: cartDiscountId.value,
     }
   }
@@ -238,6 +249,9 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     customerPhone.value = ''
     customerIdentification.value = ''
     clientId.value = null
+    deliveryAddress.value = ''
+    clientAddress.value = null
+    saveAddressToClient.value = false
     isDelivery.value = false
     cartDiscountId.value = null
     if (business.value) {
@@ -369,6 +383,9 @@ export function useSaleCheckout(business: Ref<Business | undefined>, discounts: 
     setCustomerPhone,
     setCustomerIdentification,
     isDelivery,
+    deliveryAddress,
+    clientAddress,
+    saveAddressToClient,
     cartDiscountId,
     itemDiscounts,
     cartDiscounts,

@@ -55,14 +55,20 @@ function ticketLabel(ticket: KitchenTicket): string {
   return ticket.table_name || ticket.customer_name || `Pedido #${ticket.id}`
 }
 
-// Un pedido online sale de la comandera al despacharse (no se cobra aquí):
-// solo cuando toda la comanda está lista, para no despachar media orden.
-function canDispatch(ticket: KitchenTicket, status: KitchenStatus): boolean {
-  return ticket.online_order !== null && status === 'ready' && ticket.kitchen_status === 'ready'
+// Un pedido online para recoger sale de aquí cuando el cliente se lo lleva,
+// y solo con toda la comanda lista. Los domicilios salen desde Domicilios,
+// cuando un domiciliario los toma.
+function canHandOver(ticket: KitchenTicket, status: KitchenStatus): boolean {
+  return (
+    ticket.online_order !== null &&
+    ticket.online_order.is_pickup &&
+    status === 'ready' &&
+    ticket.kitchen_status === 'ready'
+  )
 }
 
-function dispatchLabel(ticket: KitchenTicket): string {
-  return ticket.online_order?.is_pickup ? 'Entregado al cliente' : 'Salió a domicilio'
+function waitsForCourier(ticket: KitchenTicket, status: KitchenStatus): boolean {
+  return ticket.is_delivery && status === 'ready' && ticket.kitchen_status === 'ready'
 }
 </script>
 
@@ -103,17 +109,29 @@ function dispatchLabel(ticket: KitchenTicket): string {
             </div>
           </div>
 
-          <!-- La nota va ANTES de los productos: es lo que no se puede pasar por alto
-               al cocinar (alergias, "sin cebolla") o al despachar (dirección). -->
-          <p
-            v-if="card.ticket.notes"
-            class="mb-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-800"
-          >
-            <span class="font-semibold">Nota:</span> {{ card.ticket.notes }}
-          </p>
-          <p v-if="card.ticket.customer_phone && card.ticket.is_delivery" class="mb-2 text-xs text-slate-500">
-            <i class="pi pi-phone mr-1 text-[10px]" />{{ card.ticket.customer_phone }}
-          </p>
+          <!-- Antes de los productos, cada dato en su línea: lo que no se puede
+               pasar por alto al cocinar (la nota: alergias, "sin cebolla") y al
+               despachar (a dónde va y a quién llamar). -->
+          <div class="mb-2 flex flex-col gap-1 text-xs">
+            <p v-if="card.ticket.is_delivery" class="flex items-start gap-1.5 text-slate-700">
+              <i class="pi pi-map-marker mt-0.5 text-indigo-500" />
+              <span>{{ card.ticket.delivery_address || 'Sin dirección' }}</span>
+            </p>
+            <p v-else-if="card.ticket.online_order?.is_pickup" class="flex items-center gap-1.5 text-slate-700">
+              <i class="pi pi-shopping-bag text-slate-500" />
+              Recoge en el local
+            </p>
+            <p v-if="card.ticket.customer_phone && (card.ticket.is_delivery || card.ticket.online_order)" class="flex items-center gap-1.5 text-slate-500">
+              <i class="pi pi-phone" />{{ card.ticket.customer_phone }}
+            </p>
+            <p
+              v-if="card.ticket.notes"
+              class="mt-0.5 flex items-start gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 font-medium text-amber-800"
+            >
+              <i class="pi pi-comment mt-0.5" />
+              <span>{{ card.ticket.notes }}</span>
+            </p>
+          </div>
 
           <ul class="mb-3 flex flex-col gap-1">
             <li v-for="item in card.items" :key="item.id" class="text-sm text-slate-700">
@@ -129,15 +147,21 @@ function dispatchLabel(ticket: KitchenTicket): string {
           </ul>
 
           <NxButton
-            v-if="canDispatch(card.ticket, column.status)"
+            v-if="canHandOver(card.ticket, column.status)"
             size="sm"
             class="mb-1.5 w-full"
-            icon="pi pi-send"
+            icon="pi pi-check"
             :loading="dispatchMutation.isPending.value"
             @click="dispatchMutation.mutate(card.ticket.id)"
           >
-            {{ dispatchLabel(card.ticket) }}
+            Entregado al cliente
           </NxButton>
+          <p
+            v-if="waitsForCourier(card.ticket, column.status)"
+            class="mb-1.5 flex items-center justify-center gap-1.5 rounded-lg bg-indigo-50 px-2 py-1.5 text-xs font-semibold text-indigo-700"
+          >
+            <i class="pi pi-truck" /> Esperando domiciliario
+          </p>
 
           <div class="flex gap-1.5">
             <NxButton

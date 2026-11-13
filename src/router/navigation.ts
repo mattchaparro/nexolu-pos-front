@@ -63,6 +63,8 @@ export const adminNavItems: NavItem[] = [
     routeName: 'kitchen.index',
     featureKey: 'kitchen_board',
   },
+  // Solo si el negocio hace domicilios (Configuración › Ventas): ver useNavItems.
+  { label: 'Domicilios', icon: 'pi pi-truck', routeName: 'deliveries.index' },
   { label: 'Catálogo', icon: 'pi pi-shop', routeName: 'catalog.index' },
   // Sin equivalente en admin.json del legacy a proposito: legacy tiene las
   // rutas/controlador de clientes (Admin\ClientsController) pero ningun
