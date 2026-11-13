@@ -604,7 +604,7 @@ function applyClient(client: { id: number; name: string; phone: string | null })
                 <NxInput :model-value="customerName" label="Nombre del cliente" size="sm" @update:model-value="setCustomerName" />
                 <NxInput :model-value="customerPhone" label="Teléfono" size="sm" @update:model-value="setCustomerPhone" />
                 <NxInput v-if="receivableMode" v-model="customerIdentification" label="Cédula" size="sm" />
-                <ClientQuickAssociate v-if="!receivableMode" :name="customerName" :phone="customerPhone" @apply="applyClient" />
+                <ClientQuickAssociate v-if="!receivableMode" auto-creates :name="customerName" :phone="customerPhone" @apply="applyClient" />
               </template>
             </div>
 
@@ -752,7 +752,7 @@ function applyClient(client: { id: number; name: string; phone: string | null })
                 </p>
                 <NxInput :model-value="customerName" label="Nombre del cliente" size="sm" @update:model-value="setCustomerName" />
                 <NxInput :model-value="customerPhone" label="Teléfono" size="sm" @update:model-value="setCustomerPhone" />
-                <ClientQuickAssociate :name="customerName" :phone="customerPhone" @apply="applyClient" />
+                <ClientQuickAssociate auto-creates :name="customerName" :phone="customerPhone" @apply="applyClient" />
               </template>
             </div>
           </NxTabPanel>

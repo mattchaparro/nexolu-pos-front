@@ -98,7 +98,7 @@ const addressDiffers = computed(
           @update:model-value="$emit('update:identification', $event)"
         />
       </div>
-      <ClientQuickAssociate :name="name" :phone="phone" :identification="identification" @apply="emit('select-client', $event)" />
+      <ClientQuickAssociate auto-creates :name="name" :phone="phone" :identification="identification" @apply="emit('select-client', $event)" />
       <div v-if="delivery" class="flex flex-col gap-1.5">
         <NxInput
           :model-value="address"
