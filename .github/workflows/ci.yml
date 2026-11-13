@@ -1,0 +1,33 @@
+# Revisa tipos y compila en cada push a main y en cada PR. No despliega:
+# eso lo hace release.yml cuando se publica un release o se lanza a mano.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      # `build` ya corre `vue-tsc -b` antes de vite (ver package.json). No
+      # usar `--noEmit`: dejó pasar un error que después tumbó el build.
+      - run: npm run build

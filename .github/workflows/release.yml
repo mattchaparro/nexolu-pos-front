@@ -1,0 +1,80 @@
+# Despliega pos.nexolu.co. Se compila aquí, en GitHub, y al droplet solo le
+# llega el dist/ ya hecho: compilar allá lo mandaba al swap.
+#
+# Dos formas de lanzarlo:
+#   - Publicar un release (p. ej. v1.4.0) en GitHub.
+#   - Actions → Release → Run workflow, eligiendo la rama o el tag.
+#
+# Volver atrás: lanzarlo a mano sobre el tag anterior, o en el droplet
+# `./deploy.sh rollback` (instantáneo, sin compilar).
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Nunca dos despliegues a la vez, y nunca se cancela uno a medias.
+concurrency:
+  group: deploy-pos-front
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://pos.nexolu.co
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Versión
+        id: version
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            echo "value=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      # Lo que antes vivía en el .env del droplet. Los VITE_* quedan dentro
+      # del bundle (son públicos igual); SENTRY_AUTH_TOKEN no, solo sube los
+      # source maps.
+      - name: Compilar
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_AUTH_BASE_URL: ${{ vars.VITE_AUTH_BASE_URL }}
+          VITE_SENTRY_DSN_PUBLIC: ${{ vars.VITE_SENTRY_DSN_PUBLIC }}
+          VITE_SENTRY_TRACES_SAMPLE_RATE: ${{ vars.VITE_SENTRY_TRACES_SAMPLE_RATE }}
+          VITE_PRIMEVUE_LICENSE_KEY: ${{ secrets.VITE_PRIMEVUE_LICENSE_KEY }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          # Sin la URL de la API el build sale "bien" pero la app no sirve.
+          [ -n "$VITE_API_BASE_URL" ] || { echo "Falta la variable VITE_API_BASE_URL"; exit 1; }
+          npm run build
+          tar -czf dist.tgz dist
+
+      - name: Desplegar en el droplet
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # La llave solo puede correr nexolu-infra/scripts/ci-deploy.sh en
+          # el droplet; esto es su argumento, no un comando de shell.
+          ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "root@$DEPLOY_HOST" "pos-front ${{ steps.version.outputs.value }}" < dist.tgz

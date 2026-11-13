@@ -143,10 +143,6 @@ desplegar() {
     log "==> git pull"
     git pull origin main
 
-    local release_dir
-    release_dir="$RELEASES_DIR/$(date +%Y%m%d-%H%M%S)"
-    mkdir -p "$RELEASES_DIR"
-
     log "==> build en contenedor ($NODE_IMAGE, mem=$MEM_LIMIT, swap total=$MEM_SWAP_LIMIT, heap=${NODE_HEAP_MB}m)"
     # --user root: el checkout del droplet es de root, y node_modules ya
     #   quedo root-owned de las corridas viejas en el host. Correr como otro
@@ -172,10 +168,25 @@ desplegar() {
 
     [ -f "$APP_DIR/dist/index.html" ] || fallar "el build termino sin error pero no dejo dist/index.html."
 
+    publicar "$APP_DIR/dist"
+}
+
+# ---------------------------------------------------------------------------
+# publicar: convierte un dist/ ya compilado en la release activa. La usan el
+# build en el droplet (desplegar) y el build que llega hecho desde GitHub
+# Actions (artifact). `origen` tiene que estar en el mismo disco que
+# releases/ para que el mv sea un rename y no una copia.
+# ---------------------------------------------------------------------------
+publicar() {
+    local origen="$1"
+    local release_dir
+    release_dir="$RELEASES_DIR/$(date +%Y%m%d-%H%M%S)"
+    mkdir -p "$RELEASES_DIR"
+
     log "==> publicando release $(basename "$release_dir")"
     # mv del directorio entero, no de su contenido: un glob se saltea los
     # dotfiles que Vite puede dejar (.vite/, .htaccess de public/).
-    mv "$APP_DIR/dist" "$release_dir"
+    mv "$origen" "$release_dir"
 
     # previous apunta a lo que estaba sirviendose HASTA este momento, para
     # que rollback y el fallback de assets viejos de nginx tengan a donde ir.
@@ -208,10 +219,32 @@ desplegar() {
     log "Listo. nginx sirve la release nueva desde 'current' (cambio atomico, sin ventana de caida)."
 }
 
+# ---------------------------------------------------------------------------
+# artifact: publica un build hecho en GitHub Actions, sin compilar aqui. El
+# tar.gz llega por stdin (ver nexolu-infra/scripts/ci-deploy.sh). Compilar
+# en el droplet de 2 GB era lo que lo mandaba al swap en cada deploy.
+# ---------------------------------------------------------------------------
+desplegar_artefacto() {
+    local version="${1:-sin-version}"
+    # Global y no `local`: el trap de EXIT corre cuando la funcion ya termino.
+    ARTEFACTO_TMP="$APP_DIR/.artefacto-$$"
+    local tmp="$ARTEFACTO_TMP"
+    trap 'rm -rf "${ARTEFACTO_TMP:-}"' EXIT
+    mkdir -p "$tmp"
+
+    log "==> recibiendo build $version"
+    tar -xzf - -C "$tmp" || fallar "el artefacto no es un tar.gz valido. NO se toco 'current'."
+    [ -f "$tmp/dist/index.html" ] || fallar "el artefacto no trae dist/index.html. NO se toco 'current'."
+    echo "$version" > "$tmp/dist/VERSION"
+
+    publicar "$tmp/dist"
+}
+
 case "${1:-deploy}" in
     deploy)    desplegar ;;
+    artifact)  desplegar_artefacto "${2:-}" ;;
     rollback)  rollback ;;
     status)    estado ;;
     bootstrap) bootstrap ;;
-    *) echo "Uso: $0 [deploy|rollback|status|bootstrap]"; exit 1 ;;
+    *) echo "Uso: $0 [deploy|artifact <version>|rollback|status|bootstrap]"; exit 1 ;;
 esac
