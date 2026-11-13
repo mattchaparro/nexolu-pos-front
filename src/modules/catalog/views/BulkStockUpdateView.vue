@@ -186,7 +186,9 @@ const INGREDIENT_FIELDS: IngredientField[] = ['name', 'stock', 'cost']
 const editingId = ref<number | null>(null)
 const editingField = ref<string | null>(null)
 const editValue = ref('')
-const editInputRef = ref<HTMLInputElement | null>(null)
+// Dentro del v-for Vue llena la ref como arreglo (solo hay una celda en
+// edición a la vez, así que es el primero).
+const editInputRef = ref<HTMLInputElement | HTMLInputElement[] | null>(null)
 
 function dispName(row: ProductRow | IngredientRow): string {
   return row.new_name ?? row.name
@@ -208,8 +210,9 @@ function isEditing(row: ProductRow | IngredientRow, field: string): boolean {
 
 function focusEditInput(): void {
   nextTick(() => {
-    editInputRef.value?.focus()
-    editInputRef.value?.select()
+    const input = Array.isArray(editInputRef.value) ? editInputRef.value[0] : editInputRef.value
+    input?.focus()
+    input?.select()
   })
 }
 

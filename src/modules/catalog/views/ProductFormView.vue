@@ -10,6 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useBranches } from '@/composables/useBranches'
 import { useBusiness } from '@/composables/useBusiness'
+import { useChannelName } from '@/modules/link-page/composables/useChannelName'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import { fetchBranchPrices, updateBranchPrices } from '@/services/branches'
 import type {
@@ -75,6 +76,7 @@ const optionLibraryQuery = useOptionGroupLibrary(productOptionsEnabled)
 // que la seccion entera vive detras de ese modulo (las rutas de imagenes
 // tambien estan gateadas por `feature:online_store` en el backend).
 // El menú digital también muestra la foto de cada plato.
+const channelName = useChannelName()
 const onlineStoreEnabled = computed(() =>
   hasFeature(business.value, ['online_store', 'digital_menu']),
 )
@@ -832,7 +834,7 @@ async function submit(): Promise<void> {
         v-if="onlineStoreEnabled"
         :step="sectionSteps.photos"
         title="Fotos"
-        subtitle="La primera es la portada en tu tienda online."
+        :subtitle="`La primera es la portada en ${channelName}.`"
       >
         <ProductImagesEditor
           v-model:pending="pendingImages"

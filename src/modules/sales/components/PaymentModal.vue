@@ -156,7 +156,9 @@ function resetForm(): void {
   isDelivery.value = props.sale ? Boolean(props.sale.is_delivery) : props.initialDelivery
   isCourtesy.value = false
   courtesyReason.value = ''
-  applyServiceCharge.value = true
+  // El servicio es de la mesa: en un domicilio (p. ej. un pedido del menú
+  // digital, cuyo total el comprador ya vio) arranca apagado.
+  applyServiceCharge.value = !(props.sale?.is_delivery ?? false)
   applyIpoconsumo.value = true
   activeTab.value = 'single'
   splitRows.value = []
@@ -218,11 +220,17 @@ const chargeBase = computed(() =>
 // existe y su domicilio no se toca).
 const showDelivery = computed(() => props.business.delivery_enabled && !props.receivableMode)
 const savedDeliveryFee = computed(() => (props.sale ? Number(props.sale.delivery_fee) : 0))
+// Una cuenta que ya era domicilio conserva su tarifa (la del menú digital no
+// es la del POS); la del negocio solo aplica si el domicilio se marca aquí.
+// Mismo criterio que OpenTabService::close en el API.
+const deliveryRate = computed(() =>
+  props.sale?.is_delivery ? savedDeliveryFee.value : Number(props.business.delivery_fee),
+)
 const deliveryFee = computed(() => {
   if (!showDelivery.value) {
     return savedDeliveryFee.value
   }
-  return isDelivery.value ? Number(props.business.delivery_fee) : 0
+  return isDelivery.value ? deliveryRate.value : 0
 })
 const grandBase = computed(() =>
   props.sale
@@ -493,7 +501,7 @@ function applyClient(client: { id: number; name: string; phone: string | null })
           <input v-model="isDelivery" type="checkbox" class="h-4 w-4 rounded accent-indigo-600" />
           Domicilio
         </span>
-        <span class="font-semibold">+{{ formatCop(business.delivery_fee) }}</span>
+        <span class="font-semibold">+{{ formatCop(deliveryRate) }}</span>
       </label>
 
       <div v-if="!receivableMode">
