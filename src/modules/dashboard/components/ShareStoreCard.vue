@@ -19,6 +19,8 @@ const { linkPageQuery } = useLinkPage()
 const state = computed(() => linkPageQuery.data.value)
 
 const hasStoreModule = computed(() => hasFeature(business.value, 'online_store'))
+// Un restaurante comparte su menú digital, no una tienda.
+const isMenu = computed(() => hasFeature(business.value, 'digital_menu'))
 
 const catalogOpen = ref(false)
 const linksOpen = ref(false)
@@ -36,14 +38,25 @@ const linksOpen = ref(false)
       <div class="min-w-0 flex-1">
         <p class="text-sm font-semibold text-slate-800">Comparte tu negocio</p>
         <p class="text-xs text-slate-500">
-          <template v-if="state.has_store">
+          <template v-if="state.has_store && isMenu">
+            Tu menú para las mesas y WhatsApp, y tu página de enlaces para la bio de Instagram.
+          </template>
+          <template v-else-if="state.has_store">
             Tu catálogo para WhatsApp y tu página de enlaces para la bio de Instagram y TikTok.
           </template>
           <template v-else>
             Tu WhatsApp, Instagram y TikTok en un solo enlace para poner en tu bio.
           </template>
           <button
-            v-if="hasStoreModule && !state.has_store"
+            v-if="isMenu && !state.has_store"
+            type="button"
+            class="font-semibold text-indigo-600 hover:text-indigo-800"
+            @click="router.push({ name: 'digital-menu.index' })"
+          >
+            Publica tu menú digital.
+          </button>
+          <button
+            v-else-if="hasStoreModule && !state.has_store"
             type="button"
             class="font-semibold text-indigo-600 hover:text-indigo-800"
             @click="router.push({ name: 'online-store.index' })"
@@ -54,7 +67,20 @@ const linksOpen = ref(false)
       </div>
 
       <div class="grid grid-cols-2 gap-2 sm:flex">
-        <NxButton v-if="state.has_store" size="sm" icon="pi pi-shop" @click="catalogOpen = true">
+        <NxButton
+          v-if="state.has_store && isMenu"
+          size="sm"
+          icon="pi pi-book"
+          @click="router.push({ name: 'digital-menu.index' })"
+        >
+          Menú
+        </NxButton>
+        <NxButton
+          v-else-if="state.has_store"
+          size="sm"
+          icon="pi pi-shop"
+          @click="catalogOpen = true"
+        >
           Catálogo
         </NxButton>
         <NxButton

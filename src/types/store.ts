@@ -90,6 +90,10 @@ export interface StoreSettings {
   facebook_url: string | null
   /** Direccion publica ya compuesta ({storefront_url}/{slug}). */
   public_url: string
+  /** 'menu' = menú digital de restaurante; 'store' = tienda online. */
+  kind: 'menu' | 'store'
+  /** La carta del restaurante ({public_url}/menu): lo que va en el QR. */
+  menu_url: string
   /** Publicados Y activos: los que de verdad se ven en la tienda. */
   published_products_count: number
 }
@@ -103,6 +107,8 @@ export type StoreSettingsPayload = Partial<
     | 'hero_image_url'
     | 'story_image_url'
     | 'public_url'
+    | 'kind'
+    | 'menu_url'
     | 'published_products_count'
     // Del perfil público del negocio (PUT /link-page): la API los ignora aquí.
     | 'whatsapp_number'

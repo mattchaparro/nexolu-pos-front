@@ -16,6 +16,12 @@ import type { Business } from '@/types/business'
  * desincronizar. El servidor sigue siendo la fuente de verdad real en cada
  * endpoint gateado por `feature:`, esto solo decide que UI mostrar.
  */
-export function hasFeature(business: Business | undefined | null, feature: string): boolean {
-  return business?.resolved_features?.[feature] === true
+export function hasFeature(
+  business: Business | undefined | null,
+  feature: string | readonly string[],
+): boolean {
+  // Con una lista basta cualquiera: la tienda online y el menú digital
+  // comparten pantallas (pedidos, fotos) aunque sean módulos distintos.
+  const features = typeof feature === 'string' ? [feature] : feature
+  return features.some((key) => business?.resolved_features?.[key] === true)
 }

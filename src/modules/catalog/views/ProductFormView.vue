@@ -73,7 +73,10 @@ const optionLibraryQuery = useOptionGroupLibrary(productOptionsEnabled)
 // Las fotos del catalogo existen para publicarlas en la tienda online, asi
 // que la seccion entera vive detras de ese modulo (las rutas de imagenes
 // tambien estan gateadas por `feature:online_store` en el backend).
-const onlineStoreEnabled = computed(() => hasFeature(business.value, 'online_store'))
+// El menú digital también muestra la foto de cada plato.
+const onlineStoreEnabled = computed(() =>
+  hasFeature(business.value, ['online_store', 'digital_menu']),
+)
 // Sin el módulo de Servicios no hay nada que elegir: todo lo que se crea es un
 // producto, así que el selector de tipo no se muestra. (Un servicio ya
 // existente se sigue editando como servicio: isService lo trae el producto.)

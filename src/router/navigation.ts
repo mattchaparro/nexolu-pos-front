@@ -89,6 +89,14 @@ export const adminNavItems: NavItem[] = [
     featureKey: 'reminders',
   },
   { label: 'Descuentos', icon: 'pi pi-tag', routeName: 'discounts.index', featureKey: 'discounts' },
+  // El restaurante tiene su menú digital; la tienda online es para quien
+  // vende productos. Son módulos distintos aunque compartan motor.
+  {
+    label: 'Menú digital',
+    icon: 'pi pi-book',
+    routeName: 'digital-menu.index',
+    featureKey: 'digital_menu',
+  },
   {
     label: 'Tienda online',
     icon: 'pi pi-shop',
@@ -102,7 +110,7 @@ export const adminNavItems: NavItem[] = [
     label: 'Pedidos online',
     icon: 'pi pi-inbox',
     routeName: 'online-store.orders',
-    featureKey: 'online_store',
+    featureKey: ['online_store', 'digital_menu'],
   },
   // Moderar es del dueño, como configurar la tienda: lo que se publica en
   // internet a nombre del negocio no lo decide quien esta en la caja.

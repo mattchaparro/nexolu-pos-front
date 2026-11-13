@@ -80,7 +80,19 @@ const steps = computed<SetupStep[]>(() => {
     },
   ]
 
-  if (hasFeature(business.value, 'online_store')) {
+  // Restaurante: su menú digital. Si no, la tienda online. Nunca los dos.
+  if (hasFeature(business.value, 'digital_menu')) {
+    list.push({
+      key: 'menu',
+      title: 'Publica tu menú digital',
+      hint: 'Tu carta con fotos y precios, con un QR para las mesas.',
+      action: 'Publicar',
+      done: current.has_store,
+      run: () => {
+        router.push({ name: 'digital-menu.index' })
+      },
+    })
+  } else if (hasFeature(business.value, 'online_store')) {
     list.push({
       key: 'store',
       title: 'Abre tu tienda online',

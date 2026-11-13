@@ -20,7 +20,8 @@ declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean
     requiresSuperAdmin?: boolean
-    requiresFeature?: string
+    /** Una bandera, o varias si basta cualquiera de ellas. */
+    requiresFeature?: string | string[]
     // Basta con tener uno de la lista - mismo criterio que el middleware
     // permission:x,y del backend (ver routes/api.php).
     requiresPermission?: string | string[]
@@ -326,6 +327,14 @@ const router = createRouter({
           },
         },
         {
+          // El menú digital del restaurante: su propia pantalla, con lenguaje
+          // de restaurante, aunque por dentro use el motor de la tienda.
+          path: 'menu-digital',
+          name: 'digital-menu.index',
+          component: () => import('@/modules/digital-menu/views/DigitalMenuView.vue'),
+          meta: { requiresFeature: 'digital_menu', requiresAdmin: true },
+        },
+        {
           // Solo el dueño/admin: abrir la tienda al publico no es una accion
           // de caja. El backend lo exige igual (middleware business-admin).
           path: 'tienda-online',
@@ -339,7 +348,7 @@ const router = createRouter({
           path: 'pedidos-online',
           name: 'online-store.orders',
           component: () => import('@/modules/online-store/views/OrdersView.vue'),
-          meta: { requiresFeature: 'online_store' },
+          meta: { requiresFeature: ['online_store', 'digital_menu'] },
         },
         {
           // Pantalla propia y no una modal: atender un pedido es leer al
@@ -349,7 +358,7 @@ const router = createRouter({
           path: 'pedidos-online/:id',
           name: 'online-store.order',
           component: () => import('@/modules/online-store/views/OrderDetailView.vue'),
-          meta: { requiresFeature: 'online_store' },
+          meta: { requiresFeature: ['online_store', 'digital_menu'] },
         },
         {
           // Moderar opiniones es decision editorial del negocio, no trabajo
@@ -789,7 +798,7 @@ router.beforeEach(async (to, from) => {
       })
       const allowed = to.meta.requiresPurchasesAccess
         ? business.can_access_purchases
-        : hasFeature(business, to.meta.requiresFeature as string)
+        : hasFeature(business, to.meta.requiresFeature as string | string[])
       if (!allowed) {
         useFlashStore().set('Este módulo no está disponible en tu plan.', 'warn')
         return { name: 'dashboard' }

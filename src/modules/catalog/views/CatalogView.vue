@@ -157,7 +157,13 @@ const {
 } = useProductMutations()
 
 // La columna de publicar solo tiene sentido si el negocio tiene tienda.
-const onlineStoreEnabled = computed(() => hasFeature(business.value, 'online_store'))
+// Publicar sirve igual para la tienda y para el menú digital del restaurante.
+const onlineStoreEnabled = computed(() =>
+  hasFeature(business.value, ['online_store', 'digital_menu']),
+)
+const publishTarget = computed(() =>
+  hasFeature(business.value, 'digital_menu') ? 'el menú' : 'la tienda online',
+)
 
 // Compartir el catalogo: la configuracion de la tienda es solo del admin
 // (business-admin en la API), asi que a un cajero no se le ofrece.
@@ -718,8 +724,8 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                           :disabled="togglePublishedMutation.isPending.value"
                           :title="
                             data.is_published
-                              ? 'Quitar de la tienda online'
-                              : 'Publicar en la tienda online'
+                              ? `Quitar de ${publishTarget}`
+                              : `Publicar en ${publishTarget}`
                           "
                           @click="togglePublished(data)"
                         >
@@ -728,7 +734,11 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
                             style="font-size: 1.125rem"
                           />
                           <span class="text-[11px] font-medium">{{
-                            data.is_published ? 'En tienda' : 'Publicar'
+                            data.is_published
+                              ? publishTarget === 'el menú'
+                                ? 'En menú'
+                                : 'En tienda'
+                              : 'Publicar'
                           }}</span>
                         </button>
                         <button

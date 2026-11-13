@@ -19,6 +19,8 @@ export interface LinkPagePublic {
   icon_url: string | null
   theme: { primary: string; surface: string; accent: string; font: string }
   has_store: boolean
+  /** 'menu' para restaurantes: el botón lleva a la carta. */
+  kind: 'menu' | 'store'
   has_whatsapp: boolean
   instagram_url: string | null
   tiktok_url: string | null

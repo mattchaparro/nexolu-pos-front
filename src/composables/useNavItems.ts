@@ -45,7 +45,9 @@ export function useNavItems() {
   // unica forma de enterarse seria entrar a la bandeja a mirar. Solo se
   // consulta si el negocio tiene el modulo - el endpoint responde 403 sin el.
   const hasOnlineStore = computed(() => hasFeature(business.value, 'online_store'))
-  const { data: pendingOrders } = usePendingOrderCount(hasOnlineStore)
+  // Los pedidos llegan por la tienda o por el menú digital del restaurante.
+  const hasOrders = computed(() => hasFeature(business.value, ['online_store', 'digital_menu']))
+  const { data: pendingOrders } = usePendingOrderCount(hasOrders)
 
   // Las opiniones por revisar solo las cuenta el dueño: su endpoint va detras
   // de `business-admin` y a un cajero le responderia 403.
