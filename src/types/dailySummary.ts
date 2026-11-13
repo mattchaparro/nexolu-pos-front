@@ -30,6 +30,9 @@ export interface RecentSale {
   is_non_revenue: boolean
   is_credit: boolean
   table_name: string | null
+  /** Pedido online del que salió la venta (su número), o nulo. */
+  order_number?: number | null
+  is_delivery?: boolean
   customer_name: string | null
   customer_phone: string | null
   user_name: string | null
@@ -116,6 +119,11 @@ export interface DailySummary {
   open_total: number
   total_all: number
   courtesy_total: number
+  /** Ya incluidos en el total: de dónde vino y qué parte no es del negocio. */
+  online_orders?: { count: number; total: number }
+  deliveries?: { count: number; fees_total: number }
+  service_charge_total?: number
+  ipoconsumo_total?: number
   total_discounts_day: number
   top_products: TopProduct[]
   recent_sales: RecentSale[]

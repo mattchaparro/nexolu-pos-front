@@ -149,6 +149,39 @@ function paymentMethodLabel(id: string): string {
   return paymentMethodLabelMap.value[id] ?? business.value?.payment_method_labels?.[id] ?? id
 }
 
+const incomeDetails = computed(() => {
+  const data = summaryQuery.data.value
+  if (!data) {
+    return []
+  }
+  const details: { key: string; icon: string; label: string; value: string }[] = []
+  if ((data.online_orders?.count ?? 0) > 0) {
+    const count = data.online_orders!.count
+    details.push({
+      key: 'online',
+      icon: 'pi pi-globe',
+      label: count === 1 ? '1 pedido online' : `${count} pedidos online`,
+      value: formatCop(data.online_orders!.total),
+    })
+  }
+  if ((data.deliveries?.count ?? 0) > 0) {
+    const count = data.deliveries!.count
+    details.push({
+      key: 'deliveries',
+      icon: 'pi pi-truck',
+      label: count === 1 ? '1 domicilio · envíos' : `${count} domicilios · envíos`,
+      value: formatCop(data.deliveries!.fees_total),
+    })
+  }
+  if ((data.service_charge_total ?? 0) > 0) {
+    details.push({ key: 'tips', icon: 'pi pi-heart', label: 'Propinas (del equipo)', value: formatCop(data.service_charge_total!) })
+  }
+  if ((data.ipoconsumo_total ?? 0) > 0) {
+    details.push({ key: 'ipoconsumo', icon: 'pi pi-percentage', label: 'Impoconsumo', value: formatCop(data.ipoconsumo_total!) })
+  }
+  return details
+})
+
 const closedSales = computed<RecentSale[]>(() => (summaryQuery.data.value?.recent_sales ?? []).filter((sale) => sale.status === 'closed'))
 
 // Filas de transaccion mapeadas a una forma comun (ver types.ts) para poder
@@ -170,6 +203,12 @@ function saleRow(sale: RecentSale): TransactionRow {
   }
   if (sale.is_credit) {
     flags.push({ label: 'Fiado', badgeClass: 'bg-amber-50 text-amber-600' })
+  }
+  if (sale.order_number) {
+    flags.push({ label: `Pedido online #${sale.order_number}`, badgeClass: 'bg-indigo-50 text-indigo-700' })
+  }
+  if (sale.is_delivery) {
+    flags.push({ label: 'Domicilio', badgeClass: 'bg-slate-100 text-slate-600' })
   }
 
   return {
@@ -326,6 +365,21 @@ function openReceipt(row: TransactionRow): void {
         <NxStatCard label="Gastos" :value="formatCop(summaryQuery.data.value.total_expenses)" icon="pi pi-money-bill" />
         <NxStatCard label="Neto" :value="formatCop(summaryQuery.data.value.net)" icon="pi pi-wallet" />
         <NxStatCard label="Cortesías" :value="formatCop(summaryQuery.data.value.courtesy_total)" icon="pi pi-gift" />
+      </div>
+
+      <!-- Lo que los ingresos ya incluyen, visto aparte: cuánto vino de
+           pedidos online, cuánto fue envío, y la propina (del equipo) y el
+           impoconsumo (del Estado), que no son plata del negocio. -->
+      <div v-if="incomeDetails.length > 0" class="flex flex-wrap gap-2">
+        <div
+          v-for="detail in incomeDetails"
+          :key="detail.key"
+          class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+        >
+          <i :class="detail.icon" class="text-slate-400" />
+          <span class="text-slate-500">{{ detail.label }}</span>
+          <span class="font-semibold text-slate-900">{{ detail.value }}</span>
+        </div>
       </div>
 
       <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
