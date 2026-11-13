@@ -66,6 +66,7 @@ const deliveryEstimate = ref('')
 // toda la tienda.
 const shippingNote = ref('')
 const pickupEnabled = ref(false)
+const menuMode = ref(false)
 const fulfillmentBranchId = ref<number | null>(null)
 const orderEmailEnabled = ref(true)
 const orderEmail = ref('')
@@ -115,6 +116,7 @@ watch(
     deliveryEstimate.value = value.delivery_estimate ?? ''
     shippingNote.value = value.shipping_note ?? ''
     pickupEnabled.value = value.pickup_enabled
+    menuMode.value = value.menu_mode
     fulfillmentBranchId.value = value.fulfillment_branch_id
     orderEmailEnabled.value = value.order_email_enabled
     orderEmail.value = value.order_email ?? ''
@@ -176,6 +178,7 @@ function saveStore(): Promise<void> {
       delivery_estimate: deliveryEstimate.value.trim() || null,
       shipping_note: shippingNote.value.trim() || null,
       pickup_enabled: pickupEnabled.value,
+      menu_mode: menuMode.value,
       ...(hasMultipleBranches.value ? { fulfillment_branch_id: fulfillmentBranchId.value } : {}),
       order_email_enabled: orderEmailEnabled.value,
       order_email: orderEmail.value.trim() || null,
@@ -297,6 +300,21 @@ const shareOpen = ref(false)
               <!-- Nombre, logo, WhatsApp y redes: el perfil público del negocio. Se
                    edita en un solo lugar y la tienda lo lee de ahí. -->
               <PublicProfileCard />
+
+              <!-- Un restaurante puede querer solo mostrar la carta (QR en las mesas)
+                   y atender por su cuenta, sin recibir pedidos por internet. -->
+              <div class="rounded-xl border border-slate-200 bg-white p-4">
+                <p class="mb-1 text-sm font-semibold text-slate-700">Pedidos</p>
+                <p class="mb-3 text-[11px] text-slate-400">
+                  Tus clientes ven tus productos, fotos y precios, pero no pueden pedir por aquí.
+                  Ideal para el QR de las mesas.
+                </p>
+                <NxToggleButton
+                  v-model="menuMode"
+                  label="Solo mostrar el menú (sin pedidos)"
+                  icon="pi pi-book"
+                />
+              </div>
 
               <div class="rounded-xl border border-slate-200 bg-white p-4">
                 <p class="mb-3 text-sm font-semibold text-slate-700">Envío y dirección</p>

@@ -85,6 +85,18 @@ function ticketLabel(ticket: KitchenTicket): string {
             <span v-if="card.ticket.is_delivery" class="text-xs font-semibold text-fuchsia-600">Domicilio</span>
           </div>
 
+          <!-- La nota va ANTES de los productos: es lo que no se puede pasar por alto
+               al cocinar (alergias, "sin cebolla") o al despachar (dirección). -->
+          <p
+            v-if="card.ticket.notes"
+            class="mb-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-800"
+          >
+            <span class="font-semibold">Nota:</span> {{ card.ticket.notes }}
+          </p>
+          <p v-if="card.ticket.customer_phone && card.ticket.is_delivery" class="mb-2 text-xs text-slate-500">
+            <i class="pi pi-phone mr-1 text-[10px]" />{{ card.ticket.customer_phone }}
+          </p>
+
           <ul class="mb-3 flex flex-col gap-1">
             <li v-for="item in card.items" :key="item.id" class="text-sm text-slate-700">
               <div class="flex items-center gap-1.5">

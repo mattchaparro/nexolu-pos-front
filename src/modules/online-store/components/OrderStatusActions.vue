@@ -9,6 +9,7 @@ import { useBusiness } from '@/composables/useBusiness'
 import type { Order, OrderStatus } from '@/types/order'
 import { NxButton, NxSelect, NxTextarea } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
+import { hasFeature } from '@/utils/hasFeature'
 import { isCreditPaymentMethodId } from '@/utils/paymentMethod'
 
 import { useOrderMutations } from '../composables/useOrders'
@@ -37,9 +38,23 @@ const NEEDS_CONFIRMATION: Partial<Record<OrderStatus, string>> = {
 }
 
 const pendingStatus = ref<OrderStatus | null>(null)
-const confirmationText = computed(() =>
-  pendingStatus.value ? NEEDS_CONFIRMATION[pendingStatus.value] : null,
+
+// Restaurantes con comandera: confirmar no cierra una venta, abre una cuenta
+// que cocina ve al instante y se cobra al entregar (como cualquier domicilio).
+// Un pedido ya pagado en línea sigue cerrándose como venta.
+const sendsToKitchen = computed(
+  () => hasFeature(business.value, 'kitchen_board') && !props.order.paid_at,
 )
+
+const confirmationText = computed(() => {
+  if (!pendingStatus.value) {
+    return null
+  }
+  if (pendingStatus.value === 'confirmed' && sendsToKitchen.value) {
+    return 'El pedido pasa a la comandera como una cuenta abierta y se descuenta el inventario. Lo cobras al entregarlo, desde Cuentas abiertas.'
+  }
+  return NEEDS_CONFIRMATION[pendingStatus.value]
+})
 
 // Con qué le pagaron. Cuando el pago no entró por la pasarela se coordina por
 // fuera (transferencia, Nequi, contraentrega) y solo el comerciante sabe cuál
@@ -50,6 +65,13 @@ const paymentMethods = computed(() =>
   (business.value?.payment_methods ?? []).filter((method) => !isCreditPaymentMethodId(method.id)),
 )
 const paymentMethod = ref<string | null>(null)
+
+// "Facturar" no aplica cuando el pedido va a cocina: queda como cuenta abierta.
+function actionLabel(status: OrderStatus): string {
+  return status === 'confirmed' && sendsToKitchen.value
+    ? 'Confirmar y enviar a cocina'
+    : statusMeta(status).action
+}
 
 function requestMove(status: OrderStatus): void {
   errorMessage.value = null
@@ -68,7 +90,10 @@ async function moveTo(status: OrderStatus): Promise<void> {
       id: props.order.id,
       status,
       note: note.value.trim() || undefined,
-      paymentMethod: status === 'confirmed' ? (paymentMethod.value ?? undefined) : undefined,
+      paymentMethod:
+        status === 'confirmed' && !sendsToKitchen.value
+          ? (paymentMethod.value ?? undefined)
+          : undefined,
     })
     note.value = ''
     pendingStatus.value = null
@@ -87,7 +112,7 @@ async function moveTo(status: OrderStatus): Promise<void> {
     <!-- El paso de confirmación reemplaza a los botones en vez de sumarse,
          para que no queden dos acciones distintas pidiendo el mismo clic. -->
     <div v-if="pendingStatus" class="rounded-xl border border-amber-200 bg-amber-50 p-3">
-      <p class="text-sm font-semibold text-slate-900">{{ statusMeta(pendingStatus).action }}</p>
+      <p class="text-sm font-semibold text-slate-900">{{ actionLabel(pendingStatus) }}</p>
       <p class="mt-0.5 text-sm text-slate-600">{{ confirmationText }}</p>
 
       <!-- Ya pagó por la pasarela: preguntar con qué pagó sería inventar un
@@ -100,7 +125,12 @@ async function moveTo(status: OrderStatus): Promise<void> {
       </p>
 
       <NxSelect
-        v-if="pendingStatus === 'confirmed' && !order.paid_at && paymentMethods.length > 0"
+        v-if="
+          pendingStatus === 'confirmed' &&
+          !order.paid_at &&
+          !sendsToKitchen &&
+          paymentMethods.length > 0
+        "
         v-model="paymentMethod"
         class="mt-3"
         :options="paymentMethods"
@@ -137,7 +167,7 @@ async function moveTo(status: OrderStatus): Promise<void> {
           :disabled="statusMutation.isPending.value"
           @click="requestMove(next)"
         >
-          {{ statusMeta(next).action }}
+          {{ actionLabel(next) }}
         </NxButton>
       </div>
     </template>

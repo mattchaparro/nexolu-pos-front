@@ -55,6 +55,8 @@ export interface StoreSettings {
   delivery_estimate: string | null
   min_order_amount: number
   pickup_enabled: boolean
+  /** Solo menú: la tienda muestra la carta pero no recibe pedidos. */
+  menu_mode: boolean
   /** Clics en el botón de WhatsApp de la tienda, últimos 30 días. */
   whatsapp_clicks_30d: number
   order_email_enabled: boolean

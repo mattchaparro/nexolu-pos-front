@@ -17,6 +17,9 @@ export interface KitchenTicket {
   id: number
   table_name: string | null
   customer_name: string | null
+  customer_phone: string | null
+  /** Nota de la cuenta: alergias, "sin cebolla", dirección del domicilio... */
+  notes: string | null
   is_delivery: boolean
   kitchen_status: KitchenStatus
   created_at: string
