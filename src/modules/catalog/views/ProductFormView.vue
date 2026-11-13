@@ -119,6 +119,8 @@ const isActive = ref(true)
 const categoryId = ref<number | null>(null)
 const ingredients = ref<ProductRecipeLineInput[]>([])
 const variants = ref<ProductVariantInput[]>([])
+// Un solo precio o por variaciones: ver «Un solo precio…» más abajo.
+const priceMode = ref<'single' | 'variants'>('single')
 const optionGroups = ref<ProductOptionGroupInput[]>([])
 const components = ref<ProductComponentInput[]>([])
 const fieldErrors = ref<Record<string, string>>({})
@@ -448,7 +450,9 @@ watch(
 // y las variaciones al final: al marcar una, el precio de arriba se ponía
 // gris sin explicar por qué. Ahora el comerciante dice primero cómo vende el
 // producto y solo ve los campos de ese modo.
-const priceMode = ref<'single' | 'variants'>('single')
+// (`priceMode` se declara más arriba, junto a las demás: el watch que carga el
+// producto la escribe al montar, y declararla después daba «Cannot access
+// before initialization» al abrir un producto ya en caché.)
 
 const canHaveVariants = computed(
   () =>
