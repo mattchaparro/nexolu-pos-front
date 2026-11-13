@@ -8,6 +8,7 @@ import { queryClient } from '@/services/query/queryClient'
 import { useAuthStore } from '@/stores/auth.store'
 import { useFlashStore } from '@/stores/flash.store'
 import type { User } from '@/types/auth'
+import { isCourierOnly } from '@/utils/courier'
 import { hasFeature } from '@/utils/hasFeature'
 
 // Meta de negocio (no de vue-router): que feature flag y/o permiso
@@ -52,7 +53,11 @@ export function homeRouteFor(user: User | null): { name: string } {
   // Ahora que el tablero de plataforma existe, el super admin entra ahi y no
   // al listado de negocios: es el primer item del menu y lo unico que
   // responde "como va todo" de un vistazo.
-  return { name: user?.roles?.includes('superadmin') ? 'superadmin.dashboard' : 'dashboard' }
+  if (user?.roles?.includes('superadmin')) {
+    return { name: 'superadmin.dashboard' }
+  }
+  // El domiciliario no tiene nada que hacer en Inicio: su pantalla es esa.
+  return { name: isCourierOnly(user) ? 'deliveries.index' : 'dashboard' }
 }
 
 // Permiso propio del modulo, o el de citas que era el unico que lo abria
@@ -752,6 +757,11 @@ router.beforeEach(async (to, from) => {
 
   if (to.name === 'login' && auth.isAuthenticated) {
     return homeRouteFor(auth.user)
+  }
+
+  // Tocar el logo o "Inicio" lo devuelve a Domicilios, no a un tablero vacío.
+  if (to.name === 'dashboard' && isCourierOnly(auth.user)) {
+    return { name: 'deliveries.index' }
   }
 
   // Vencido y sin dias de gracia: solo se puede pagar. El API ya lo hace

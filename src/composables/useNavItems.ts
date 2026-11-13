@@ -7,7 +7,9 @@ import { hasFeature } from '@/utils/hasFeature'
 import { adminNavItems } from '@/router/navigation'
 import type { NavItem } from '@/types/navigation'
 
+import { useReadyDeliveryCount } from '@/modules/deliveries/composables/useDeliveries'
 import { usePendingOrderCount } from '@/modules/online-store/composables/useOrders'
+import { DELIVERIES_PERMISSION, isCourierOnly } from '@/utils/courier'
 import { usePendingReviewCount } from '@/modules/online-store/composables/useReviews'
 
 import { useBusiness } from './useBusiness'
@@ -55,6 +57,13 @@ export function useNavItems() {
     computed(() => hasOnlineStore.value && isAdmin.value),
   )
 
+  // Domicilios listos para llevar: el contador avisa a quien los hace (o al
+  // dueño) sin tener que entrar a mirar.
+  const seesDeliveries = computed(
+    () => business.value?.delivery_enabled === true && (isAdmin.value || hasPermission(DELIVERIES_PERMISSION)),
+  )
+  const readyDeliveries = useReadyDeliveryCount(seesDeliveries)
+
   function isRouteAccessible(routeName: string): boolean {
     const route = router.getRoutes().find((r) => r.name === routeName)
     if (!route) {
@@ -82,7 +91,9 @@ export function useNavItems() {
           (!item.routeName || isRouteAccessible(item.routeName)) &&
           // Domicilios no es un modulo contratado sino la configuracion de
           // domicilio del negocio.
-          (item.routeName !== 'deliveries.index' || business.value?.delivery_enabled === true),
+          (item.routeName !== 'deliveries.index' || business.value?.delivery_enabled === true) &&
+          // Quien solo hace domicilios ve solo su pantalla.
+          (!isCourierOnly(auth.user) || item.routeName === 'deliveries.index'),
       )
       .map((item) => {
         if (item.routeName === 'online-store.orders' && (pendingOrders.value ?? 0) > 0) {
@@ -90,6 +101,9 @@ export function useNavItems() {
         }
         if (item.routeName === 'online-store.reviews' && (pendingReviews.value ?? 0) > 0) {
           return { ...item, badge: pendingReviews.value }
+        }
+        if (item.routeName === 'deliveries.index' && readyDeliveries.value > 0) {
+          return { ...item, badge: readyDeliveries.value }
         }
         return item
       }),
