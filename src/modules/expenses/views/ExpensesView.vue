@@ -19,6 +19,7 @@ import { useExpenses } from '../composables/useExpenses'
 import { useExpenseTypes } from '../composables/useExpenseTypes'
 import { useFixedExpenseTemplateMutations } from '../composables/useFixedExpenseTemplateMutations'
 import { useFixedExpenseTemplates } from '../composables/useFixedExpenseTemplates'
+import { confirmAction } from '@/composables/useConfirm'
 
 const MONTH_LABELS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 const MONTH_OPTIONS = MONTH_LABELS.map((label, i) => ({ label, value: i + 1 }))
@@ -112,14 +113,14 @@ function openEditExpense(expense: Expense): void {
 }
 
 async function removeExpense(expense: Expense): Promise<void> {
-  if (!window.confirm(`¿Eliminar gasto "${expense.description}"?`)) {
+  if (!await confirmAction(`¿Eliminar gasto "${expense.description}"?`)) {
     return
   }
   try {
     await deleteMutation.mutateAsync(expense.id)
     notify('Gasto eliminado')
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos eliminar el gasto.'))
+    notify(extractErrorMessage(error, 'No pudimos eliminar el gasto.'), 'error')
   }
 }
 
@@ -173,19 +174,19 @@ async function toggleReminder(template: FixedExpenseTemplate): Promise<void> {
     const result = await toggleReminderMutation.mutateAsync(template.id)
     notify(result.active ? 'Recordatorio activado' : 'Recordatorio desactivado')
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos cambiar el recordatorio.'))
+    notify(extractErrorMessage(error, 'No pudimos cambiar el recordatorio.'), 'error')
   }
 }
 
 async function removeTemplate(template: FixedExpenseTemplate): Promise<void> {
-  if (!window.confirm(`¿Eliminar "${template.name}"?`)) {
+  if (!await confirmAction(`¿Eliminar "${template.name}"?`)) {
     return
   }
   try {
     await deleteTemplateMutation.mutateAsync(template.id)
     notify('Plantilla eliminada')
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos eliminar la plantilla.'))
+    notify(extractErrorMessage(error, 'No pudimos eliminar la plantilla.'), 'error')
   }
 }
 </script>

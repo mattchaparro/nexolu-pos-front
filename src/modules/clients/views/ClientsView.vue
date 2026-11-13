@@ -12,6 +12,10 @@ import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import ClientFormModal from '../components/ClientFormModal.vue'
 import { useClientMutations } from '../composables/useClientMutations'
 import { useClients } from '../composables/useClients'
+import { confirmAction } from '@/composables/useConfirm'
+import { useSystemAlert } from '@/composables/useSystemAlert'
+
+const { notify } = useSystemAlert()
 
 const searchInput = ref('')
 const search = ref('')
@@ -48,13 +52,13 @@ function openEditClient(client: Client): void {
 }
 
 async function removeClient(client: Client): Promise<void> {
-  if (!window.confirm(`¿Eliminar "${client.name}"?`)) {
+  if (!await confirmAction(`¿Eliminar "${client.name}"?`)) {
     return
   }
   try {
     await deleteMutation.mutateAsync(client.id)
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos eliminar el cliente.'))
+    notify(extractErrorMessage(error, 'No pudimos eliminar el cliente.'), 'error')
   }
 }
 </script>

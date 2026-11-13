@@ -58,6 +58,10 @@ import { useIngredients } from '../composables/useIngredients'
 import { useProductMutations } from '../composables/useProductMutations'
 import { useProducts } from '../composables/useProducts'
 import { ingredientStockBadge, productStockBadge } from '../support/stockBadge'
+import { confirmAction } from '@/composables/useConfirm'
+import { useSystemAlert } from '@/composables/useSystemAlert'
+
+const { notify } = useSystemAlert()
 
 const router = useRouter()
 const { data: business } = useBusiness()
@@ -182,13 +186,13 @@ const productMeta = computed(() => productsQuery.data.value?.meta)
 const productsSummaryQuery = useProductsSummary()
 
 async function removeProduct(product: Product): Promise<void> {
-  if (!window.confirm(`¿Eliminar "${product.name}"?`)) {
+  if (!await confirmAction(`¿Eliminar "${product.name}"?`)) {
     return
   }
   try {
     await deleteProductMutation.mutateAsync(product.id)
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos eliminar el producto.'))
+    notify(extractErrorMessage(error, 'No pudimos eliminar el producto.'), 'error')
   }
 }
 
@@ -243,7 +247,7 @@ async function togglePublished(product: Product): Promise<void> {
   try {
     await togglePublishedMutation.mutateAsync({ id: product.id, isPublished: product.is_published })
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos cambiar la publicación del producto.'))
+    notify(extractErrorMessage(error, 'No pudimos cambiar la publicación del producto.'), 'error')
   }
 }
 
@@ -251,7 +255,7 @@ async function toggleProductActive(product: Product): Promise<void> {
   try {
     await toggleProductActiveMutation.mutateAsync({ id: product.id, isActive: product.is_active })
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos cambiar el estado del producto.'))
+    notify(extractErrorMessage(error, 'No pudimos cambiar el estado del producto.'), 'error')
   }
 }
 
@@ -259,7 +263,7 @@ async function toggleVariantActive(product: Product, variant: ProductVariant): P
   try {
     await toggleVariantMutation.mutateAsync({ productId: product.id, variantId: variant.id })
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos cambiar el estado de la variación.'))
+    notify(extractErrorMessage(error, 'No pudimos cambiar el estado de la variación.'), 'error')
   }
 }
 
@@ -276,7 +280,7 @@ async function duplicateProductRow(product: Product): Promise<void> {
   try {
     await duplicateProductMutation.mutateAsync(product.id)
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos duplicar el producto.'))
+    notify(extractErrorMessage(error, 'No pudimos duplicar el producto.'), 'error')
   }
 }
 
@@ -338,13 +342,13 @@ function openEditIngredient(ingredient: Ingredient): void {
 }
 
 async function removeIngredient(ingredient: Ingredient): Promise<void> {
-  if (!window.confirm(`¿Eliminar "${ingredient.name}"?`)) {
+  if (!await confirmAction(`¿Eliminar "${ingredient.name}"?`)) {
     return
   }
   try {
     await deleteIngredientMutation.mutateAsync(ingredient.id)
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos eliminar el insumo.'))
+    notify(extractErrorMessage(error, 'No pudimos eliminar el insumo.'), 'error')
   }
 }
 

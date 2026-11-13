@@ -7,6 +7,10 @@ import type { ProductCategory } from '@/types/product'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
 import { useCategoryMutations } from '../composables/useCategoryMutations'
+import { confirmAction } from '@/composables/useConfirm'
+import { useSystemAlert } from '@/composables/useSystemAlert'
+
+const { notify } = useSystemAlert()
 
 const props = defineProps<{ categories: ProductCategory[]; canEdit?: boolean }>()
 
@@ -23,13 +27,13 @@ const grouped = computed(() => {
 })
 
 async function remove(category: ProductCategory): Promise<void> {
-  if (!window.confirm(`¿Eliminar la categoría "${category.name}"?`)) {
+  if (!await confirmAction(`¿Eliminar la categoría "${category.name}"?`)) {
     return
   }
   try {
     await deleteMutation.mutateAsync(category.id)
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos eliminar la categoría.'))
+    notify(extractErrorMessage(error, 'No pudimos eliminar la categoría.'), 'error')
   }
 }
 </script>

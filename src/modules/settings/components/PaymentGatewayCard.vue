@@ -13,6 +13,7 @@ import TerminalSyncPanel from './TerminalSyncPanel.vue'
 
 import { usePaymentGateways } from '../composables/usePaymentGateways'
 import { testPaymentGateway } from '../services/paymentGatewayService'
+import { confirmAction } from '@/composables/useConfirm'
 
 const props = defineProps<{ provider: PaymentGatewayProvider }>()
 
@@ -205,7 +206,7 @@ async function connect(): Promise<void> {
 }
 
 async function disconnect(): Promise<void> {
-  if (!window.confirm(`¿Desconectar ${meta.value.name}? Dejarás de poder cobrar en línea.`)) {
+  if (!await confirmAction(`¿Desconectar ${meta.value.name}? Dejarás de poder cobrar en línea.`)) {
     return
   }
   try {

@@ -18,11 +18,15 @@ import {
   useCashClosingPreview,
   usePendingClosingDates,
 } from '../composables/useCashClosing'
+import { usePermissions } from '@/composables/usePermissions'
+import { useAuthStore } from '@/stores/auth.store'
+
 import { useCashClosingMutations } from '../composables/useCashClosingMutations'
 import { useCashDifference } from '../composables/useCashDifference'
 import DailySummaryDetailModal from './DailySummaryDetailModal.vue'
 import PaymentBreakdownList from './PaymentBreakdownList.vue'
 import PendingDatesQueue from './PendingDatesQueue.vue'
+import { confirmAction } from '@/composables/useConfirm'
 
 const pendingDatesQuery = usePendingClosingDates()
 
@@ -114,6 +118,15 @@ const { notify } = useSystemAlert()
 const { storeMutation } = useCashClosingMutations()
 
 const detailModalOpen = ref(false)
+// El detalle del día sale de /reports/sales/daily, que pide su propio permiso
+// (reports.daily_summary), distinto del de cerrar caja. Sin él no se ofrece
+// el botón, y el modal solo se monta al abrirlo: antes consultaba al cargar
+// la pantalla y a quien no tenía ese permiso le salía "No tienes permiso".
+const auth = useAuthStore()
+const { hasPermission } = usePermissions()
+const canSeeDayDetail = computed(
+  () => auth.user?.roles?.includes('admin') === true || hasPermission('reports.daily_summary'),
+)
 
 async function submit(): Promise<void> {
   if (actualCash.value === null || baseForNextDay.value === null) {
@@ -122,7 +135,7 @@ async function submit(): Promise<void> {
   formError.value = null
   if (
     isClosingToday.value &&
-    !window.confirm(
+    !await confirmAction(
       '¿Seguro que quieres cerrar la caja de HOY?\n\n' +
         'Después del cierre nadie podrá abrir turno hoy y lo que se siga vendiendo no quedará en este cierre. Si solo querías cerrar días anteriores, cancela y elige esa fecha.',
     )
@@ -173,6 +186,7 @@ async function submit(): Promise<void> {
       </p>
       <p class="text-xs text-slate-400">Consúltalo en el historial más abajo.</p>
       <button
+        v-if="canSeeDayDetail"
         type="button"
         class="mt-3 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
         @click="detailModalOpen = true"
@@ -211,6 +225,7 @@ async function submit(): Promise<void> {
         <div class="mb-3 flex items-center justify-between gap-2">
           <h3 class="text-sm font-semibold text-slate-700">Ingresos por medio de pago</h3>
           <button
+            v-if="canSeeDayDetail"
             type="button"
             class="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
             @click="detailModalOpen = true"
@@ -365,6 +380,7 @@ async function submit(): Promise<void> {
     </template>
 
     <DailySummaryDetailModal
+      v-if="detailModalOpen"
       v-model="detailModalOpen"
       :date="selectedDate"
       :cash="existingClosing ?? previewQuery.data.value?.totals ?? null"

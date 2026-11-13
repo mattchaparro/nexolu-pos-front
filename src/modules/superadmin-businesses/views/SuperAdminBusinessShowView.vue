@@ -21,6 +21,7 @@ import { useBusiness } from '../composables/useBusiness'
 import { useBusinessMutations } from '../composables/useBusinessMutations'
 import { useImpersonate } from '../composables/useImpersonate'
 import { useUserMutations } from '../composables/useUserMutations'
+import { confirmAction } from '@/composables/useConfirm'
 
 const route = useRoute()
 const router = useRouter()
@@ -125,7 +126,7 @@ async function saveFeatureFlags(): Promise<void> {
     })
     notify('Features actualizados.')
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos guardar los features.'))
+    notify(extractErrorMessage(error, 'No pudimos guardar los features.'), 'error')
   }
 }
 
@@ -138,13 +139,13 @@ function discardFeatureChanges(): void {
 const { impersonateMutation } = useImpersonate()
 
 async function impersonate(member: SuperAdminBusinessTeamMember): Promise<void> {
-  if (!window.confirm(`¿Entrar como "${member.name}"? Vas a ver el negocio tal como lo ve este usuario.`)) {
+  if (!await confirmAction(`¿Entrar como "${member.name}"? Vas a ver el negocio tal como lo ve este usuario.`)) {
     return
   }
   try {
     await impersonateMutation.mutateAsync(member.id)
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos impersonar a este usuario.'))
+    notify(extractErrorMessage(error, 'No pudimos impersonar a este usuario.'), 'error')
   }
 }
 
@@ -155,25 +156,25 @@ async function toggleTeamMember(member: SuperAdminBusinessTeamMember): Promise<v
     return
   }
   const verb = member.is_active ? 'desactivar' : 'activar'
-  if (!window.confirm(`¿Seguro que quieres ${verb} a "${member.name}"?`)) {
+  if (!await confirmAction(`¿Seguro que quieres ${verb} a "${member.name}"?`)) {
     return
   }
   try {
     await toggleUserMutation.mutateAsync({ userId: member.id, businessId: detail.value.business.id })
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos cambiar el estado de este usuario.'))
+    notify(extractErrorMessage(error, 'No pudimos cambiar el estado de este usuario.'), 'error')
   }
 }
 
 async function resetTeamMemberPassword(member: SuperAdminBusinessTeamMember): Promise<void> {
-  if (!window.confirm(`¿Generar una contraseña nueva para "${member.name}"? La actual dejará de servir.`)) {
+  if (!await confirmAction(`¿Generar una contraseña nueva para "${member.name}"? La actual dejará de servir.`)) {
     return
   }
   try {
     const password = await resetPasswordMutation.mutateAsync(member.id)
     resetPasswordResult.value = { name: member.name, password }
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos restablecer la contraseña.'))
+    notify(extractErrorMessage(error, 'No pudimos restablecer la contraseña.'), 'error')
   }
 }
 
@@ -185,7 +186,7 @@ async function copyPassword(): Promise<void> {
     await navigator.clipboard.writeText(resetPasswordResult.value.password)
     notify('Contraseña copiada.')
   } catch {
-    window.alert('No pudimos copiarla automáticamente - selecciónala a mano.')
+    notify('No pudimos copiarla automáticamente - selecciónala a mano.', 'error')
   }
 }
 

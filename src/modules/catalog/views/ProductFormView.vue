@@ -45,6 +45,7 @@ import { useProductAttributes } from '../composables/useProductAttributes'
 import { useProductMutations } from '../composables/useProductMutations'
 import { uploadProductImage } from '../services/productImageService'
 import { variantComboKey, variantComboLabel } from '../support/variantCombo'
+import { confirmAction } from '@/composables/useConfirm'
 
 const route = useRoute()
 const router = useRouter()
@@ -464,12 +465,12 @@ watch(canHaveVariants, (allowed) => {
   }
 })
 
-function setPriceMode(mode: 'single' | 'variants'): void {
+async function setPriceMode(mode: 'single' | 'variants'): Promise<void> {
   if (mode === priceMode.value) {
     return
   }
   if (mode === 'single' && variants.value.length > 0) {
-    const ok = window.confirm(
+    const ok = await confirmAction(
       `Se quitarán las ${variants.value.length} combinaciones que marcaste. ¿Pasar a un solo precio?`,
     )
     if (!ok) {

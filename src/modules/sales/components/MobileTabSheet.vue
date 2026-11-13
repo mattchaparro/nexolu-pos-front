@@ -57,7 +57,6 @@ const newTabIsDelivery = defineModel<boolean>('newTabIsDelivery', { default: fal
         v-model:new-tab-name="newTabName"
         v-model:new-tab-phone="newTabPhone"
         v-model:new-tab-notes="newTabNotes"
-        @tab-updated="emit('tab-updated', $event)"
         v-model:new-tab-is-delivery="newTabIsDelivery"
         :active-sale="activeSale"
         :pending-table="pendingTable"
@@ -68,6 +67,7 @@ const newTabIsDelivery = defineModel<boolean>('newTabIsDelivery', { default: fal
         :draft-items="draftItems"
         :has-draft-changes="hasDraftChanges"
         :draft-total-delta="draftTotalDelta"
+        @tab-updated="emit('tab-updated', $event)"
         :item-discounts="itemDiscounts"
         @cancel="
           emit('cancel');

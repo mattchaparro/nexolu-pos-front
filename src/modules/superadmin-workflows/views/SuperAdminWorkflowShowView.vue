@@ -20,6 +20,7 @@ import ServiceWorkflowStageFormModal from '../components/ServiceWorkflowStageFor
 import { useBusinessSearch } from '../composables/useBusinessSearch'
 import { useServiceWorkflow } from '../composables/useServiceWorkflow'
 import { useServiceWorkflowMutations } from '../composables/useServiceWorkflowMutations'
+import { confirmAction } from '@/composables/useConfirm'
 
 const route = useRoute()
 const router = useRouter()
@@ -48,13 +49,13 @@ function openEditStage(stage: SuperAdminServiceWorkflowStage): void {
 }
 
 async function removeStage(stage: SuperAdminServiceWorkflowStage): Promise<void> {
-  if (!workflow.value || !window.confirm(`¿Eliminar la etapa "${stage.label}"?`)) {
+  if (!workflow.value || !await confirmAction(`¿Eliminar la etapa "${stage.label}"?`)) {
     return
   }
   try {
     await deleteStageMutation.mutateAsync({ workflowId: workflow.value.id, stageId: stage.id })
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos eliminar la etapa.'))
+    notify(extractErrorMessage(error, 'No pudimos eliminar la etapa.'), 'error')
   }
 }
 
@@ -73,7 +74,7 @@ async function moveStage(stage: SuperAdminServiceWorkflowStage, direction: -1 | 
   try {
     await reorderStagesMutation.mutateAsync({ workflowId: workflow.value.id, ids: stages.map((s) => s.id) })
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos reordenar las etapas.'))
+    notify(extractErrorMessage(error, 'No pudimos reordenar las etapas.'), 'error')
   }
 }
 

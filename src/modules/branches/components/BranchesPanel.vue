@@ -17,6 +17,7 @@ import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import BranchFormModal from '../components/BranchFormModal.vue'
 import { useBranchMutations } from '../composables/useBranchMutations'
 import { useManagedBranches } from '../composables/useManagedBranches'
+import { confirmAction } from '@/composables/useConfirm'
 
 const { query, branches } = useManagedBranches()
 const { data: business } = useBusiness()
@@ -40,7 +41,7 @@ function openEdit(branch: Branch): void {
 
 async function deactivate(branch: Branch): Promise<void> {
   if (
-    !window.confirm(`¿Desactivar "${branch.name}"? Dejará de aparecer para vender y abrir caja.`)
+    !await confirmAction(`¿Desactivar "${branch.name}"? Dejará de aparecer para vender y abrir caja.`)
   ) {
     return
   }

@@ -18,6 +18,7 @@ import { extractFieldErrors } from '@/utils/extractFieldErrors'
 
 import { useLinkPage } from '../composables/useLinkPage'
 import type { BioLink } from '../services/linkPageService'
+import { confirmAction } from '@/composables/useConfirm'
 
 /** Igual que BusinessStoreSettings::MAX_BIO_LINKS en la API. */
 const MAX_LINKS = 8
@@ -66,7 +67,7 @@ async function activate(): Promise<void> {
 
 async function deactivate(): Promise<void> {
   if (
-    !window.confirm('¿Despublicar tu página de enlaces? Quien tenga el enlace verá que no existe.')
+    !await confirmAction('¿Despublicar tu página de enlaces? Quien tenga el enlace verá que no existe.')
   ) {
     return
   }

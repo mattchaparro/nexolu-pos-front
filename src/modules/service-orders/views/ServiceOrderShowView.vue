@@ -20,6 +20,7 @@ import { formatCop } from '@/utils/formatCop'
 import PayServiceOrderModal from '../components/PayServiceOrderModal.vue'
 import { useServiceOrder } from '../composables/useServiceOrder'
 import { useServiceOrderMutations } from '../composables/useServiceOrderMutations'
+import { confirmAction } from '@/composables/useConfirm'
 
 const route = useRoute()
 const router = useRouter()
@@ -72,7 +73,7 @@ async function cancelOrder(): Promise<void> {
   if (!order.value) {
     return
   }
-  if (!window.confirm('¿Cancelar esta orden? Se reembolsarán los abonos registrados.')) {
+  if (!await confirmAction('¿Cancelar esta orden? Se reembolsarán los abonos registrados.')) {
     return
   }
   actionError.value = null
@@ -88,7 +89,7 @@ async function deleteOrder(): Promise<void> {
   if (!order.value) {
     return
   }
-  if (!window.confirm('¿Eliminar esta orden? Se reembolsarán los abonos registrados y no podrá deshacerse.')) {
+  if (!await confirmAction('¿Eliminar esta orden? Se reembolsarán los abonos registrados y no podrá deshacerse.')) {
     return
   }
   actionError.value = null

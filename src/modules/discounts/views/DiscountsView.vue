@@ -14,6 +14,10 @@ import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import DiscountFormModal from '../components/DiscountFormModal.vue'
 import { useDiscountMutations } from '../composables/useDiscountMutations'
 import { useDiscounts } from '../composables/useDiscounts'
+import { confirmAction } from '@/composables/useConfirm'
+import { useSystemAlert } from '@/composables/useSystemAlert'
+
+const { notify } = useSystemAlert()
 
 const searchInput = ref('')
 const search = ref('')
@@ -61,13 +65,13 @@ function openEditDiscount(discount: Discount): void {
 }
 
 async function removeDiscount(discount: Discount): Promise<void> {
-  if (!window.confirm(`¿Eliminar "${discount.name}"?`)) {
+  if (!await confirmAction(`¿Eliminar "${discount.name}"?`)) {
     return
   }
   try {
     await deleteMutation.mutateAsync(discount.id)
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos eliminar el descuento.'))
+    notify(extractErrorMessage(error, 'No pudimos eliminar el descuento.'), 'error')
   }
 }
 </script>

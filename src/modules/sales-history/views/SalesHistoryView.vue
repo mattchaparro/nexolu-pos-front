@@ -20,6 +20,7 @@ import { toLocalDateIso } from '@/utils/toLocalDateIso'
 
 import { useSalesHistory } from '../composables/useSalesHistory'
 import { fetchSalesHistoryCsv } from '../services/salesHistoryService'
+import { confirmAction } from '@/composables/useConfirm'
 
 // from/to en la query: atajo de Resumen del dia, que linkea aca con el
 // rango que el usuario tenia elegido en esa pantalla (ver DailySummaryView.vue).
@@ -158,7 +159,7 @@ async function reverseSaleRow(row: SaleHistoryRow): Promise<void> {
     row.status === 'closed'
       ? 'Se restaurará el stock y la venta se eliminará permanentemente. ¿Continuar?'
       : '¿Cancelar esta cuenta abierta? Se restaurará el stock reservado.'
-  if (!window.confirm(confirmText)) {
+  if (!await confirmAction(confirmText)) {
     return
   }
   reversingId.value = saleId

@@ -13,6 +13,7 @@ import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import ServiceWorkflowFormModal from '../components/ServiceWorkflowFormModal.vue'
 import { useServiceWorkflowMutations } from '../composables/useServiceWorkflowMutations'
 import { useServiceWorkflows } from '../composables/useServiceWorkflows'
+import { confirmAction } from '@/composables/useConfirm'
 
 const router = useRouter()
 const workflowsQuery = useServiceWorkflows()
@@ -30,14 +31,14 @@ function openShow(workflow: SuperAdminServiceWorkflow): void {
 }
 
 async function removeWorkflow(workflow: SuperAdminServiceWorkflow): Promise<void> {
-  if (!window.confirm(`¿Eliminar el workflow "${workflow.name}"? Los negocios que lo tengan asignado quedarán sin workflow.`)) {
+  if (!await confirmAction(`¿Eliminar el workflow "${workflow.name}"? Los negocios que lo tengan asignado quedarán sin workflow.`)) {
     return
   }
   try {
     await deleteMutation.mutateAsync(workflow.id)
     notify('Workflow eliminado')
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos eliminar el workflow.'))
+    notify(extractErrorMessage(error, 'No pudimos eliminar el workflow.'), 'error')
   }
 }
 </script>

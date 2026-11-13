@@ -16,6 +16,7 @@ import {
   fetchAnnouncementAudience,
   type AnnouncementScope,
 } from '../services/announcementService'
+import { confirmAction } from '@/composables/useConfirm'
 
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
@@ -114,11 +115,11 @@ const sendMutation = useMutation({
   },
 })
 
-function send(): void {
+async function send(): Promise<void> {
   formError.value = null
   const who = `${reach.value?.businesses ?? 0} negocio(s)`
   const whatsapp = sendWhatsApp.value ? ` y un WhatsApp a ${reach.value?.with_whatsapp ?? 0}` : ''
-  if (window.confirm(`Se publicará el aviso en el POS de ${who}${whatsapp}. ¿Enviar?`)) {
+  if (await confirmAction(`Se publicará el aviso en el POS de ${who}${whatsapp}. ¿Enviar?`)) {
     sendMutation.mutate()
   }
 }

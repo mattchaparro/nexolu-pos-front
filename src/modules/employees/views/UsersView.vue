@@ -17,6 +17,7 @@ import EmployeeFormModal from '../components/EmployeeFormModal.vue'
 import EmployeePermissionsModal from '../components/EmployeePermissionsModal.vue'
 import { useEmployeeMutations } from '../composables/useEmployeeMutations'
 import { useEmployees } from '../composables/useEmployees'
+import { confirmAction } from '@/composables/useConfirm'
 
 const { data: business } = useBusiness()
 const auth = useAuthStore()
@@ -57,19 +58,19 @@ async function toggle(employee: Employee): Promise<void> {
     await toggleMutation.mutateAsync(employee.id)
     notify(employee.is_active ? 'Usuario desactivado' : 'Usuario activado')
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos actualizar el usuario.'))
+    notify(extractErrorMessage(error, 'No pudimos actualizar el usuario.'), 'error')
   }
 }
 
 async function remove(employee: Employee): Promise<void> {
-  if (!window.confirm(`¿Eliminar a "${employee.name}"? Esta acción no se puede deshacer.`)) {
+  if (!await confirmAction(`¿Eliminar a "${employee.name}"? Esta acción no se puede deshacer.`)) {
     return
   }
   try {
     await deleteMutation.mutateAsync(employee.id)
     notify('Usuario eliminado')
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos eliminar el usuario.'))
+    notify(extractErrorMessage(error, 'No pudimos eliminar el usuario.'), 'error')
   }
 }
 

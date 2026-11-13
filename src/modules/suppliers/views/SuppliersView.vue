@@ -18,6 +18,10 @@ import RemindVisitModal from '../components/RemindVisitModal.vue'
 import SupplierFormModal from '../components/SupplierFormModal.vue'
 import { useSupplierMutations } from '../composables/useSupplierMutations'
 import { useSuppliers } from '../composables/useSuppliers'
+import { confirmAction } from '@/composables/useConfirm'
+import { useSystemAlert } from '@/composables/useSystemAlert'
+
+const { notify } = useSystemAlert()
 
 const searchInput = ref('')
 const search = ref('')
@@ -62,13 +66,13 @@ function openRemindVisit(supplier: Supplier): void {
 }
 
 async function removeSupplier(supplier: Supplier): Promise<void> {
-  if (!window.confirm(`¿Eliminar "${supplier.name}"?`)) {
+  if (!await confirmAction(`¿Eliminar "${supplier.name}"?`)) {
     return
   }
   try {
     await deleteMutation.mutateAsync(supplier.id)
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos eliminar el proveedor.'))
+    notify(extractErrorMessage(error, 'No pudimos eliminar el proveedor.'), 'error')
   }
 }
 

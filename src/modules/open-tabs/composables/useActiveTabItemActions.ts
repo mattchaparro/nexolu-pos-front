@@ -12,6 +12,7 @@ import {
   hasDraftChanges as draftHasChanges,
 } from '../support/tabDraft'
 import { toSyncItemsPayload } from '../support/tabItemsPayload'
+import { confirmAction } from '@/composables/useConfirm'
 
 /**
  * Edicion de los items YA guardados de una cuenta abierta, con la semantica
@@ -93,16 +94,16 @@ export function useActiveTabItemActions(
     }
   }
 
-  function confirmDestroyActiveTab(): void {
-    if (window.confirm('¿Eliminar esta cuenta abierta? Se restaurará el inventario de los productos.')) {
-      destroyActiveTab()
+  async function confirmDestroyActiveTab(): Promise<void> {
+    if (await confirmAction('¿Eliminar esta cuenta abierta? Se restaurará el inventario de los productos.')) {
+      await destroyActiveTab()
     }
   }
 
   /**
    * Ajusta el borrador, sin tocar el backend. Instantaneo a proposito.
    */
-  function adjustItemQuantity(itemId: number, delta: number): void {
+  async function adjustItemQuantity(itemId: number, delta: number): Promise<void> {
     const sale = activeSale.value
     if (!sale) {
       return
@@ -117,8 +118,8 @@ export function useActiveTabItemActions(
     // items": es eliminar la cuenta, y eso se decide explicito.
     const wouldBeEmpty = sale.items.every((i) => (i.id === itemId ? newQuantity : draftQuantityOf(i)) <= 0)
     if (wouldBeEmpty) {
-      if (window.confirm('Esto dejaría la cuenta sin productos. ¿Eliminar la cuenta completa en su lugar?')) {
-        destroyActiveTab()
+      if (await confirmAction('Esto dejaría la cuenta sin productos. ¿Eliminar la cuenta completa en su lugar?')) {
+        await destroyActiveTab()
       }
       return
     }

@@ -23,6 +23,7 @@ import {
   startOfWeekMonday,
   toDateOnly,
 } from '../support/reminderRecurrence'
+import { confirmAction } from '@/composables/useConfirm'
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
@@ -203,19 +204,19 @@ async function markComplete(reminder: Reminder): Promise<void> {
     await completeMutation.mutateAsync(reminder.id)
     notify('Recordatorio marcado como completado')
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos completar el recordatorio.'))
+    notify(extractErrorMessage(error, 'No pudimos completar el recordatorio.'), 'error')
   }
 }
 
 async function removeReminder(reminder: Reminder): Promise<void> {
-  if (!window.confirm(`¿Eliminar recordatorio "${reminder.title}"?`)) {
+  if (!await confirmAction(`¿Eliminar recordatorio "${reminder.title}"?`)) {
     return
   }
   try {
     await deleteMutation.mutateAsync(reminder.id)
     notify('Recordatorio eliminado')
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos eliminar el recordatorio.'))
+    notify(extractErrorMessage(error, 'No pudimos eliminar el recordatorio.'), 'error')
   }
 }
 </script>

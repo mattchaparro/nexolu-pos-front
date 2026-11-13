@@ -18,6 +18,10 @@ import CatalogHubTabs from '../components/CatalogHubTabs.vue'
 import { useServicesSummary } from '../composables/useCatalogSummary'
 import { useProductMutations } from '../composables/useProductMutations'
 import { useServices } from '../composables/useProducts'
+import { confirmAction } from '@/composables/useConfirm'
+import { useSystemAlert } from '@/composables/useSystemAlert'
+
+const { notify } = useSystemAlert()
 
 const router = useRouter()
 
@@ -41,13 +45,13 @@ function onPage(event: { page: number }): void {
 }
 
 async function removeService(service: Product): Promise<void> {
-  if (!window.confirm(`¿Eliminar "${service.name}"?`)) {
+  if (!await confirmAction(`¿Eliminar "${service.name}"?`)) {
     return
   }
   try {
     await deleteMutation.mutateAsync(service.id)
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos eliminar el servicio.'))
+    notify(extractErrorMessage(error, 'No pudimos eliminar el servicio.'), 'error')
   }
 }
 </script>

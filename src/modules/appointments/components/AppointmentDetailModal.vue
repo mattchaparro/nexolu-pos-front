@@ -21,6 +21,7 @@ import PayServiceOrderModal from '@/modules/service-orders/components/PayService
 import { useAppointmentMutations } from '../composables/useAppointmentMutations'
 import AppointmentFormModal from './AppointmentFormModal.vue'
 import RescheduleAppointmentModal from './RescheduleAppointmentModal.vue'
+import { confirmAction } from '@/composables/useConfirm'
 
 const props = defineProps<{
   modelValue: boolean
@@ -84,7 +85,7 @@ async function cancelAppointment(): Promise<void> {
   if (!props.appointment) {
     return
   }
-  if (!window.confirm('¿Cancelar esta cita? Si tiene abonos registrados, se reembolsarán.')) {
+  if (!await confirmAction('¿Cancelar esta cita? Si tiene abonos registrados, se reembolsarán.')) {
     return
   }
   await changeStatus('cancelled')
@@ -101,7 +102,7 @@ async function deleteAppointment(): Promise<void> {
   const warning = linkedOrder.value
     ? '¿Eliminar esta cita? La orden de servicio vinculada y sus pagos no se verán afectados.'
     : '¿Eliminar esta cita?'
-  if (!window.confirm(warning)) {
+  if (!await confirmAction(warning)) {
     return
   }
   actionError.value = null

@@ -14,6 +14,7 @@ import { formatCop } from '@/utils/formatCop'
 
 import { useCashClosingHistory } from '../composables/useCashClosing'
 import { useCashClosingMutations } from '../composables/useCashClosingMutations'
+import { confirmAction } from '@/composables/useConfirm'
 
 const page = ref(1)
 const historyQuery = useCashClosingHistory(page)
@@ -27,7 +28,7 @@ const { notify } = useSystemAlert()
 const { undoMutation } = useCashClosingMutations()
 
 async function undo(closing: CashClosing): Promise<void> {
-  if (!window.confirm(`¿Deshacer el cierre de caja del ${closing.date}? Esto reabre los turnos que cerró automáticamente.`)) {
+  if (!await confirmAction(`¿Deshacer el cierre de caja del ${closing.date}? Esto reabre los turnos que cerró automáticamente.`)) {
     return
   }
   try {

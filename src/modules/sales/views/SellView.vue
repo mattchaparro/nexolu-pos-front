@@ -52,6 +52,7 @@ import { useActiveDiscounts } from '../composables/useActiveDiscounts'
 import { useCreateSale } from '../composables/useCreateSale'
 import { useProductCatalog } from '../composables/useProductCatalog'
 import { useSaleCheckout } from '../composables/useSaleCheckout'
+import { confirmAction } from '@/composables/useConfirm'
 
 const { data: business } = useBusiness()
 
@@ -176,14 +177,14 @@ const openTabsByName = computed(() => (openTabsQuery.data.value ?? []).filter((s
  * debe pasar por un dedazo: se pide confirmacion SOLO cuando hay algo que
  * perder. Con la cuenta limpia, salir es un tap sin friccion.
  */
-function confirmLeaveTab(): boolean {
+async function confirmLeaveTab(): Promise<boolean> {
   if (mode.value === 'quick') {
     return true
   }
   if (tabCart.lines.value.length === 0 && !hasDraftChanges.value) {
     return true
   }
-  return window.confirm('¿Salir de la cuenta? Los cambios sin confirmar y los productos sin agregar se descartan.')
+  return confirmAction('¿Salir de la cuenta? Los cambios sin confirmar y los productos sin agregar se descartan.')
 }
 
 /**
@@ -222,19 +223,19 @@ function discardQuickSaleOnSwitch(): void {
 }
 
 /** El chip "Venta rapida" y la X del panel: volver al mostrador en un tap. */
-function goQuickSale(): void {
-  if (confirmLeaveTab()) {
+async function goQuickSale(): Promise<void> {
+  if (await confirmLeaveTab()) {
     cancelTab()
   }
 }
 
-function selectNewNamedTab(): void {
+async function selectNewNamedTab(): Promise<void> {
   // Re-tocar "+ Cuenta" ya estando en cuenta nueva no debe borrar el nombre
   // que se esta escribiendo.
   if (mode.value === 'new-tab' && !pendingTable.value) {
     return
   }
-  if (!confirmLeaveTab()) {
+  if (!(await confirmLeaveTab())) {
     return
   }
   discardQuickSaleOnSwitch()
@@ -249,7 +250,7 @@ function selectNewNamedTab(): void {
   tabCart.reset()
 }
 
-function selectTable(table: BusinessTable): void {
+async function selectTable(table: BusinessTable): Promise<void> {
   const openSale = openSaleByTable.value.get(table.id)
   // Re-tocar la mesa que ya esta activa es un no-op: antes reseteaba el
   // carrito de la propia cuenta que se estaba editando.
@@ -259,7 +260,7 @@ function selectTable(table: BusinessTable): void {
   if (!openSale && mode.value === 'new-tab' && pendingTable.value?.id === table.id) {
     return
   }
-  if (!confirmLeaveTab()) {
+  if (!(await confirmLeaveTab())) {
     return
   }
   discardQuickSaleOnSwitch()
@@ -280,12 +281,12 @@ function selectTable(table: BusinessTable): void {
   tabCart.reset()
 }
 
-function selectOpenTab(sale: Sale): void {
+async function selectOpenTab(sale: Sale): Promise<void> {
   // Mismo no-op que selectTable: re-tocar la cuenta activa no resetea nada.
   if (mode.value === 'tab' && activeSale.value?.id === sale.id) {
     return
   }
-  if (!confirmLeaveTab()) {
+  if (!(await confirmLeaveTab())) {
     return
   }
   discardQuickSaleOnSwitch()
@@ -622,7 +623,6 @@ const { branches: sellableBranches } = useBranches()
           v-model:new-tab-name="newTabName"
           v-model:new-tab-phone="newTabPhone"
           v-model:new-tab-notes="newTabNotes"
-          @tab-updated="activeSale = $event"
           v-model:new-tab-is-delivery="newTabIsDelivery"
           :active-sale="activeSale"
           :pending-table="pendingTable"
@@ -633,6 +633,7 @@ const { branches: sellableBranches } = useBranches()
           :draft-items="draftItems"
           :has-draft-changes="hasDraftChanges"
           :draft-total-delta="draftTotalDelta"
+          @tab-updated="activeSale = $event"
           :item-discounts="checkout.itemDiscounts.value"
           @cancel="goQuickSale"
           @submit="submitTabCart"
@@ -683,7 +684,6 @@ const { branches: sellableBranches } = useBranches()
         v-model:new-tab-name="newTabName"
         v-model:new-tab-phone="newTabPhone"
         v-model:new-tab-notes="newTabNotes"
-        @tab-updated="activeSale = $event"
         v-model:new-tab-is-delivery="newTabIsDelivery"
         :active-sale="activeSale"
         :pending-table="pendingTable"
@@ -694,6 +694,7 @@ const { branches: sellableBranches } = useBranches()
         :draft-items="draftItems"
         :has-draft-changes="hasDraftChanges"
         :draft-total-delta="draftTotalDelta"
+        @tab-updated="activeSale = $event"
         :item-discounts="checkout.itemDiscounts.value"
         @cancel="goQuickSale"
         @submit="submitTabCart"

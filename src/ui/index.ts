@@ -28,6 +28,7 @@ export { default as NxInputNumber } from './NxInputNumber.vue'
 
 export { default as NxQuantityStepper } from './NxQuantityStepper.vue'
 
+export { default as NxConfirmDialog } from './NxConfirmDialog.vue'
 export { default as NxModal } from './NxModal.vue'
 
 export { default as NxNavbar } from './NxNavbar.vue'

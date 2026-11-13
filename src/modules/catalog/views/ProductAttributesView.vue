@@ -15,6 +15,10 @@ import CatalogHubTabs from '../components/CatalogHubTabs.vue'
 import ProductAttributeFormModal from '../components/ProductAttributeFormModal.vue'
 import { useProductAttributeMutations } from '../composables/useProductAttributeMutations'
 import { useProductAttributes } from '../composables/useProductAttributes'
+import { confirmAction } from '@/composables/useConfirm'
+import { useSystemAlert } from '@/composables/useSystemAlert'
+
+const { notify } = useSystemAlert()
 
 const { hasPermission } = usePermissions()
 const canAdd = computed(() => hasPermission('inventory.add'))
@@ -35,13 +39,13 @@ function openEditAttribute(attribute: ProductAttribute): void {
 }
 
 async function removeAttribute(attribute: ProductAttribute): Promise<void> {
-  if (!window.confirm(`¿Eliminar el atributo "${attribute.name}"?`)) {
+  if (!await confirmAction(`¿Eliminar el atributo "${attribute.name}"?`)) {
     return
   }
   try {
     await deleteMutation.mutateAsync(attribute.id)
   } catch (error) {
-    window.alert(extractErrorMessage(error, 'No pudimos eliminar el atributo.'))
+    notify(extractErrorMessage(error, 'No pudimos eliminar el atributo.'), 'error')
   }
 }
 </script>

@@ -16,6 +16,7 @@ import AddLayawayPaymentModal from '../components/AddLayawayPaymentModal.vue'
 import EditLayawayItemsModal from '../components/EditLayawayItemsModal.vue'
 import { useLayaway } from '../composables/useLayaway'
 import { useLayawayMutations } from '../composables/useLayawayMutations'
+import { confirmAction } from '@/composables/useConfirm'
 
 const route = useRoute()
 const router = useRouter()
@@ -52,7 +53,7 @@ async function cancelLayaway(): Promise<void> {
   if (!layaway.value) {
     return
   }
-  if (!window.confirm('¿Cancelar este apartado? Se liberará el stock reservado y se reembolsarán los abonos.')) {
+  if (!await confirmAction('¿Cancelar este apartado? Se liberará el stock reservado y se reembolsarán los abonos.')) {
     return
   }
   actionError.value = null

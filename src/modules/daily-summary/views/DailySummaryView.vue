@@ -25,6 +25,7 @@ import { toLocalDateIso } from '@/utils/toLocalDateIso'
 import TransactionRowItem from '../components/TransactionRowItem.vue'
 import { useDailySummary } from '../composables/useDailySummary'
 import type { TransactionRow } from '../types'
+import { confirmAction } from '@/composables/useConfirm'
 
 const dateFrom = ref(toLocalDateIso())
 const dateTo = ref(toLocalDateIso())
@@ -51,7 +52,7 @@ async function onReverse(row: TransactionRow): Promise<void> {
   if (!row.reverse) {
     return
   }
-  if (!window.confirm(row.reverse.confirmText)) {
+  if (!await confirmAction(row.reverse.confirmText)) {
     return
   }
   reversingKey.value = row.key

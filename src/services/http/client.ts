@@ -49,6 +49,15 @@ httpClient.interceptors.request.use((config) => {
     config.headers['X-Branch-Id'] = String(branch)
   }
 
+  // Desde qué pantalla sale la petición. Si la API responde "no tienes
+  // permiso", lo deja anotado con este dato (ver AccessDenialLogger en
+  // nexolu-pos-api): así se encuentra la pantalla que consulta algo que el
+  // usuario no puede ver.
+  const screen = router.currentRoute.value.name
+  if (typeof screen === 'string' && screen !== '') {
+    config.headers['X-Client-Route'] = screen
+  }
+
   return config
 })
 

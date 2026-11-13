@@ -3,7 +3,7 @@ import { watch } from 'vue'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import { useFlashStore } from '@/stores/flash.store'
-import { NxToast } from '@/ui'
+import { NxConfirmDialog, NxToast } from '@/ui'
 
 // Puente para mensajes disparados fuera de un componente (guard del
 // router, interceptor de axios) - ver src/stores/flash.store.ts.
@@ -24,4 +24,6 @@ watch(
 <template>
   <router-view />
   <NxToast />
+  <!-- El modal de confirmación de toda la app (ver useConfirm.ts). -->
+  <NxConfirmDialog />
 </template>

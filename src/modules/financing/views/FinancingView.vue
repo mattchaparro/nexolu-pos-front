@@ -28,6 +28,7 @@ import {
   updateFinancingPayoutMode,
   type FetchFinancingCreditsParams,
 } from '../services/financingService'
+import { confirmAction } from '@/composables/useConfirm'
 
 type StatusFilter = '' | 'pending' | 'overdue' | 'paid'
 
@@ -190,7 +191,7 @@ async function confirmPayout(payload: RegisterPayoutPayload): Promise<void> {
 
 async function undoPayout(credit: FinancingCredit): Promise<void> {
   if (
-    !window.confirm(
+    !await confirmAction(
       `¿Volver a dejar pendiente el crédito de ${credit.customer_name || 'este cliente'}?`,
     )
   ) {
