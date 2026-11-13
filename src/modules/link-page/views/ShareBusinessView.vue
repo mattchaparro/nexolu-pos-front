@@ -10,6 +10,7 @@ import { NxPageHeader } from '@/ui'
 
 import LinkPageCard from '../components/LinkPageCard.vue'
 import LinkPageStyleCard from '../components/LinkPageStyleCard.vue'
+import PublicProfileCard from '../components/PublicProfileCard.vue'
 import { useLinkPage } from '../composables/useLinkPage'
 
 const { linkPageQuery } = useLinkPage()
@@ -29,6 +30,8 @@ const catalogUrl = computed(() => state.value?.public_url.replace(/\/enlaces$/, 
     />
 
     <LinkPageCard />
+
+    <PublicProfileCard />
 
     <LinkPageStyleCard />
 

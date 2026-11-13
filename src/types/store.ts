@@ -34,6 +34,8 @@ export interface StoreSettings {
   store_name: string | null
   description: string | null
   logo_url: string | null
+  /** Ícono cuadrado (círculo de la página de enlaces). */
+  icon_url: string | null
   banner_url: string | null
   primary_color: string | null
   surface_color: string | null
@@ -94,10 +96,14 @@ export type StoreSettingsPayload = Partial<
   Omit<
     StoreSettings,
     | 'logo_url'
+    | 'icon_url'
     | 'banner_url'
     | 'hero_image_url'
     | 'story_image_url'
     | 'public_url'
     | 'published_products_count'
+    // Del perfil público del negocio (PUT /link-page): la API los ignora aquí.
+    | 'whatsapp_number'
+    | 'instagram_url'
   >
 >

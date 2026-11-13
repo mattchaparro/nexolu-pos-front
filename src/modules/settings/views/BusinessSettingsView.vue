@@ -584,6 +584,10 @@ const { gatewaysQuery } = usePaymentGateways()
                   :disabled="!canEdit"
                   :error="negocioErrors.tiktok_handle"
                 />
+                <p class="text-[11px] text-slate-400 sm:col-span-2">
+                  WhatsApp, Instagram y TikTok son los mismos de tu perfil público: salen en tu
+                  tienda online y en tu página de enlaces. Cámbialos aquí o allá, es un solo dato.
+                </p>
               </div>
               <NxButton v-if="canEdit" class="mt-4" :loading="isSaving" @click="submitNegocio"
                 >Guardar cambios</NxButton

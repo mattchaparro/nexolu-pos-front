@@ -23,6 +23,7 @@ import { NxPageHeader, NxStatCard } from '@/ui'
 import { formatCop } from '@/utils/formatCop'
 
 import AiInsightCard from '../components/AiInsightCard.vue'
+import BusinessSetupCard from '../components/BusinessSetupCard.vue'
 import ShareStoreCard from '../components/ShareStoreCard.vue'
 import ConsejoDelDiaCard from '../components/ConsejoDelDiaCard.vue'
 import ShortcutCustomizer from '../components/ShortcutCustomizer.vue'
@@ -97,6 +98,8 @@ const shortcuts = computed(() => resolveShortcuts(stats.value?.shortcuts ?? null
         />
       </template>
     </div>
+
+    <BusinessSetupCard v-if="canShareStore" class="mt-6" />
 
     <ShareStoreCard v-if="canShareStore" class="mt-6" />
 

@@ -27,8 +27,6 @@ export interface ChecklistItem {
 }
 
 export interface ChecklistDraft {
-  storeName: string
-  whatsappNumber: string
   seoDescription: string
   blocks: Block[]
 }
@@ -51,14 +49,6 @@ export function usePublishChecklist(
         section: 'bloques',
       },
       {
-        key: 'name',
-        label: 'Ponerle nombre a la tienda',
-        hint: 'Es lo primero que ve quien entra y lo que aparece en Google.',
-        done: draft.storeName.trim() !== '',
-        blocking: true,
-        section: 'identidad',
-      },
-      {
         key: 'blocks',
         label: 'Armar la página de inicio',
         hint: 'Con una plantilla quedas listo en un toque.',
@@ -70,15 +60,15 @@ export function usePublishChecklist(
         key: 'whatsapp',
         label: 'Dejar tu WhatsApp',
         hint: 'Es por donde te van a escribir para preguntar antes de comprar.',
-        done: draft.whatsappNumber.trim() !== '',
+        done: Boolean(settings.value?.whatsapp_number),
         blocking: false,
         section: 'identidad',
       },
       {
         key: 'logo',
         label: 'Subir tu logo',
-        hint: 'Sin logo mostramos la inicial de tu nombre.',
-        done: Boolean(settings.value?.logo_url),
+        hint: 'Sin logo mostramos el nombre de tu negocio en texto.',
+        done: Boolean(settings.value?.logo_url || settings.value?.icon_url),
         blocking: false,
         section: 'marca',
       },

@@ -13,7 +13,10 @@ export interface LinkPagePublic {
   slug: string
   name: string
   description: string | null
+  /** Logo de la marca, normalmente horizontal. */
   logo_url: string | null
+  /** Ícono cuadrado: el círculo de la página. */
+  icon_url: string | null
   theme: { primary: string; surface: string; accent: string; font: string }
   has_store: boolean
   has_whatsapp: boolean
@@ -35,6 +38,9 @@ export interface LinkPageSettings {
   surface_color: string
   font_preset: string
   has_logo: boolean
+  has_icon: boolean
+  logo_url: string | null
+  icon_url: string | null
   instagram: string | null
   tiktok: string | null
   whatsapp: string | null
@@ -76,7 +82,7 @@ export async function updateLinkPage(payload: LinkPagePayload): Promise<LinkPage
   return data
 }
 
-/** El logo es el mismo del negocio en la tienda: una sola ranura. */
+/** Logo de la marca (horizontal): el mismo de la cabecera de la tienda, una sola ranura. */
 export async function uploadLinkPageLogo(file: File): Promise<LinkPageState> {
   const form = new FormData()
   form.append('image', file)
@@ -86,5 +92,18 @@ export async function uploadLinkPageLogo(file: File): Promise<LinkPageState> {
 
 export async function deleteLinkPageLogo(): Promise<LinkPageState> {
   const { data } = await httpClient.delete<LinkPageState>('/link-page/logo')
+  return data
+}
+
+/** Ícono cuadrado para el círculo de la página de enlaces. */
+export async function uploadLinkPageIcon(file: File): Promise<LinkPageState> {
+  const form = new FormData()
+  form.append('image', file)
+  const { data } = await httpClient.post<LinkPageState>('/link-page/icon', form)
+  return data
+}
+
+export async function deleteLinkPageIcon(): Promise<LinkPageState> {
+  const { data } = await httpClient.delete<LinkPageState>('/link-page/icon')
   return data
 }

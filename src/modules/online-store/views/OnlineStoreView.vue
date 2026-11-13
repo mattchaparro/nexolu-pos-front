@@ -31,6 +31,8 @@ import {
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { extractFieldErrors } from '@/utils/extractFieldErrors'
 
+import PublicProfileCard from '@/modules/link-page/components/PublicProfileCard.vue'
+
 import ShareCatalogModal from '../components/ShareCatalogModal.vue'
 import { useStoreSettings } from '../composables/useStoreSettings'
 
@@ -53,9 +55,6 @@ const activeTab = ref<'tienda' | 'editor'>('tienda')
 // (useTheme.ts). Catálogo cerrado: fuente libre = tiendas ilegibles.
 
 // --- Estado del formulario ---
-const storeName = ref('')
-const description = ref('')
-const whatsappNumber = ref('')
 const shippingFlatFee = ref<number | null>(0)
 const minOrderAmount = ref<number | null>(0)
 // Cuanto se demora en llegar. Texto libre y no un numero de dias: un
@@ -97,8 +96,6 @@ const storyStats = ref<StoryStat[]>([])
 
 const address = ref('')
 const openingHours = ref('')
-const instagramUrl = ref('')
-const facebookUrl = ref('')
 
 const fieldErrors = ref<Record<string, string>>({})
 const formError = ref<string | null>(null)
@@ -113,9 +110,6 @@ watch(
     if (!value) {
       return
     }
-    storeName.value = value.store_name ?? ''
-    description.value = value.description ?? ''
-    whatsappNumber.value = value.whatsapp_number ?? ''
     shippingFlatFee.value = value.shipping_flat_fee
     minOrderAmount.value = value.min_order_amount
     deliveryEstimate.value = value.delivery_estimate ?? ''
@@ -151,8 +145,6 @@ watch(
 
     address.value = value.address ?? ''
     openingHours.value = value.opening_hours ?? ''
-    instagramUrl.value = value.instagram_url ?? ''
-    facebookUrl.value = value.facebook_url ?? ''
   },
   { immediate: true },
 )
@@ -179,9 +171,6 @@ const nullable = (value: string) => value.trim() || null
 function saveStore(): Promise<void> {
   return save(
     {
-      store_name: nullable(storeName.value),
-      description: nullable(description.value),
-      whatsapp_number: nullable(whatsappNumber.value),
       shipping_flat_fee: shippingFlatFee.value ?? 0,
       min_order_amount: minOrderAmount.value ?? 0,
       delivery_estimate: deliveryEstimate.value.trim() || null,
@@ -195,8 +184,6 @@ function saveStore(): Promise<void> {
       seo_description: nullable(seoDescription.value),
       address: nullable(address.value),
       opening_hours: nullable(openingHours.value),
-      instagram_url: nullable(instagramUrl.value),
-      facebook_url: nullable(facebookUrl.value),
     },
     'Tienda actualizada',
   )
@@ -307,35 +294,14 @@ const shareOpen = ref(false)
           <!-- ------------------------------ TIENDA -->
           <NxTabPanel value="tienda">
             <div class="flex flex-col gap-4">
-              <div class="rounded-xl border border-slate-200 bg-white p-4">
-                <p class="mb-3 text-sm font-semibold text-slate-700">Identidad</p>
-                <div class="flex flex-col gap-3">
-                  <NxInput
-                    v-model="storeName"
-                    label="Nombre de la tienda"
-                    :error="fieldErrors.store_name"
-                  />
-                  <p class="-mt-2 text-[11px] text-slate-400">
-                    Si lo dejas vacío se usa el nombre de tu negocio.
-                  </p>
-                  <NxTextarea
-                    v-model="description"
-                    label="Descripción"
-                    :rows="2"
-                    :error="fieldErrors.description"
-                  />
-                </div>
-              </div>
+              <!-- Nombre, logo, WhatsApp y redes: el perfil público del negocio. Se
+                   edita en un solo lugar y la tienda lo lee de ahí. -->
+              <PublicProfileCard />
 
               <div class="rounded-xl border border-slate-200 bg-white p-4">
-                <p class="mb-3 text-sm font-semibold text-slate-700">Contacto y envío</p>
+                <p class="mb-3 text-sm font-semibold text-slate-700">Envío y dirección</p>
                 <div class="flex flex-col gap-3">
-                  <NxInput
-                    v-model="whatsappNumber"
-                    label="WhatsApp de atención"
-                    :error="fieldErrors.whatsapp_number"
-                  />
-                  <p v-if="whatsappNumber" class="-mt-2 text-[11px] text-slate-400">
+                  <p v-if="settings.whatsapp_number" class="text-xs text-slate-500">
                     <template v-if="settings.whatsapp_clicks_30d > 0">
                       {{ settings.whatsapp_clicks_30d }}
                       {{
@@ -343,10 +309,10 @@ const shareOpen = ref(false)
                           ? 'persona escribió'
                           : 'personas escribieron'
                       }}
-                      desde tu tienda en los últimos 30 días.
+                      a tu WhatsApp desde la tienda en los últimos 30 días.
                     </template>
                     <template v-else>
-                      Todavía nadie te ha escrito desde la tienda este mes.
+                      Todavía nadie te ha escrito por WhatsApp desde la tienda este mes.
                     </template>
                   </p>
                   <NxInputNumber
@@ -409,16 +375,6 @@ const shareOpen = ref(false)
                     v-model="openingHours"
                     label="Horario"
                     :error="fieldErrors.opening_hours"
-                  />
-                  <NxInput
-                    v-model="instagramUrl"
-                    label="Instagram (URL)"
-                    :error="fieldErrors.instagram_url"
-                  />
-                  <NxInput
-                    v-model="facebookUrl"
-                    label="Facebook (URL)"
-                    :error="fieldErrors.facebook_url"
                   />
                   <NxTextarea
                     v-model="terms"

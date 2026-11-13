@@ -6,6 +6,11 @@ import type { StoreSettings, StoreSettingsPayload } from '@/types/store'
 /**
  * Todo lo que el editor puede cambiar, en un solo sitio.
  *
+ * Quedan fuera el nombre, la descripción, el logo, el WhatsApp y las redes: son
+ * el perfil público del negocio (link-page/PublicProfileModal), que se guarda
+ * al instante y lo leen la tienda y la página de enlaces. Si estuvieran aquí,
+ * publicar un borrador viejo pisaba lo que se acababa de cambiar allá.
+ *
  * Antes el editor solo manejaba bloques, colores y tipografía; el resto de
  * los ajustes (nombre, WhatsApp, envío, SEO…) vivía en otra pantalla, así
  * que armar una tienda obligaba a salir del editor y volver. Con esto el
@@ -21,13 +26,8 @@ export interface StoreDraft {
   surface: string
   accent: string
   font: string
-  storeName: string
-  description: string
-  whatsappNumber: string
   address: string
   openingHours: string
-  instagramUrl: string
-  facebookUrl: string
   shippingFlatFee: number
   minOrderAmount: number
   pickupEnabled: boolean
@@ -43,13 +43,8 @@ export function useStoreDraft() {
   const accent = ref('#0ea5e9')
   const font = ref('moderna')
 
-  const storeName = ref('')
-  const description = ref('')
-  const whatsappNumber = ref('')
   const address = ref('')
   const openingHours = ref('')
-  const instagramUrl = ref('')
-  const facebookUrl = ref('')
 
   const shippingFlatFee = ref(0)
   const minOrderAmount = ref(0)
@@ -67,13 +62,8 @@ export function useStoreDraft() {
       surface: surface.value,
       accent: accent.value,
       font: font.value,
-      storeName: storeName.value,
-      description: description.value,
-      whatsappNumber: whatsappNumber.value,
       address: address.value,
       openingHours: openingHours.value,
-      instagramUrl: instagramUrl.value,
-      facebookUrl: facebookUrl.value,
       shippingFlatFee: shippingFlatFee.value,
       minOrderAmount: minOrderAmount.value,
       pickupEnabled: pickupEnabled.value,
@@ -89,13 +79,8 @@ export function useStoreDraft() {
     surface.value = state.surface
     accent.value = state.accent
     font.value = state.font
-    storeName.value = state.storeName
-    description.value = state.description
-    whatsappNumber.value = state.whatsappNumber
     address.value = state.address
     openingHours.value = state.openingHours
-    instagramUrl.value = state.instagramUrl
-    facebookUrl.value = state.facebookUrl
     shippingFlatFee.value = state.shippingFlatFee
     minOrderAmount.value = state.minOrderAmount
     pickupEnabled.value = state.pickupEnabled
@@ -111,13 +96,8 @@ export function useStoreDraft() {
     surface.value = settings.surface_color ?? '#ffffff'
     accent.value = settings.accent_color ?? '#0ea5e9'
     font.value = settings.font_preset ?? 'moderna'
-    storeName.value = settings.store_name ?? ''
-    description.value = settings.description ?? ''
-    whatsappNumber.value = settings.whatsapp_number ?? ''
     address.value = settings.address ?? ''
     openingHours.value = settings.opening_hours ?? ''
-    instagramUrl.value = settings.instagram_url ?? ''
-    facebookUrl.value = settings.facebook_url ?? ''
     shippingFlatFee.value = Number(settings.shipping_flat_fee ?? 0)
     minOrderAmount.value = Number(settings.min_order_amount ?? 0)
     pickupEnabled.value = Boolean(settings.pickup_enabled)
@@ -141,13 +121,8 @@ export function useStoreDraft() {
       surface_color: surface.value,
       accent_color: accent.value,
       font_preset: font.value,
-      store_name: opcional(storeName.value),
-      description: opcional(description.value),
-      whatsapp_number: opcional(whatsappNumber.value),
       address: opcional(address.value),
       opening_hours: opcional(openingHours.value),
-      instagram_url: opcional(instagramUrl.value),
-      facebook_url: opcional(facebookUrl.value),
       shipping_flat_fee: shippingFlatFee.value,
       min_order_amount: minOrderAmount.value,
       pickup_enabled: pickupEnabled.value,
@@ -168,9 +143,6 @@ export function useStoreDraft() {
       surface_color: surface.value,
       accent_color: accent.value,
       font_preset: font.value,
-      store_name: storeName.value,
-      description: description.value,
-      whatsapp_number: whatsappNumber.value,
       min_order_amount: minOrderAmount.value,
       shipping_flat_fee: shippingFlatFee.value,
     }))
@@ -182,13 +154,8 @@ export function useStoreDraft() {
     surface,
     accent,
     font,
-    storeName,
-    description,
-    whatsappNumber,
     address,
     openingHours,
-    instagramUrl,
-    facebookUrl,
     shippingFlatFee,
     minOrderAmount,
     pickupEnabled,

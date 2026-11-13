@@ -24,6 +24,7 @@ import {
   NxTextarea,
 } from '@/ui'
 import GuidedTour from '@/components/GuidedTour.vue'
+import PublicProfileCard from '@/modules/link-page/components/PublicProfileCard.vue'
 import { useBusiness } from '@/composables/useBusiness'
 import { useGuidedTour } from '@/composables/useGuidedTour'
 import { STORE_EDITOR_TOUR } from '@/tours/storeEditor'
@@ -152,12 +153,6 @@ const checklistOpen = ref(false)
 const checklist = usePublishChecklist(
   settings,
   {
-    get storeName() {
-      return draft.storeName.value
-    },
-    get whatsappNumber() {
-      return draft.whatsappNumber.value
-    },
     get seoDescription() {
       return draft.seoDescription.value
     },
@@ -176,6 +171,11 @@ function goToSection(section: string): void {
 // La llave del recorrido es por NEGOCIO: el dueño con dos negocios lo ve en
 // cada uno, y en un POS compartido dos usuarios no se lo pisan.
 const { data: currentBusiness } = useBusiness()
+
+// El nombre y la descripción ya no son parte del borrador: viven en el perfil
+// público y se leen de lo guardado.
+const storeName = computed(() => settings.value?.store_name || currentBusiness.value?.name || '')
+const storeDescription = computed(() => settings.value?.description ?? '')
 const tour = useGuidedTour(
   STORE_EDITOR_TOUR.key,
   STORE_EDITOR_TOUR.steps,
@@ -530,43 +530,25 @@ async function save(): Promise<void> {
           <StoreFontPicker v-model="fontPreset" />
         </div>
 
-        <div v-else-if="editorSection === 'marca' && settings">
-          <p class="mb-3 text-sm font-semibold text-slate-700">Logo y portada</p>
-          <div class="flex flex-col gap-4">
-            <StoreImageField
-              image-slot="logo"
-              label="Logo"
-              :url="settings.logo_url"
-              aspect="square"
-              hint="Va solo, arriba de la tienda (sin el nombre en texto al lado). Lo ideal: horizontal con el nombre escrito, en PNG con fondo transparente. Si no tienes logo, se muestra el nombre."
-            />
-            <StoreImageField
-              image-slot="banner"
-              label="Portada"
-              :url="settings.banner_url"
-              aspect="wide"
-              hint="Una foto o imagen de tu marca debajo del menú, solo en la portada; ideal unos 1600 × 400 px. No subas aquí tu logo: ya va en la barra de arriba."
-            />
-          </div>
+        <div v-else-if="editorSection === 'marca' && settings" class="flex flex-col gap-4">
+          <p class="text-sm font-semibold text-slate-700">Logo y portada</p>
+          <!-- El logo y el ícono se suben en el perfil público: son los mismos
+               de tu página de enlaces y de tus recibos. -->
+          <PublicProfileCard compact />
+          <StoreImageField
+            image-slot="banner"
+            label="Portada"
+            :url="settings.banner_url"
+            aspect="wide"
+            hint="Una foto o imagen de tu marca debajo del menú, solo en la portada; ideal unos 1600 × 400 px. No subas aquí tu logo: ya va en la barra de arriba."
+          />
         </div>
 
-        <!-- Datos del negocio. Antes vivían en la pantalla de Tienda online:
-             para poner el WhatsApp había que salir del editor. -->
+        <!-- Nombre, logo, WhatsApp y redes son el perfil público del negocio:
+             se editan en un solo lugar. Aquí solo lo que es de la tienda. -->
         <div v-else-if="editorSection === 'identidad'" class="flex flex-col gap-3">
           <p class="text-sm font-semibold text-slate-700">Datos de tu tienda</p>
-          <NxInput v-model="draft.storeName.value" label="Nombre" />
-          <NxTextarea v-model="draft.description.value" label="Descripción corta" :rows="2" />
-          <div>
-            <NxInput
-              v-model="draft.whatsappNumber.value"
-              label="WhatsApp"
-              placeholder="573001234567"
-              inputmode="tel"
-            />
-            <p class="mt-1 text-[11px] text-slate-400">
-              Con indicativo del país y sin espacios ni signos.
-            </p>
-          </div>
+          <PublicProfileCard compact />
           <NxInput v-model="draft.address.value" label="Dirección" />
           <NxTextarea
             v-model="draft.openingHours.value"
@@ -574,8 +556,6 @@ async function save(): Promise<void> {
             :rows="2"
             placeholder="Lun-Sáb 9:00-19:00"
           />
-          <NxInput v-model="draft.instagramUrl.value" label="Instagram" placeholder="https://…" />
-          <NxInput v-model="draft.facebookUrl.value" label="Facebook" placeholder="https://…" />
         </div>
 
         <!-- Lo que se negocia con el comprador antes de pagar. -->
@@ -615,7 +595,7 @@ async function save(): Promise<void> {
           <NxInput
             v-model="draft.seoTitle.value"
             label="Título"
-            :placeholder="draft.storeName.value || 'Nombre de tu tienda'"
+            :placeholder="storeName || 'Nombre de tu tienda'"
           />
           <div>
             <NxTextarea v-model="draft.seoDescription.value" label="Descripción" :rows="3" />
@@ -629,12 +609,12 @@ async function save(): Promise<void> {
               {{ settings?.public_url ?? 'tienda.nexolu.co/tu-tienda' }}
             </p>
             <p class="truncate text-base text-blue-800">
-              {{ draft.seoTitle.value || draft.storeName.value || 'Nombre de tu tienda' }}
+              {{ draft.seoTitle.value || storeName || 'Nombre de tu tienda' }}
             </p>
             <p class="line-clamp-2 text-xs text-slate-500">
               {{
                 draft.seoDescription.value ||
-                draft.description.value ||
+                storeDescription ||
                 'Escribe una descripción para que Google muestre algo aquí.'
               }}
             </p>

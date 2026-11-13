@@ -15,24 +15,10 @@ import { hasFeature } from '@/utils/hasFeature'
 
 const router = useRouter()
 const { data: business } = useBusiness()
-const { linkPageQuery, updateMutation } = useLinkPage()
+const { linkPageQuery } = useLinkPage()
 const state = computed(() => linkPageQuery.data.value)
 
 const hasStoreModule = computed(() => hasFeature(business.value, 'online_store'))
-
-// Pedir el Instagram aquí mismo: es lo que más le suma a la página de
-// enlaces y casi todo negocio lo tiene, pero pocos entran a Ajustes a ponerlo.
-const instagram = ref('')
-const needsInstagram = computed(() => state.value !== undefined && !state.value.page.instagram_url)
-
-async function saveInstagram(): Promise<void> {
-  const value = instagram.value.trim()
-  if (value === '') {
-    return
-  }
-  await updateMutation.mutateAsync({ instagram: value })
-  instagram.value = ''
-}
 
 const catalogOpen = ref(false)
 const linksOpen = ref(false)
@@ -92,34 +78,6 @@ const linksOpen = ref(false)
         </NxButton>
       </div>
     </div>
-
-    <form
-      v-if="needsInstagram"
-      class="mt-3 flex flex-col gap-2 rounded-lg bg-slate-50 p-3 sm:flex-row sm:items-center"
-      @submit.prevent="saveInstagram"
-    >
-      <p class="flex-1 text-xs text-slate-600">
-        <i class="pi pi-instagram mr-1 text-pink-600" />
-        <strong>¿Tienes Instagram?</strong> Agrégalo y aparece en tu página de enlaces.
-      </p>
-      <div class="flex gap-2">
-        <input
-          v-model="instagram"
-          type="text"
-          placeholder="@tunegocio"
-          aria-label="Tu usuario de Instagram"
-          class="w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-indigo-400 sm:w-44"
-        />
-        <NxButton
-          type="submit"
-          size="sm"
-          :loading="updateMutation.isPending.value"
-          :disabled="instagram.trim() === ''"
-        >
-          Guardar
-        </NxButton>
-      </div>
-    </form>
 
     <ShareCatalogModal v-if="catalogOpen" v-model="catalogOpen" initial-target="catalog" />
     <ShareLinkPageModal v-if="linksOpen" v-model="linksOpen" />
