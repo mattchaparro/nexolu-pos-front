@@ -10,10 +10,14 @@
 // siendo una cifra de solo lectura en Dashboard/SuperAdmin/etc.) - solo el
 // listado de Catalogo la usa ademas como filtro (ver CatalogView.vue,
 // "Sin stock"/"Inventario bajo"/etc.).
-withDefaults(defineProps<{ label: string; value: string; icon: string; clickable?: boolean; active?: boolean }>(), {
-  clickable: false,
-  active: false,
-})
+withDefaults(
+  defineProps<{ label: string; value: string; icon: string; hint?: string; clickable?: boolean; active?: boolean }>(),
+  {
+    hint: undefined,
+    clickable: false,
+    active: false,
+  },
+)
 
 defineEmits<{ click: [] }>()
 </script>
@@ -36,6 +40,7 @@ defineEmits<{ click: [] }>()
       <div class="min-w-0">
         <p class="truncate text-xs font-medium text-slate-500">{{ label }}</p>
         <p class="truncate text-lg font-bold text-slate-900">{{ value }}</p>
+        <p v-if="hint" class="truncate text-xs text-slate-400">{{ hint }}</p>
       </div>
     </div>
   </component>

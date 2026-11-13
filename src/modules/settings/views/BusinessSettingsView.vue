@@ -689,53 +689,66 @@ const { gatewaysQuery } = usePaymentGateways()
                 {{ ventasFormError }}
               </p>
 
-              <p class="mb-2 text-sm font-semibold text-slate-700">Domicilios</p>
-              <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end">
-                <NxToggleButton
-                  v-model="ventas.delivery_enabled"
-                  label="Cobrar domicilio"
-                  icon="pi pi-truck"
-                  :disabled="!canEdit"
-                />
-                <NxInputNumber
-                  v-model="ventas.delivery_fee"
-                  label="Valor del domicilio"
-                  :disabled="!canEdit || !ventas.delivery_enabled"
-                  :error="ventasErrors.delivery_fee"
-                />
-              </div>
-
-              <p class="mb-2 text-sm font-semibold text-slate-700">Cargos adicionales</p>
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div class="flex items-end gap-3">
-                  <NxToggleButton
-                    v-model="ventas.service_charge_enabled"
-                    label="Propina sugerida"
-                    icon="pi pi-percentage"
-                    :disabled="!canEdit"
-                  />
-                  <NxInputNumber
-                    v-model="ventas.service_charge_rate"
-                    label="% propina"
-                    :currency="false"
-                    :disabled="!canEdit || !ventas.service_charge_enabled"
-                    :error="ventasErrors.service_charge_rate"
-                  />
+              <p class="mb-1 text-sm font-semibold text-slate-700">Domicilio y cargos</p>
+              <p class="mb-3 text-xs text-slate-500">
+                Los mismos para el POS y para los pedidos online: no hay una tarifa aparte en la tienda.
+              </p>
+              <div class="divide-y divide-slate-100 rounded-xl border border-slate-200">
+                <div class="px-4 py-3">
+                  <div class="flex items-start gap-3">
+                    <i class="pi pi-truck mt-0.5 text-slate-500" />
+                    <div class="min-w-0 flex-1">
+                      <p class="text-sm font-medium text-slate-800">Domicilio</p>
+                      <p class="text-xs text-slate-500">Se suma a las ventas a domicilio del POS y a los pedidos online.</p>
+                    </div>
+                    <NxSwitch v-model="ventas.delivery_enabled" class="shrink-0" :disabled="!canEdit" />
+                  </div>
+                  <div v-if="ventas.delivery_enabled" class="mt-2 w-40 pl-7">
+                    <NxInputNumber
+                      v-model="ventas.delivery_fee"
+                      size="sm"
+                      :disabled="!canEdit"
+                      :error="ventasErrors.delivery_fee"
+                    />
+                  </div>
                 </div>
-                <div class="flex items-end gap-3">
-                  <NxToggleButton
-                    v-model="ventas.ipoconsumo_enabled"
-                    label="Impoconsumo"
-                    icon="pi pi-percentage"
-                    :disabled="!canEdit"
-                  />
-                  <NxInputNumber
-                    v-model="ventas.ipoconsumo_rate"
-                    label="% impoconsumo"
-                    :currency="false"
-                    :disabled="!canEdit || !ventas.ipoconsumo_enabled"
-                    :error="ventasErrors.ipoconsumo_rate"
-                  />
+                <div class="px-4 py-3">
+                  <div class="flex items-start gap-3">
+                    <i class="pi pi-heart mt-0.5 text-slate-500" />
+                    <div class="min-w-0 flex-1">
+                      <p class="text-sm font-medium text-slate-800">Propina sugerida (%)</p>
+                      <p class="text-xs text-slate-500">Sugerida en mesas y pedidos online; el cliente la puede quitar.</p>
+                    </div>
+                    <NxSwitch v-model="ventas.service_charge_enabled" class="shrink-0" :disabled="!canEdit" />
+                  </div>
+                  <div v-if="ventas.service_charge_enabled" class="mt-2 w-40 pl-7">
+                    <NxInputNumber
+                      v-model="ventas.service_charge_rate"
+                      size="sm"
+                      :currency="false"
+                      :disabled="!canEdit"
+                      :error="ventasErrors.service_charge_rate"
+                    />
+                  </div>
+                </div>
+                <div class="px-4 py-3">
+                  <div class="flex items-start gap-3">
+                    <i class="pi pi-percentage mt-0.5 text-slate-500" />
+                    <div class="min-w-0 flex-1">
+                      <p class="text-sm font-medium text-slate-800">Impoconsumo (%)</p>
+                      <p class="text-xs text-slate-500">Se suma al total de cada venta.</p>
+                    </div>
+                    <NxSwitch v-model="ventas.ipoconsumo_enabled" class="shrink-0" :disabled="!canEdit" />
+                  </div>
+                  <div v-if="ventas.ipoconsumo_enabled" class="mt-2 w-40 pl-7">
+                    <NxInputNumber
+                      v-model="ventas.ipoconsumo_rate"
+                      size="sm"
+                      :currency="false"
+                      :disabled="!canEdit"
+                      :error="ventasErrors.ipoconsumo_rate"
+                    />
+                  </div>
                 </div>
               </div>
 

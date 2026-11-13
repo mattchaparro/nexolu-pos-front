@@ -28,10 +28,13 @@ const props = withDefaults(
   defineProps<{
     type?: string
     title?: string
+    /** Línea al pie (el consejo del día): antes era otra tarjeta igual. */
+    tip?: string
   }>(),
   {
     type: 'resumen_inteligente',
     title: 'Resumen inteligente',
+    tip: undefined,
   },
 )
 
@@ -116,7 +119,9 @@ onMounted(() => {
   }
 })
 
-const visible = computed(() => collapsed.value || loading.value || insight.value !== null)
+const visible = computed(
+  () => collapsed.value || loading.value || insight.value !== null || Boolean(props.tip),
+)
 </script>
 
 <template>
@@ -203,6 +208,14 @@ const visible = computed(() => collapsed.value || loading.value || insight.value
           </button>
         </div>
       </template>
+
+      <p
+        v-if="tip"
+        class="mt-3 flex items-start gap-2 border-t border-slate-100 pt-3 text-xs leading-snug text-slate-500"
+      >
+        <i class="pi pi-lightbulb mt-0.5 text-amber-500" />
+        <span>{{ tip }}</span>
+      </p>
     </div>
   </section>
 </template>

@@ -163,7 +163,7 @@ function resetForm(): void {
   courtesyReason.value = ''
   // El servicio es de la mesa: en un domicilio (p. ej. un pedido del menú
   // digital, cuyo total el comprador ya vio) arranca apagado.
-  applyServiceCharge.value = !(props.sale?.is_delivery ?? false)
+  applyServiceCharge.value = !(props.sale ? Boolean(props.sale.is_delivery) : props.initialDelivery)
   applyIpoconsumo.value = true
   activeTab.value = 'single'
   splitRows.value = []
