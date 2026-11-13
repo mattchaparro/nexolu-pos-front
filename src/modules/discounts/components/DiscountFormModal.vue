@@ -93,7 +93,8 @@ watch(scope, (value) => {
 // Los cupones son de la tienda online: a quien no la tiene no se le
 // ofrecen campos que no puede usar.
 const { data: business } = useBusiness()
-const tieneTienda = computed(() => hasFeature(business.value, 'online_store'))
+// El cupón se redime en el checkout, que también usa el menú digital.
+const tieneTienda = computed(() => hasFeature(business.value, ['online_store', 'digital_menu']))
 const isEdit = computed(() => props.discount !== null)
 const isSaving = computed(() => createMutation.isPending.value || updateMutation.isPending.value)
 const modalTitle = computed(() => (isEdit.value ? 'Editar descuento' : 'Nuevo descuento'))

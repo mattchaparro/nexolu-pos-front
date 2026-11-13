@@ -172,8 +172,12 @@ const publishTarget = computed(() =>
 // Compartir el catalogo: la configuracion de la tienda es solo del admin
 // (business-admin en la API), asi que a un cajero no se le ofrece.
 const auth = useAuthStore()
+// El restaurante comparte su menú desde «Menú digital» (QR y enlace de la
+// carta), no el catálogo de una tienda: por eso el modal es solo de la tienda.
+const isAdminUser = computed(() => auth.user?.roles?.includes('admin') === true)
+const canShareMenu = computed(() => hasFeature(business.value, 'digital_menu') && isAdminUser.value)
 const canShareCatalog = computed(
-  () => onlineStoreEnabled.value && auth.user?.roles?.includes('admin') === true,
+  () => hasFeature(business.value, 'online_store') && !canShareMenu.value && isAdminUser.value,
 )
 const shareOpen = ref(false)
 const shareProduct = ref<{ id: number; name: string } | null>(null)
@@ -379,6 +383,16 @@ const usedInModalIngredient = ref<Ingredient | null>(null)
     <div class="flex flex-wrap items-center justify-between gap-3">
       <NxPageHeader title="Catálogo" icon="pi pi-shop" compact />
       <div class="flex w-full items-stretch gap-2 sm:w-auto">
+        <NxButton
+          v-if="canShareMenu"
+          variant="outline"
+          icon="pi pi-book"
+          title="Compartir menú"
+          aria-label="Compartir menú"
+          @click="router.push({ name: 'digital-menu.index' })"
+        >
+          <span class="hidden sm:inline">Compartir menú</span>
+        </NxButton>
         <NxButton
           v-if="canShareCatalog"
           variant="outline"

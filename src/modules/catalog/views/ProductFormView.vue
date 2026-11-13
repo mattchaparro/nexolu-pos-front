@@ -78,6 +78,9 @@ const optionLibraryQuery = useOptionGroupLibrary(productOptionsEnabled)
 const onlineStoreEnabled = computed(() =>
   hasFeature(business.value, ['online_store', 'digital_menu']),
 )
+// Las ventas cruzadas («Va bien con») sí son solo de la tienda online: su
+// endpoint responde 403 a un restaurante que solo tiene el menú digital.
+const crossSellsEnabled = computed(() => hasFeature(business.value, 'online_store'))
 // Sin el módulo de Servicios no hay nada que elegir: todo lo que se crea es un
 // producto, así que el selector de tipo no se muestra. (Un servicio ya
 // existente se sigue editando como servicio: isService lo trae el producto.)
@@ -314,7 +317,7 @@ async function uploadPendingImages(created: Product): Promise<void> {
 // endpoint solo existe con tienda online: sin ella responde 403 y el aviso
 // "modulo no habilitado" salia al abrir cualquier producto.
 watch(
-  [() => productQuery.data.value?.id, onlineStoreEnabled],
+  [() => productQuery.data.value?.id, crossSellsEnabled],
   ([id, enabled]) => {
     if (id && enabled) {
       void fetchCrossSells(id).then((related) => {
@@ -523,7 +526,7 @@ const sectionSteps = computed(() => {
 
 const hasExtras = computed(
   () =>
-    onlineStoreEnabled.value ||
+    crossSellsEnabled.value ||
     (ingredientsEnabled.value && !isService.value && !isSingleSale.value) ||
     (productOptionsEnabled.value && !isService.value),
 )
@@ -652,7 +655,7 @@ async function submit(): Promise<void> {
       await saveBranchPrices(updated)
       // Despues del producto: es una relacion aparte, y si fallara no debe
       // impedir que el producto se guarde.
-      if (onlineStoreEnabled.value) {
+      if (crossSellsEnabled.value) {
         await saveCrossSells(productId.value, crossSellIds.value)
       }
       notify('Producto actualizado')
@@ -1088,7 +1091,7 @@ async function submit(): Promise<void> {
         <!-- Solo con tienda online: las ventas cruzadas son exclusivas de la
              tienda (desde 2026-09-04). Sin tienda no hay donde se muestren. -->
         <ProductFormExtra
-          v-if="onlineStoreEnabled"
+          v-if="crossSellsEnabled"
           title="Se vende bien con"
           hint="Lo que aparece como «Va bien con» en la ficha de tu tienda online."
           icon="pi pi-link"
