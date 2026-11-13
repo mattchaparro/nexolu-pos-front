@@ -8,6 +8,12 @@ export async function fetchKitchenTickets(): Promise<KitchenTicket[]> {
   return data
 }
 
+/** Pedido online listo que sale del local: enviado o entregado. */
+export async function dispatchOnlineOrder(saleId: number): Promise<KitchenTicket> {
+  const { data } = await httpClient.post<KitchenTicket>(`/kitchen/tickets/${saleId}/dispatch`)
+  return data
+}
+
 export async function updateKitchenStatus(saleId: number, payload: UpdateKitchenStatusPayload): Promise<KitchenTicket> {
   const { data } = await httpClient.post<KitchenTicket>(`/kitchen/tickets/${saleId}/status`, payload)
   return data

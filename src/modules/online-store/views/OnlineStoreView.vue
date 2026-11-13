@@ -33,6 +33,7 @@ import { extractFieldErrors } from '@/utils/extractFieldErrors'
 
 import PublicProfileCard from '@/modules/link-page/components/PublicProfileCard.vue'
 
+import BusinessOrderCharges from '../components/BusinessOrderCharges.vue'
 import ShareCatalogModal from '../components/ShareCatalogModal.vue'
 import { useStoreSettings } from '../composables/useStoreSettings'
 
@@ -55,7 +56,6 @@ const activeTab = ref<'tienda' | 'editor'>('tienda')
 // (useTheme.ts). Catálogo cerrado: fuente libre = tiendas ilegibles.
 
 // --- Estado del formulario ---
-const shippingFlatFee = ref<number | null>(0)
 const minOrderAmount = ref<number | null>(0)
 // Cuanto se demora en llegar. Texto libre y no un numero de dias: un
 // restaurante que despacha en 40 minutos y una tienda que envia por
@@ -110,7 +110,6 @@ watch(
     if (!value) {
       return
     }
-    shippingFlatFee.value = value.shipping_flat_fee
     minOrderAmount.value = value.min_order_amount
     deliveryEstimate.value = value.delivery_estimate ?? ''
     shippingNote.value = value.shipping_note ?? ''
@@ -171,7 +170,6 @@ const nullable = (value: string) => value.trim() || null
 function saveStore(): Promise<void> {
   return save(
     {
-      shipping_flat_fee: shippingFlatFee.value ?? 0,
       min_order_amount: minOrderAmount.value ?? 0,
       delivery_estimate: deliveryEstimate.value.trim() || null,
       shipping_note: shippingNote.value.trim() || null,
@@ -315,12 +313,7 @@ const shareOpen = ref(false)
                       Todavía nadie te ha escrito por WhatsApp desde la tienda este mes.
                     </template>
                   </p>
-                  <NxInputNumber
-                    v-model="shippingFlatFee"
-                    label="Costo de envío"
-                    :min="0"
-                    :error="fieldErrors.shipping_flat_fee"
-                  />
+                  <BusinessOrderCharges />
                   <NxInputNumber
                     v-model="minOrderAmount"
                     label="Pedido mínimo"

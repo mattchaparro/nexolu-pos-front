@@ -12,6 +12,7 @@ import { useRouter } from 'vue-router'
 import { useBusiness } from '@/composables/useBusiness'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import PublicProfileCard from '@/modules/link-page/components/PublicProfileCard.vue'
+import BusinessOrderCharges from '@/modules/online-store/components/BusinessOrderCharges.vue'
 import ShareLinkPanel from '@/modules/online-store/components/ShareLinkPanel.vue'
 import { useStoreSettings } from '@/modules/online-store/composables/useStoreSettings'
 import { BRAND_SWATCHES } from '@/modules/online-store/support/themeSwatches'
@@ -41,7 +42,6 @@ const dishes = computed(() => settings.value?.published_products_count ?? 0)
 const hasKitchen = computed(() => hasFeature(business.value, 'kitchen_board'))
 
 // --- Formulario (se guarda con el botón) ---
-const shippingFee = ref<number | null>(0)
 const minOrder = ref<number | null>(0)
 const pickupEnabled = ref(true)
 const deliveryEstimate = ref('')
@@ -57,7 +57,6 @@ watch(
     if (!value) {
       return
     }
-    shippingFee.value = value.shipping_flat_fee
     minOrder.value = value.min_order_amount
     pickupEnabled.value = value.pickup_enabled
     deliveryEstimate.value = value.delivery_estimate ?? ''
@@ -107,7 +106,6 @@ function setTakesOrders(value: boolean): void {
 function saveDetails(): void {
   void save(
     {
-      shipping_flat_fee: shippingFee.value ?? 0,
       min_order_amount: minOrder.value ?? 0,
       pickup_enabled: pickupEnabled.value,
       delivery_estimate: nullable(deliveryEstimate.value),
@@ -241,7 +239,7 @@ const shareText = computed(
             Pedidos online</button
           >.
           <template v-if="hasKitchen">
-            Al confirmarlos pasan a la comandera y los cobras al entregar, desde Cuentas abiertas.
+            Al confirmarlos se registra la venta y pasan a la comandera; desde ahí los despachas.
           </template>
           <template v-else>Al confirmarlos se registran como venta.</template>
           Al cliente le escribes desde tu WhatsApp con el botón del pedido.
@@ -252,13 +250,7 @@ const shareText = computed(
       <div v-if="takesOrders" class="rounded-xl border border-slate-200 bg-white p-4">
         <p class="mb-3 text-sm font-semibold text-slate-800">Domicilios y para recoger</p>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <NxInputNumber
-            v-model="shippingFee"
-            label="Costo del domicilio"
-            :min="0"
-            currency
-            :error="fieldErrors.shipping_flat_fee"
-          />
+          <BusinessOrderCharges />
           <NxInputNumber
             v-model="minOrder"
             label="Pedido mínimo"

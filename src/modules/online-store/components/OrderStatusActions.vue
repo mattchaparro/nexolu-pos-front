@@ -39,19 +39,16 @@ const NEEDS_CONFIRMATION: Partial<Record<OrderStatus, string>> = {
 
 const pendingStatus = ref<OrderStatus | null>(null)
 
-// Restaurantes con comandera: confirmar no cierra una venta, abre una cuenta
-// que cocina ve al instante y se cobra al entregar (como cualquier domicilio).
-// Un pedido ya pagado en línea sigue cerrándose como venta.
-const sendsToKitchen = computed(
-  () => hasFeature(business.value, 'kitchen_board') && !props.order.paid_at,
-)
+// Con comandera, el pedido confirmado (venta ya registrada) pasa a cocina.
+// No es una cuenta abierta: se cobra aquí o ya lo cobró la pasarela.
+const sendsToKitchen = computed(() => hasFeature(business.value, 'kitchen_board'))
 
 const confirmationText = computed(() => {
   if (!pendingStatus.value) {
     return null
   }
   if (pendingStatus.value === 'confirmed' && sendsToKitchen.value) {
-    return 'El pedido pasa a la comandera como una cuenta abierta y se descuenta el inventario. Lo cobras al entregarlo, desde Cuentas abiertas.'
+    return 'Se registra la venta, se descuenta el inventario y el pedido pasa a la comandera. Esto no se puede deshacer.'
   }
   return NEEDS_CONFIRMATION[pendingStatus.value]
 })
@@ -66,7 +63,6 @@ const paymentMethods = computed(() =>
 )
 const paymentMethod = ref<string | null>(null)
 
-// "Facturar" no aplica cuando el pedido va a cocina: queda como cuenta abierta.
 function actionLabel(status: OrderStatus): string {
   return status === 'confirmed' && sendsToKitchen.value
     ? 'Confirmar y enviar a cocina'
@@ -90,10 +86,7 @@ async function moveTo(status: OrderStatus): Promise<void> {
       id: props.order.id,
       status,
       note: note.value.trim() || undefined,
-      paymentMethod:
-        status === 'confirmed' && !sendsToKitchen.value
-          ? (paymentMethod.value ?? undefined)
-          : undefined,
+      paymentMethod: status === 'confirmed' ? (paymentMethod.value ?? undefined) : undefined,
     })
     note.value = ''
     pendingStatus.value = null
@@ -128,7 +121,6 @@ async function moveTo(status: OrderStatus): Promise<void> {
         v-if="
           pendingStatus === 'confirmed' &&
           !order.paid_at &&
-          !sendsToKitchen &&
           paymentMethods.length > 0
         "
         v-model="paymentMethod"

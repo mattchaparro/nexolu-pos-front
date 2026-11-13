@@ -11,6 +11,7 @@
 // página que llegara a incrustarse ahí.
 import { computed, ref, watch } from 'vue'
 
+import { useBusiness } from '@/composables/useBusiness'
 import type { HomeBlock, StoreSettings } from '@/types/store'
 
 import type { StoreLibraryImage } from '../services/storeSettingsService'
@@ -23,6 +24,9 @@ const props = defineProps<{
 
 type Width = 'mobile' | 'desktop'
 const width = defineModel<Width>('width', { default: 'desktop' })
+
+// El envío es el domicilio del negocio, no un dato de la tienda.
+const { data: business } = useBusiness()
 
 /**
  * Los dos controles de espacio. Viven acá y no en la vista porque su sitio
@@ -122,7 +126,7 @@ function send(): void {
       description: props.settings.description,
       whatsapp_number: props.settings.whatsapp_number,
       min_order_amount: props.settings.min_order_amount,
-      shipping_flat_fee: props.settings.shipping_flat_fee,
+      shipping_flat_fee: business.value?.delivery_enabled ? Number(business.value.delivery_fee) : 0,
     },
   }
 

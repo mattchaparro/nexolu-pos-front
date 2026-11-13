@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
 import type { UpdateKitchenStatusPayload } from '@/types/kitchenTicket'
 
-import { updateKitchenStatus } from '../services/kitchenService'
+import { dispatchOnlineOrder, updateKitchenStatus } from '../services/kitchenService'
 
 export function useKitchenMutations() {
   const queryClient = useQueryClient()
@@ -13,5 +13,13 @@ export function useKitchenMutations() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['kitchen-tickets'] }),
   })
 
-  return { updateStatusMutation }
+  const dispatchMutation = useMutation({
+    mutationFn: (saleId: number) => dispatchOnlineOrder(saleId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['kitchen-tickets'] })
+      void queryClient.invalidateQueries({ queryKey: ['orders'] })
+    },
+  })
+
+  return { updateStatusMutation, dispatchMutation }
 }

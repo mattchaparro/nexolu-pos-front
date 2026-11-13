@@ -28,7 +28,6 @@ export interface StoreDraft {
   font: string
   address: string
   openingHours: string
-  shippingFlatFee: number
   minOrderAmount: number
   pickupEnabled: boolean
   terms: string
@@ -46,7 +45,6 @@ export function useStoreDraft() {
   const address = ref('')
   const openingHours = ref('')
 
-  const shippingFlatFee = ref(0)
   const minOrderAmount = ref(0)
   const pickupEnabled = ref(false)
   const terms = ref('')
@@ -64,7 +62,6 @@ export function useStoreDraft() {
       font: font.value,
       address: address.value,
       openingHours: openingHours.value,
-      shippingFlatFee: shippingFlatFee.value,
       minOrderAmount: minOrderAmount.value,
       pickupEnabled: pickupEnabled.value,
       terms: terms.value,
@@ -81,7 +78,6 @@ export function useStoreDraft() {
     font.value = state.font
     address.value = state.address
     openingHours.value = state.openingHours
-    shippingFlatFee.value = state.shippingFlatFee
     minOrderAmount.value = state.minOrderAmount
     pickupEnabled.value = state.pickupEnabled
     terms.value = state.terms
@@ -98,7 +94,6 @@ export function useStoreDraft() {
     font.value = settings.font_preset ?? 'moderna'
     address.value = settings.address ?? ''
     openingHours.value = settings.opening_hours ?? ''
-    shippingFlatFee.value = Number(settings.shipping_flat_fee ?? 0)
     minOrderAmount.value = Number(settings.min_order_amount ?? 0)
     pickupEnabled.value = Boolean(settings.pickup_enabled)
     terms.value = settings.terms ?? ''
@@ -123,7 +118,6 @@ export function useStoreDraft() {
       font_preset: font.value,
       address: opcional(address.value),
       opening_hours: opcional(openingHours.value),
-      shipping_flat_fee: shippingFlatFee.value,
       min_order_amount: minOrderAmount.value,
       pickup_enabled: pickupEnabled.value,
       terms: opcional(terms.value),
@@ -144,7 +138,6 @@ export function useStoreDraft() {
       accent_color: accent.value,
       font_preset: font.value,
       min_order_amount: minOrderAmount.value,
-      shipping_flat_fee: shippingFlatFee.value,
     }))
   }
 
@@ -156,7 +149,6 @@ export function useStoreDraft() {
     font,
     address,
     openingHours,
-    shippingFlatFee,
     minOrderAmount,
     pickupEnabled,
     terms,

@@ -135,6 +135,12 @@ const customerMessage = computed(() =>
                 <span>Envío</span>
                 <span>{{ order.shipping_fee > 0 ? formatCop(order.shipping_fee) : 'Gratis' }}</span>
               </div>
+              <div v-if="order.service_charge > 0" class="flex justify-between text-slate-500">
+                <span>Propina sugerida</span><span>{{ formatCop(order.service_charge) }}</span>
+              </div>
+              <div v-if="order.ipoconsumo > 0" class="flex justify-between text-slate-500">
+                <span>Impoconsumo</span><span>{{ formatCop(order.ipoconsumo) }}</span>
+              </div>
               <!-- Sin esta línea el total no cuadra contra subtotal + envío y
                    no hay nada en pantalla que explique la diferencia. -->
               <div v-if="order.discount_amount > 0" class="flex justify-between text-emerald-600">

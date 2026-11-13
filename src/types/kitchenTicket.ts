@@ -21,6 +21,17 @@ export interface KitchenTicket {
   /** Nota de la cuenta: alergias, "sin cebolla", dirección del domicilio... */
   notes: string | null
   is_delivery: boolean
+  /**
+   * Pedido online: su venta ya está registrada (pagó en línea o el negocio
+   * verificó el pago). No se cobra en la comandera: sale de ella al
+   * despacharse.
+   */
+  online_order: {
+    number: number
+    status: string
+    is_pickup: boolean
+    is_paid_online: boolean
+  } | null
   kitchen_status: KitchenStatus
   created_at: string
   items: KitchenTicketItem[]

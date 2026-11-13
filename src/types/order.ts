@@ -56,6 +56,9 @@ export interface Order {
   status: OrderStatus
   subtotal: number
   shipping_fee: number
+  /** Propina sugerida que el comprador aceptó (la del negocio). */
+  service_charge: number
+  ipoconsumo: number
   total: number
   customer_name: string
   customer_phone: string

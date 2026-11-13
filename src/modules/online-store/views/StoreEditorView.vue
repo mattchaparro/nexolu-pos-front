@@ -30,6 +30,7 @@ import { useGuidedTour } from '@/composables/useGuidedTour'
 import { STORE_EDITOR_TOUR } from '@/tours/storeEditor'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
+import BusinessOrderCharges from '../components/BusinessOrderCharges.vue'
 import HomePresetPicker from '../components/HomePresetPicker.vue'
 import { useEditorHistory, useUndoShortcuts } from '../composables/useEditorHistory'
 import { useStoreDraft, type StoreDraft } from '../composables/useStoreDraft'
@@ -561,12 +562,7 @@ async function save(): Promise<void> {
         <!-- Lo que se negocia con el comprador antes de pagar. -->
         <div v-else-if="editorSection === 'envio'" class="flex flex-col gap-3">
           <p class="text-sm font-semibold text-slate-700">Envío y condiciones</p>
-          <NxInputNumber
-            v-model="draft.shippingFlatFee.value"
-            label="Costo de envío"
-            :min="0"
-            currency
-          />
+          <BusinessOrderCharges />
           <NxInputNumber
             v-model="draft.minOrderAmount.value"
             label="Pedido mínimo"

@@ -42,7 +42,7 @@ function cardsFor(status: KitchenStatus): ColumnCard[] {
 
 const columnCards = computed(() => COLUMNS.map((column) => ({ column, cards: cardsFor(column.status) })))
 
-const { updateStatusMutation } = useKitchenMutations()
+const { updateStatusMutation, dispatchMutation } = useKitchenMutations()
 
 function advance(ticket: KitchenTicket, items: KitchenTicketItem[], status: KitchenStatus): void {
   updateStatusMutation.mutate({
@@ -53,6 +53,16 @@ function advance(ticket: KitchenTicket, items: KitchenTicketItem[], status: Kitc
 
 function ticketLabel(ticket: KitchenTicket): string {
   return ticket.table_name || ticket.customer_name || `Pedido #${ticket.id}`
+}
+
+// Un pedido online sale de la comandera al despacharse (no se cobra aquí):
+// solo cuando toda la comanda está lista, para no despachar media orden.
+function canDispatch(ticket: KitchenTicket, status: KitchenStatus): boolean {
+  return ticket.online_order !== null && status === 'ready' && ticket.kitchen_status === 'ready'
+}
+
+function dispatchLabel(ticket: KitchenTicket): string {
+  return ticket.online_order?.is_pickup ? 'Entregado al cliente' : 'Salió a domicilio'
 }
 </script>
 
@@ -80,9 +90,17 @@ function ticketLabel(ticket: KitchenTicket): string {
           <div class="mb-2 flex items-start justify-between gap-2">
             <div>
               <p class="text-sm font-semibold text-slate-900">{{ ticketLabel(card.ticket) }}</p>
-              <p class="text-xs text-slate-400">#{{ card.ticket.id }} · {{ card.ticket.created_at }}</p>
+              <p class="text-xs text-slate-400">
+                <template v-if="card.ticket.online_order">Pedido online #{{ card.ticket.online_order.number }}</template>
+                <template v-else>#{{ card.ticket.id }}</template>
+                · {{ card.ticket.created_at }}
+              </p>
             </div>
-            <span v-if="card.ticket.is_delivery" class="text-xs font-semibold text-fuchsia-600">Domicilio</span>
+            <div class="flex flex-col items-end gap-0.5 text-xs font-semibold">
+              <span v-if="card.ticket.is_delivery" class="text-indigo-600">Domicilio</span>
+              <span v-else-if="card.ticket.online_order" class="text-slate-500">Recoge</span>
+              <span v-if="card.ticket.online_order?.is_paid_online" class="text-emerald-600">Pagado en línea</span>
+            </div>
           </div>
 
           <!-- La nota va ANTES de los productos: es lo que no se puede pasar por alto
@@ -109,6 +127,17 @@ function ticketLabel(ticket: KitchenTicket): string {
               </p>
             </li>
           </ul>
+
+          <NxButton
+            v-if="canDispatch(card.ticket, column.status)"
+            size="sm"
+            class="mb-1.5 w-full"
+            icon="pi pi-send"
+            :loading="dispatchMutation.isPending.value"
+            @click="dispatchMutation.mutate(card.ticket.id)"
+          >
+            {{ dispatchLabel(card.ticket) }}
+          </NxButton>
 
           <div class="flex gap-1.5">
             <NxButton
