@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
-import { fetchLinkPage, updateLinkPage, type BioLink } from '../services/linkPageService'
+import {
+  deleteLinkPageLogo,
+  fetchLinkPage,
+  type LinkPagePayload,
+  type LinkPageState,
+  updateLinkPage,
+  uploadLinkPageLogo,
+} from '../services/linkPageService'
 
 export function useLinkPage() {
   const queryClient = useQueryClient()
@@ -10,10 +17,27 @@ export function useLinkPage() {
     queryFn: fetchLinkPage,
   })
 
+  const onSaved = (state: LinkPageState) => {
+    queryClient.setQueryData(['link-page'], state)
+    // Las redes y el logo también son del negocio y de la tienda.
+    queryClient.invalidateQueries({ queryKey: ['business'] })
+    queryClient.invalidateQueries({ queryKey: ['store-settings'] })
+  }
+
   const updateMutation = useMutation({
-    mutationFn: (payload: { enabled?: boolean; bio_links?: BioLink[] }) => updateLinkPage(payload),
-    onSuccess: (state) => queryClient.setQueryData(['link-page'], state),
+    mutationFn: (payload: LinkPagePayload) => updateLinkPage(payload),
+    onSuccess: onSaved,
   })
 
-  return { linkPageQuery, updateMutation }
+  const uploadLogoMutation = useMutation({
+    mutationFn: (file: File) => uploadLinkPageLogo(file),
+    onSuccess: onSaved,
+  })
+
+  const deleteLogoMutation = useMutation({
+    mutationFn: () => deleteLinkPageLogo(),
+    onSuccess: onSaved,
+  })
+
+  return { linkPageQuery, updateMutation, uploadLogoMutation, deleteLogoMutation }
 }

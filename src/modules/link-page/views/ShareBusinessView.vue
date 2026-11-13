@@ -9,6 +9,7 @@ import ShareLinkPanel from '@/modules/online-store/components/ShareLinkPanel.vue
 import { NxPageHeader } from '@/ui'
 
 import LinkPageCard from '../components/LinkPageCard.vue'
+import LinkPageStyleCard from '../components/LinkPageStyleCard.vue'
 import { useLinkPage } from '../composables/useLinkPage'
 
 const { linkPageQuery } = useLinkPage()
@@ -19,7 +20,7 @@ const catalogUrl = computed(() => state.value?.public_url.replace(/\/enlaces$/, 
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-3xl flex-col gap-4 pb-20 lg:pb-0">
+  <div class="mx-auto flex w-full max-w-4xl flex-col gap-4 pb-20 lg:pb-0">
     <NxPageHeader
       title="Compartir mi negocio"
       subtitle="Tu página de enlaces para la bio y, si tienes tienda online, tu catálogo."
@@ -28,6 +29,8 @@ const catalogUrl = computed(() => state.value?.public_url.replace(/\/enlaces$/, 
     />
 
     <LinkPageCard />
+
+    <LinkPageStyleCard />
 
     <div v-if="state?.has_store" class="rounded-xl border border-slate-200 bg-white p-4">
       <p class="text-sm font-semibold text-slate-800">Tu catálogo</p>

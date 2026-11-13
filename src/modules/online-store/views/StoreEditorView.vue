@@ -36,6 +36,7 @@ import { usePublishChecklist } from '../composables/usePublishChecklist'
 import PublishChecklist from '../components/PublishChecklist.vue'
 import StoreCategoryPicker from '../components/StoreCategoryPicker.vue'
 import StoreFontPicker from '../components/StoreFontPicker.vue'
+import { BRAND_SWATCHES, SURFACE_SWATCHES } from '../support/themeSwatches'
 import StoreHomePreview from '../components/StoreHomePreview.vue'
 import StoreImageField from '../components/StoreImageField.vue'
 import StoreImagePicker from '../components/StoreImagePicker.vue'
@@ -64,26 +65,6 @@ const {
 
 const errorMessage = ref<string | null>(null)
 const saved = ref(false)
-
-/**
- * Colores sugeridos. No son "los que quedan bien" sino un punto de partida:
- * un comerciante frente a una rueda de color infinita casi siempre elige algo
- * peor que cualquiera de estos.
- */
-const BRAND_SWATCHES = [
-  '#4f46e5',
-  '#0f172a',
-  '#b91c1c',
-  '#c2410c',
-  '#15803d',
-  '#0e7490',
-  '#7e22ce',
-  '#be185d',
-]
-
-// Fondos: claros de verdad u oscuros de verdad. Los grises intermedios son
-// los que arruinan el contraste que deriva useTheme.
-const SURFACE_SWATCHES = ['#ffffff', '#faf9f6', '#f5f5f4', '#f8fafc', '#111827', '#1c1917']
 
 // El riel. El orden es el de armar una tienda: primero qué se ve, luego cómo
 // se ve, luego los datos del negocio y por último lo que se negocia con el

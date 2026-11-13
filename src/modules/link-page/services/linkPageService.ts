@@ -14,6 +14,7 @@ export interface LinkPagePublic {
   name: string
   description: string | null
   logo_url: string | null
+  theme: { primary: string; surface: string; accent: string; font: string }
   has_store: boolean
   has_whatsapp: boolean
   instagram_url: string | null
@@ -24,6 +25,36 @@ export interface LinkPagePublic {
   bio_links: BioLink[]
 }
 
+/** Lo editable, tal como se guardó (no la vista resuelta). */
+export interface LinkPageSettings {
+  name: string | null
+  /** El nombre del negocio: lo que sale si `name` va vacío. */
+  business_name: string
+  description: string | null
+  primary_color: string
+  surface_color: string
+  font_preset: string
+  has_logo: boolean
+  instagram: string | null
+  tiktok: string | null
+  whatsapp: string | null
+  facebook_url: string | null
+}
+
+export type LinkPagePayload = {
+  enabled?: boolean
+  bio_links?: BioLink[]
+  name?: string | null
+  description?: string | null
+  primary_color?: string
+  surface_color?: string
+  font_preset?: string
+  instagram?: string | null
+  tiktok?: string | null
+  whatsapp?: string | null
+  facebook_url?: string | null
+}
+
 export interface LinkPageState {
   /** El comerciante la activó. */
   enabled: boolean
@@ -32,6 +63,7 @@ export interface LinkPageState {
   has_store: boolean
   public_url: string
   page: LinkPagePublic
+  settings: LinkPageSettings
 }
 
 export async function fetchLinkPage(): Promise<LinkPageState> {
@@ -39,10 +71,20 @@ export async function fetchLinkPage(): Promise<LinkPageState> {
   return data
 }
 
-export async function updateLinkPage(payload: {
-  enabled?: boolean
-  bio_links?: BioLink[]
-}): Promise<LinkPageState> {
+export async function updateLinkPage(payload: LinkPagePayload): Promise<LinkPageState> {
   const { data } = await httpClient.put<LinkPageState>('/link-page', payload)
+  return data
+}
+
+/** El logo es el mismo del negocio en la tienda: una sola ranura. */
+export async function uploadLinkPageLogo(file: File): Promise<LinkPageState> {
+  const form = new FormData()
+  form.append('image', file)
+  const { data } = await httpClient.post<LinkPageState>('/link-page/logo', form)
+  return data
+}
+
+export async function deleteLinkPageLogo(): Promise<LinkPageState> {
+  const { data } = await httpClient.delete<LinkPageState>('/link-page/logo')
   return data
 }
