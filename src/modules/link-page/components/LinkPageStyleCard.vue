@@ -69,6 +69,9 @@ const FONT_FAMILIES: Record<string, string> = {
   editorial: "'Zilla Slab', Georgia, serif",
   calida: "'Fraunces', Georgia, serif",
   tecnica: "'Space Grotesk', system-ui, sans-serif",
+  impacto: "'Anton', Impact, 'Arial Narrow', sans-serif",
+  bistro: "'Playfair Display', Georgia, serif",
+  urbana: "'Bebas Neue', Impact, sans-serif",
 }
 
 const preview = computed(() => {

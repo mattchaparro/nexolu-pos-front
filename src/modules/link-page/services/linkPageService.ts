@@ -8,6 +8,23 @@ export interface BioLink {
   url: string
 }
 
+/**
+ * Decisiones de estilo con opciones cerradas (App\Support\BrandStyle en la
+ * API). Sin elegir nada llegan los valores por defecto: el aspecto de siempre.
+ */
+export interface BrandStyle {
+  button_shape: 'rounded' | 'pill' | 'square'
+  button_fill: 'solid' | 'gradient'
+  button_caps: boolean
+  card_style: 'plain' | 'outlined' | 'shadow'
+  heading_underline: 'none' | 'line' | 'brush'
+  menu_layout: 'list' | 'cards'
+  home_logo: 'circle' | 'large'
+  socials_style: 'buttons' | 'icons'
+  pattern_opacity: number
+  sticker_tilt: number
+}
+
 /** Lo mismo que ve el público en /{slug}/enlaces. */
 export interface LinkPagePublic {
   slug: string
@@ -38,7 +55,11 @@ export interface LinkPageSettings {
   description: string | null
   primary_color: string
   surface_color: string
+  accent_color: string
   font_preset: string
+  style: BrandStyle
+  sticker_url: string | null
+  pattern_url: string | null
   has_logo: boolean
   has_icon: boolean
   logo_url: string | null
@@ -56,7 +77,9 @@ export type LinkPagePayload = {
   description?: string | null
   primary_color?: string
   surface_color?: string
+  accent_color?: string
   font_preset?: string
+  style?: Partial<BrandStyle>
   instagram?: string | null
   tiktok?: string | null
   whatsapp?: string | null
@@ -107,5 +130,20 @@ export async function uploadLinkPageIcon(file: File): Promise<LinkPageState> {
 
 export async function deleteLinkPageIcon(): Promise<LinkPageState> {
   const { data } = await httpClient.delete<LinkPageState>('/link-page/icon')
+  return data
+}
+
+/** Imagenes de marca: el sticker de la portada y el patron del fondo. */
+export type BrandImageKind = 'sticker' | 'pattern'
+
+export async function uploadBrandImage(kind: BrandImageKind, file: File): Promise<LinkPageState> {
+  const form = new FormData()
+  form.append('image', file)
+  const { data } = await httpClient.post<LinkPageState>(`/link-page/${kind}`, form)
+  return data
+}
+
+export async function deleteBrandImage(kind: BrandImageKind): Promise<LinkPageState> {
+  const { data } = await httpClient.delete<LinkPageState>(`/link-page/${kind}`)
   return data
 }
