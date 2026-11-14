@@ -17,6 +17,7 @@ import { useGuidedTour } from '@/composables/useGuidedTour'
 import { usePermissions } from '@/composables/usePermissions'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import { useCurrentShift } from '@/modules/cash-shifts/composables/useCurrentShift'
+import PrintingStatusBanner from '@/modules/printing/components/PrintingStatusBanner.vue'
 import { useAuthStore } from '@/stores/auth.store'
 import { useBranchStore } from '@/stores/branch.store'
 import type { Product, ProductVariant } from '@/types/product'
@@ -516,6 +517,32 @@ async function handlePaymentConfirm(payload: CloseOpenTabPayload): Promise<void>
   }
 }
 
+// «Paga al recibir»: el domicilio sale como cuenta abierta (la cocina lo
+// recibe igual) y la caja la cierra cuando vuelve el domiciliario.
+async function handlePayOnDelivery(payload: { delivery_address: string | null }): Promise<void> {
+  submitError.value = null
+  const sale = checkout.buildPayload()
+  try {
+    await tabMutations.openMutation.mutateAsync({
+      items: sale.items,
+      customer_name: sale.customer_name || null,
+      customer_phone: sale.customer_phone || null,
+      customer_identification: sale.customer_identification || null,
+      client_id: sale.client_id ?? null,
+      is_delivery: true,
+      delivery_address: payload.delivery_address,
+      save_address_to_client: sale.save_address_to_client,
+      cart_discount_id: sale.cart_discount_id ?? null,
+    })
+    paymentModalOpen.value = false
+    mobileCartOpen.value = false
+    checkout.reset()
+    notify('Domicilio enviado. Ciérralo en Cuentas abiertas cuando vuelva el domiciliario.')
+  } catch (error) {
+    showActionError(extractErrorMessage(error, 'No pudimos enviar el domicilio. Intenta de nuevo.'))
+  }
+}
+
 function handleNewSale(): void {
   checkout.reset()
   successOpen.value = false
@@ -531,6 +558,7 @@ const { branches: sellableBranches } = useBranches()
 <template>
   <div class="flex h-[calc(100dvh-4rem)] flex-col lg:h-[calc(100dvh-4rem-3rem)]">
     <NxPageHeader title="Vender" icon="pi pi-shopping-cart" compact />
+    <PrintingStatusBanner class="mb-2 shrink-0" />
 
     <div
       v-if="branchStore.isAllBranches"
@@ -750,7 +778,8 @@ const { branches: sellableBranches } = useBranches()
       :allow-financing="mode === 'quick' && hasFeature(business, 'financing') && hasPermission('financing.sell')"
       :sale="mode === 'quick' ? null : activeSale"
       :business="business"
-      :submitting="mode === 'quick' ? createSaleMutation.isPending.value : tabMutations.closeMutation.isPending.value"
+      :allow-pay-on-delivery="mode === 'quick' && openTabsEnabled"
+      :submitting="mode === 'quick' ? createSaleMutation.isPending.value || tabMutations.openMutation.isPending.value : tabMutations.closeMutation.isPending.value"
       :fallback-charge-base="checkout.totals.value?.subtotalAfterCartDiscount ?? 0"
       :initial-delivery="checkout.isDelivery.value"
       :initial-delivery-address="checkout.deliveryAddress.value"
@@ -758,6 +787,7 @@ const { branches: sellableBranches } = useBranches()
       :existing-customer-phone="mode === 'quick' ? checkout.customerPhone.value : activeSale?.customer_phone"
       @confirm="handlePaymentConfirm"
       @register-partial="handleRegisterPartial"
+      @pay-on-delivery="handlePayOnDelivery"
     />
 
     <TabClosedDialog v-model="tabClosedOpen" :sale="lastClosedSale" />

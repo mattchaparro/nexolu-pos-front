@@ -403,6 +403,14 @@ const router = createRouter({
           meta: { requiresFeature: 'kitchen_board' },
         },
         {
+          // Comandera física: la caja despacha lo que sale. Igual que la
+          // comandera, sin permiso (la ruta del backend tampoco lo pide).
+          path: 'despacho',
+          name: 'dispatch.index',
+          component: () => import('@/modules/dispatch/views/DispatchView.vue'),
+          meta: { requiresFeature: 'kitchen_printing' },
+        },
+        {
           // El domiciliario es un empleado con deliveries.handle (mismo
           // permiso que la ruta del backend).
           path: 'domicilios',

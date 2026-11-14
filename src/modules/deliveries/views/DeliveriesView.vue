@@ -14,6 +14,7 @@ import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { formatCop } from '@/utils/formatCop'
 
 import { fetchDeliveries, markDelivered, takeDelivery, type Delivery } from '../services/deliveryService'
+import { cashToCollect, deliveryTitle, paymentText as deliveryPaymentText, mapsUrl } from '../support/deliveryText'
 
 const POLL_INTERVAL_MS = 5000
 
@@ -48,32 +49,8 @@ function methodLabel(id: string | null): string {
   return business.value?.payment_methods?.find((m) => m.id === id)?.label ?? id ?? ''
 }
 
-/** Lo que hay que cobrarle al cliente en la puerta (0 = ya está pago). */
-function cashToCollect(delivery: Delivery): number {
-  if (delivery.is_paid_online) {
-    return 0
-  }
-  if (delivery.is_open_tab || delivery.payment_method === 'cash') {
-    return delivery.total
-  }
-  return 0
-}
-
 function paymentText(delivery: Delivery): string {
-  if (delivery.is_paid_online) {
-    return 'Ya pagado en línea'
-  }
-  if (delivery.is_open_tab) {
-    return `Cobrar ${formatCop(delivery.total)} al entregar`
-  }
-  if (delivery.payment_method === 'cash') {
-    return `Cobrar ${formatCop(delivery.total)} en efectivo`
-  }
-  return `Pagado con ${methodLabel(delivery.payment_method)}`
-}
-
-function mapsUrl(address: string): string {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
+  return deliveryPaymentText(delivery, methodLabel)
 }
 
 function whatsappUrl(phone: string): string {
@@ -81,10 +58,7 @@ function whatsappUrl(phone: string): string {
   return `https://wa.me/${digits.length === 10 ? `57${digits}` : digits}`
 }
 
-function title(delivery: Delivery): string {
-  const who = delivery.customer_name || 'Cliente'
-  return delivery.order_number ? `${who} · Pedido online #${delivery.order_number}` : who
-}
+const title = deliveryTitle
 
 const refresh = () => queryClient.invalidateQueries({ queryKey: ['deliveries'] })
 
