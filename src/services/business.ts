@@ -27,6 +27,7 @@ export type UpdateBusinessPayload = Partial<
     | 'ticket_footer_text'
     | 'delivery_enabled'
     | 'delivery_fee'
+    | 'sell_show_photos'
     | 'low_stock_alert_threshold'
     | 'low_stock_email_enabled'
     | 'low_stock_email'

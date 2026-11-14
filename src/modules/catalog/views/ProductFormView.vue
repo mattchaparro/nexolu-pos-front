@@ -77,8 +77,16 @@ const optionLibraryQuery = useOptionGroupLibrary(productOptionsEnabled)
 // tambien estan gateadas por `feature:online_store` en el backend).
 // El menú digital también muestra la foto de cada plato.
 const channelName = useChannelName()
-const onlineStoreEnabled = computed(() =>
-  hasFeature(business.value, ['online_store', 'digital_menu']),
+// Quien enciende "Mostrar fotos" en Ajustes › Ventas tambien puede subirlas,
+// aunque no tenga tienda ni menu (el backend lo permite igual: sell_photos).
+const onlineStoreEnabled = computed(
+  () => hasFeature(business.value, ['online_store', 'digital_menu']) || business.value?.sell_show_photos === true,
+)
+// Las fotos se recortan al centro en cuadrado (lo hace el backend al subirlas).
+const photosSubtitle = computed(() =>
+  hasFeature(business.value, ['online_store', 'digital_menu'])
+    ? `La primera es la portada en ${channelName.value}. Se recortan en cuadrado.`
+    : 'La primera es la que se ve en Vender. Se recortan en cuadrado.',
 )
 // Las ventas cruzadas («Va bien con») sí son solo de la tienda online: su
 // endpoint responde 403 a un restaurante que solo tiene el menú digital.
@@ -834,7 +842,7 @@ async function submit(): Promise<void> {
         v-if="onlineStoreEnabled"
         :step="sectionSteps.photos"
         title="Fotos"
-        :subtitle="`La primera es la portada en ${channelName}.`"
+        :subtitle="photosSubtitle"
       >
         <ProductImagesEditor
           v-model:pending="pendingImages"

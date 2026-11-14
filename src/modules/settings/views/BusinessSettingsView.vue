@@ -167,6 +167,7 @@ async function submitSupportRequest(): Promise<void> {
 }
 
 const ventas = reactive({
+  sell_show_photos: false,
   delivery_enabled: false,
   delivery_fee: 0 as number | null,
   service_charge_enabled: false,
@@ -300,6 +301,7 @@ watch(
     facturacion.email_footer_text = value.email_footer_text ?? ''
     facturacion.email_whatsapp_cta = value.email_whatsapp_cta
 
+    ventas.sell_show_photos = value.sell_show_photos === true
     ventas.delivery_enabled = value.delivery_enabled
     ventas.delivery_fee = value.delivery_fee
     ventas.service_charge_enabled = value.charges.service_charge_enabled
@@ -426,6 +428,7 @@ async function submitVentas(): Promise<void> {
   ventasFormError.value = null
   try {
     await mutateAsync({
+      sell_show_photos: ventas.sell_show_photos,
       delivery_enabled: ventas.delivery_enabled,
       delivery_fee: ventas.delivery_fee ?? 0,
       service_charge_enabled: ventas.service_charge_enabled,
@@ -688,6 +691,24 @@ const { gatewaysQuery } = usePaymentGateways()
               >
                 {{ ventasFormError }}
               </p>
+
+              <p class="mb-1 text-sm font-semibold text-slate-700">Productos en Vender</p>
+              <p class="mb-3 text-xs text-slate-500">
+                Cómo se ven los productos al vender. Los puedes fijar y ordenar desde Vender, con el botón «Organizar».
+              </p>
+              <div class="mb-6 rounded-xl border border-slate-200 px-4 py-3">
+                <div class="flex items-start gap-3">
+                  <i class="pi pi-image mt-0.5 text-slate-500" />
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm font-medium text-slate-800">Mostrar fotos</p>
+                    <p class="text-xs text-slate-500">
+                      Cada producto sale con su foto cuadrada, el nombre y el precio. Las fotos se suben en Catálogo, al
+                      editar el producto.
+                    </p>
+                  </div>
+                  <NxSwitch v-model="ventas.sell_show_photos" class="shrink-0" :disabled="!canEdit" />
+                </div>
+              </div>
 
               <p class="mb-1 text-sm font-semibold text-slate-700">Domicilio y cargos</p>
               <p class="mb-3 text-xs text-slate-500">

@@ -52,6 +52,9 @@ export interface Business {
   ticket_footer_text: string | null
   delivery_enabled: boolean
   delivery_fee: number
+  // La grilla de Vender muestra la foto de cada producto. Encenderlo tambien
+  // habilita subir fotos aunque el negocio no tenga tienda ni menu digital.
+  sell_show_photos: boolean
   // Solo los HABILITADOS - para selectores de una transaccion NUEVA
   // (checkout, abono a compra/apartado). Un medio que el negocio ya
   // desactivo no debe ofrecerse ahi.

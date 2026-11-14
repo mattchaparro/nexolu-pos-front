@@ -172,6 +172,12 @@ export interface Product {
   // URL desnormalizada de la foto principal, suficiente para los listados.
   // La galeria completa (`images`) solo viene en el detalle del producto.
   image: string | null
+  // Miniatura (400 px, cuadrada) de esa misma foto: es la que pinta la grilla
+  // de Vender, para no bajar la de 1600 px por cada producto.
+  image_thumbnail: string | null
+  // Posicion entre los productos fijados de Vender (0 = el primero); null =
+  // no fijado. Es del negocio, no de cada cajero.
+  pinned_order: number | null
   images?: ProductImage[]
   is_active: boolean
   // Publicar en la tienda online es una decision aparte de estar activo en

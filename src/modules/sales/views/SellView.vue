@@ -44,6 +44,7 @@ import PriceVariesModal from '../components/PriceVariesModal.vue'
 import ProductOptionsModal from '../components/ProductOptionsModal.vue'
 import { hasOptionGroups, type ChosenOption } from '../support/productOptions'
 import ProductGrid from '../components/ProductGrid.vue'
+import { useCanOrganizeProducts } from '../composables/useCanOrganizeProducts'
 import SaleSuccessDialog from '../components/SaleSuccessDialog.vue'
 import TabInProgressPanel from '../components/TabInProgressPanel.vue'
 import TabSwitcherStrip from '../components/TabSwitcherStrip.vue'
@@ -62,6 +63,7 @@ const tour = useGuidedTour(SELL_TOUR.key, SELL_TOUR.steps, () => business.value?
 watch(business, (value) => { if (value) { void tour.start() } }, { once: true })
 
 const { productsQuery, categoriesQuery, frequentQuery } = useProductCatalog()
+const canOrganizeProducts = useCanOrganizeProducts()
 const { hasPermission } = usePermissions()
 // Sin esto, un negocio sin el feature discounts (o un cajero sin
 // discounts.apply/discounts.manage) disparaba igual la consulta y recibia
@@ -605,6 +607,7 @@ const { branches: sellableBranches } = useBranches()
           :products="productsQuery.data.value ?? []"
           :categories="categoriesQuery.data.value ?? []"
           :frequent-ids="frequentQuery.data.value ?? []"
+          :organizable="canOrganizeProducts"
           @select="handleSelectProduct"
         />
       </div>

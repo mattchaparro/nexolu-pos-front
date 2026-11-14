@@ -19,6 +19,7 @@ import PriceVariesModal from '../../sales/components/PriceVariesModal.vue'
 import ProductOptionsModal from '../../sales/components/ProductOptionsModal.vue'
 import { hasOptionGroups, type ChosenOption } from '../../sales/support/productOptions'
 import ProductGrid from '../../sales/components/ProductGrid.vue'
+import { useCanOrganizeProducts } from '../../sales/composables/useCanOrganizeProducts'
 import { useProductCatalog } from '../../sales/composables/useProductCatalog'
 import PaymentModal from '../../sales/components/PaymentModal.vue'
 import ActiveTabItemsPanel from '../components/ActiveTabItemsPanel.vue'
@@ -39,6 +40,7 @@ const { data: business } = useBusiness()
 const tablesQuery = useTables()
 const openTabsQuery = useOpenTabsList()
 const { productsQuery, categoriesQuery, frequentQuery } = useProductCatalog()
+const canOrganizeProducts = useCanOrganizeProducts()
 const mutations = useOpenTabMutations()
 
 const search = ref('')
@@ -420,6 +422,7 @@ async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Prom
             :products="productsQuery.data.value ?? []"
             :categories="categoriesQuery.data.value ?? []"
             :frequent-ids="frequentQuery.data.value ?? []"
+          :organizable="canOrganizeProducts"
             @select="handleSelectProduct"
           />
         </div>

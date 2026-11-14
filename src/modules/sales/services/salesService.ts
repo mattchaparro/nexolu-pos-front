@@ -26,6 +26,17 @@ export async function fetchFrequentProductIds(): Promise<number[]> {
   return data.product_ids
 }
 
+/**
+ * Reemplaza la lista de fijados de Vender (en orden). Lo que no viene deja de
+ * estar fijado; el backend valida que los ids sean del negocio.
+ */
+export async function updatePinnedProducts(productIds: number[]): Promise<number[]> {
+  const { data } = await httpClient.put<{ product_ids: number[] }>('/products/pinned', {
+    product_ids: productIds,
+  })
+  return data.product_ids
+}
+
 // Reexport: la llamada es identica a la que usa el modulo Catalogo (misma
 // URL sin paginar, mismos datos) - una sola implementacion en
 // catalog/services/catalogService.ts en vez de duplicarla aca.
