@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Reservation } from '@/modules/reservations/services/reservationService'
+import { timeLabel } from '@/modules/reservations/support/reservationText'
 import type { Sale } from '@/types/sale'
 import type { BusinessTable } from '@/types/table'
 import { formatCop } from '@/utils/formatCop'
@@ -7,6 +9,8 @@ defineProps<{
   tables: BusinessTable[]
   /** Cuenta abierta de cada mesa ocupada, por table_id. */
   openSaleByTable: Map<number, Sale>
+  /** Proxima reserva de cada mesa (hoy), por table_id. Solo con el modulo de reservas. */
+  reservationByTable?: Map<number, Reservation>
 }>()
 
 const emit = defineEmits<{ select: [table: BusinessTable] }>()
@@ -38,6 +42,9 @@ const emit = defineEmits<{ select: [table: BusinessTable] }>()
       </p>
       <p v-if="openSaleByTable.has(table.id)" class="text-[10px] font-semibold leading-tight text-indigo-700">
         {{ formatCop(openSaleByTable.get(table.id)!.total) }}
+      </p>
+      <p v-else-if="reservationByTable?.has(table.id)" class="w-full truncate text-[10px] font-semibold leading-tight text-amber-600">
+        Reservada {{ timeLabel(reservationByTable.get(table.id)!.starts_at) }}
       </p>
       <p v-else class="text-[10px] leading-tight text-slate-300">Libre</p>
       <p

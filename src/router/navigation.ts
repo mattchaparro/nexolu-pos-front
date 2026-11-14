@@ -64,6 +64,12 @@ export const adminNavItems: NavItem[] = [
     featureKey: 'kitchen_board',
   },
   {
+    label: 'Reservas',
+    icon: 'pi pi-calendar-plus',
+    routeName: 'reservations.index',
+    featureKey: 'table_reservations',
+  },
+  {
     label: 'Despacho',
     icon: 'pi pi-send',
     routeName: 'dispatch.index',

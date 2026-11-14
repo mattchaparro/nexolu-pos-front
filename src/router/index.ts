@@ -403,6 +403,13 @@ const router = createRouter({
           meta: { requiresFeature: 'kitchen_board' },
         },
         {
+          // Reservas de mesa (opt-in). Mismo permiso que las rutas del backend.
+          path: 'reservas',
+          name: 'reservations.index',
+          component: () => import('@/modules/reservations/views/ReservationsView.vue'),
+          meta: { requiresFeature: 'table_reservations', requiresPermission: 'reservations.manage' },
+        },
+        {
           // Comandera física: la caja despacha lo que sale. Igual que la
           // comandera, sin permiso (la ruta del backend tampoco lo pide).
           path: 'despacho',

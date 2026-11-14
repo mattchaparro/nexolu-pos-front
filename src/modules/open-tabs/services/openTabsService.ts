@@ -28,6 +28,7 @@ export async function fetchOpenTab(id: number): Promise<Sale> {
 }
 
 export async function createTable(payload: {
+  capacity?: number
   name: string
   number?: number
 }): Promise<BusinessTable> {

@@ -5,6 +5,8 @@ export interface BusinessTable {
   business_id: number
   name: string
   number: number
+  /** Cuantas personas caben: lo usan las reservas para asignar mesa. */
+  capacity: number
   is_active: boolean
   has_open_sale: boolean
 }

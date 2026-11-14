@@ -9,6 +9,7 @@ import type { NavItem } from '@/types/navigation'
 
 import { useReadyDeliveryCount } from '@/modules/deliveries/composables/useDeliveries'
 import { usePendingOrderCount } from '@/modules/online-store/composables/useOrders'
+import { usePendingReservationCount } from '@/modules/reservations/composables/useReservations'
 import { DELIVERIES_PERMISSION, isCourierOnly } from '@/utils/courier'
 import { usePendingReviewCount } from '@/modules/online-store/composables/useReviews'
 
@@ -63,6 +64,12 @@ export function useNavItems() {
     () => business.value?.delivery_enabled === true && (isAdmin.value || hasPermission(DELIVERIES_PERMISSION)),
   )
   const readyDeliveries = useReadyDeliveryCount(seesDeliveries)
+  // Las reservas por internet llegan solas: el contador avisa que hay una por confirmar.
+  const seesReservations = computed(
+    () =>
+      hasFeature(business.value, 'table_reservations') && (isAdmin.value || hasPermission('reservations.manage')),
+  )
+  const pendingReservations = usePendingReservationCount(seesReservations)
 
   function isRouteAccessible(routeName: string): boolean {
     const route = router.getRoutes().find((r) => r.name === routeName)
@@ -101,6 +108,9 @@ export function useNavItems() {
         }
         if (item.routeName === 'online-store.reviews' && (pendingReviews.value ?? 0) > 0) {
           return { ...item, badge: pendingReviews.value }
+        }
+        if (item.routeName === 'reservations.index' && pendingReservations.value > 0) {
+          return { ...item, badge: pendingReservations.value }
         }
         if (item.routeName === 'deliveries.index' && readyDeliveries.value > 0) {
           return { ...item, badge: readyDeliveries.value }

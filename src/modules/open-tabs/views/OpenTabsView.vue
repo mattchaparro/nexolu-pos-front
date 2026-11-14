@@ -14,7 +14,11 @@ import type { BusinessTable } from '@/types/table'
 import { NxButton, NxInput, NxPageHeader } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 import { hasFeature } from '@/utils/hasFeature'
+import { useAuthStore } from '@/stores/auth.store'
 
+import { useReservationList } from '../../reservations/composables/useReservations'
+import type { Reservation } from '../../reservations/services/reservationService'
+import { todayIso } from '../../reservations/support/reservationText'
 import PriceVariesModal from '../../sales/components/PriceVariesModal.vue'
 import ProductOptionsModal from '../../sales/components/ProductOptionsModal.vue'
 import { hasOptionGroups, type ChosenOption } from '../../sales/support/productOptions'
@@ -86,6 +90,26 @@ const discountsEnabled = computed(
 )
 const { data: discounts } = useActiveDiscounts(discountsEnabled)
 const itemDiscounts = computed(() => (discounts.value ?? []).filter((d) => d.scope === 'item'))
+
+// Reservas de hoy (con el modulo y el permiso): la mesa reservada se ve marcada.
+const auth = useAuthStore()
+const reservationsOn = computed(
+  () =>
+    hasFeature(business.value, 'table_reservations') &&
+    (auth.user?.roles?.includes('admin') === true || hasPermission('reservations.manage')),
+)
+const todayReservationsFilter = computed(() => ({ date: todayIso(), status: ['confirmed' as const, 'seated' as const] }))
+const todayReservations = useReservationList(todayReservationsFilter, reservationsOn)
+const reservationByTable = computed(() => {
+  const map = new Map<number, Reservation>()
+  for (const reservation of todayReservations.data.value ?? []) {
+    // La primera por hora gana: es la que sigue.
+    if (reservation.table_id && reservation.status === 'confirmed' && !map.has(reservation.table_id)) {
+      map.set(reservation.table_id, reservation)
+    }
+  }
+  return map
+})
 
 const openSaleByTable = computed(() => {
   const map = new Map<number, Sale>()
@@ -340,7 +364,12 @@ async function handleRegisterPartial(payload: RecordPartialPaymentPayload): Prom
             {{ filteredTables.filter((t) => openSaleByTable.has(t.id)).length }}/{{ filteredTables.length }} ocupadas
           </span>
         </h3>
-        <TablesGrid :tables="filteredTables" :open-sale-by-table="openSaleByTable" @select="selectTable" />
+        <TablesGrid
+          :tables="filteredTables"
+          :open-sale-by-table="openSaleByTable"
+          :reservation-by-table="reservationByTable"
+          @select="selectTable"
+        />
       </div>
 
       <div v-if="filteredOpenTabsByName.length > 0" class="mt-5">

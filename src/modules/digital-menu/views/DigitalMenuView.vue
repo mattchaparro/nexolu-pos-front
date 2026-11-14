@@ -12,6 +12,7 @@ import { useRouter } from 'vue-router'
 import { useBusiness } from '@/composables/useBusiness'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import PublicProfileCard from '@/modules/link-page/components/PublicProfileCard.vue'
+import BusinessHoursEditor from '@/modules/reservations/components/BusinessHoursEditor.vue'
 import BusinessOrderCharges from '@/modules/online-store/components/BusinessOrderCharges.vue'
 import ShareLinkPanel from '@/modules/online-store/components/ShareLinkPanel.vue'
 import { useStoreSettings } from '@/modules/online-store/composables/useStoreSettings'
@@ -23,7 +24,6 @@ import {
   NxInput,
   NxInputNumber,
   NxPageHeader,
-  NxTextarea,
   NxToggleButton,
 } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
@@ -47,7 +47,6 @@ const pickupEnabled = ref(true)
 const deliveryEstimate = ref('')
 const shippingNote = ref('')
 const address = ref('')
-const openingHours = ref('')
 const primaryColor = ref('#4f46e5')
 const fieldErrors = ref<Record<string, string>>({})
 
@@ -62,7 +61,6 @@ watch(
     deliveryEstimate.value = value.delivery_estimate ?? ''
     shippingNote.value = value.shipping_note ?? ''
     address.value = value.address ?? ''
-    openingHours.value = value.opening_hours ?? ''
     primaryColor.value = value.primary_color ?? '#4f46e5'
   },
   { immediate: true },
@@ -111,7 +109,6 @@ function saveDetails(): void {
       delivery_estimate: nullable(deliveryEstimate.value),
       shipping_note: nullable(shippingNote.value),
       address: nullable(address.value),
-      opening_hours: nullable(openingHours.value),
       primary_color: primaryColor.value,
     },
     'Menú actualizado',
@@ -282,17 +279,13 @@ const shareText = computed(
       <!-- Datos del restaurante -->
       <PublicProfileCard />
 
+      <!-- Un solo horario: lo ve el cliente en la carta y lo usan las reservas. -->
+      <BusinessHoursEditor />
+
       <div class="rounded-xl border border-slate-200 bg-white p-4">
-        <p class="mb-3 text-sm font-semibold text-slate-800">Dirección, horario y color</p>
+        <p class="mb-3 text-sm font-semibold text-slate-800">Dirección y color</p>
         <div class="flex flex-col gap-3">
           <NxInput v-model="address" label="Dirección" :error="fieldErrors.address" />
-          <NxTextarea
-            v-model="openingHours"
-            label="Horario"
-            :rows="2"
-            placeholder="Lun-Dom 12:00-22:00"
-            :error="fieldErrors.opening_hours"
-          />
           <NxColorPicker
             v-model="primaryColor"
             label="Color de tu menú"

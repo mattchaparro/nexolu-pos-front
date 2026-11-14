@@ -12,7 +12,7 @@ export function useTableMutations() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: (params: { id: number; payload: { name?: string; number?: number; is_active?: boolean } }) =>
+    mutationFn: (params: { id: number; payload: { name?: string; number?: number; capacity?: number; is_active?: boolean } }) =>
       updateTable(params.id, params.payload),
     onSuccess: invalidate,
   })

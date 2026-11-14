@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 
 import type { BusinessTable } from '@/types/table'
-import { NxButton, NxInput, NxModal } from '@/ui'
+import { NxButton, NxInput, NxInputNumber, NxModal } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
 import { useTableMutations } from '../composables/useTableMutations'
@@ -17,6 +17,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 const { createMutation, updateMutation, deleteMutation } = useTableMutations()
 
 const newTableName = ref('')
+const newTableCapacity = ref<number | null>(4)
 const error = ref<string | null>(null)
 
 async function addTable(): Promise<void> {
@@ -26,10 +27,16 @@ async function addTable(): Promise<void> {
   }
   error.value = null
   try {
-    await createMutation.mutateAsync({ name })
+    await createMutation.mutateAsync({ name, capacity: newTableCapacity.value ?? 4 })
     newTableName.value = ''
   } catch (err) {
     error.value = extractErrorMessage(err, 'No pudimos crear la mesa.')
+  }
+}
+
+async function changeCapacity(table: BusinessTable, value: number | null): Promise<void> {
+  if (value && value !== table.capacity) {
+    await updateMutation.mutateAsync({ id: table.id, payload: { capacity: value } })
   }
 }
 
@@ -66,6 +73,16 @@ async function removeTable(table: BusinessTable): Promise<void> {
             {{ table.name }}
           </span>
           <span v-if="table.has_open_sale" class="text-[10px] font-semibold text-indigo-600">Ocupada</span>
+          <NxInputNumber
+            :model-value="table.capacity"
+            :currency="false"
+            :min="1"
+            :max="40"
+            size="sm"
+            class="w-20"
+            aria-label="Personas que caben"
+            @update:model-value="changeCapacity(table, $event)"
+          />
           <button
             type="button"
             class="text-xs font-medium text-slate-400 hover:text-indigo-600"
@@ -87,6 +104,7 @@ async function removeTable(table: BusinessTable): Promise<void> {
 
       <form class="flex items-end gap-2 border-t border-slate-200 pt-3" @submit.prevent="addTable">
         <NxInput v-model="newTableName" label="Nombre de la mesa" size="sm" class="flex-1" />
+        <NxInputNumber v-model="newTableCapacity" label="Personas" :currency="false" :min="1" :max="40" size="sm" class="w-24" />
         <NxButton size="sm" type="submit" :loading="createMutation.isPending.value">Agregar</NxButton>
       </form>
     </div>
