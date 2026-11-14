@@ -10,6 +10,8 @@ export interface Delivery {
   customer_name: string | null
   customer_phone: string | null
   address: string | null
+  /** Pedido online para recoger (lo muestra Despacho). */
+  is_pickup?: boolean
   notes: string | null
   items: { name: string; quantity: number }[]
   total: number
@@ -17,6 +19,8 @@ export interface Delivery {
   is_open_tab: boolean
   payment_method: string | null
   is_paid_online: boolean
+  /** Lo que el domiciliario cobra en la puerta (0 = ya está pago). La regla vive en el API. */
+  amount_to_collect: number
   status: DeliveryStatus
   /** La cocina ya lo terminó (o no pasa por cocina). */
   is_ready: boolean

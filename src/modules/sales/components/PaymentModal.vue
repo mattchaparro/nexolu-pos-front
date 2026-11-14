@@ -89,6 +89,12 @@ const props = withDefaults(
     allowTerminal?: boolean
     /** Venta financiada por un tercero (Addi, Banti...): solo venta directa, como el datáfono. */
     allowFinancing?: boolean
+    /**
+     * Domicilio «Paga al recibir»: en vez de cobrar, sale como cuenta abierta
+     * que la caja cierra cuando vuelve el domiciliario con la plata. Solo en
+     * venta directa y con cuentas abiertas activas.
+     */
+    allowPayOnDelivery?: boolean
   }>(),
   {
     fallbackChargeBase: 0,
@@ -101,6 +107,7 @@ const props = withDefaults(
     receivableMode: false,
     allowTerminal: false,
     allowFinancing: false,
+    allowPayOnDelivery: false,
   },
 )
 
@@ -108,6 +115,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: boolean]
   confirm: [payload: CloseOpenTabPayload]
   'register-partial': [payload: RecordPartialPaymentPayload]
+  'pay-on-delivery': [payload: { delivery_address: string | null }]
 }>()
 
 type PaymentTab = 'single' | 'multi' | 'split' | 'partial' | 'financed'
@@ -149,6 +157,7 @@ const partialLabel = ref('')
 const receivedInput = ref<number | null>(null)
 const isDelivery = ref(false)
 const deliveryAddress = ref('')
+const payOnDelivery = ref(false)
 // Venta financiada: el cliente da una inicial y la financiadora gira el resto.
 const financingProviderId = ref<number | null>(null)
 // 0 por defecto: no todas las financieras piden cuota inicial.
@@ -159,6 +168,7 @@ const approvalNumber = ref('')
 function resetForm(): void {
   isDelivery.value = props.sale ? Boolean(props.sale.is_delivery) : props.initialDelivery
   deliveryAddress.value = props.sale ? (props.sale.delivery_address ?? '') : props.initialDeliveryAddress
+  payOnDelivery.value = false
   isCourtesy.value = false
   courtesyReason.value = ''
   // El servicio es de la mesa: en un domicilio (p. ej. un pedido del menú
@@ -224,6 +234,9 @@ const chargeBase = computed(() =>
 // Domicilio: se decide aqui al cobrar. En fiados no aplica (la venta ya
 // existe y su domicilio no se toca).
 const showDelivery = computed(() => props.business.delivery_enabled && !props.receivableMode)
+const isPayOnDelivery = computed(
+  () => props.allowPayOnDelivery && props.sale === null && showDelivery.value && isDelivery.value && payOnDelivery.value,
+)
 const savedDeliveryFee = computed(() => (props.sale ? Number(props.sale.delivery_fee) : 0))
 // Una cuenta que ya era domicilio conserva su tarifa (la del menú digital no
 // es la del POS); la del negocio solo aplica si el domicilio se marca aquí.
@@ -382,6 +395,10 @@ const canConfirm = computed(() => {
 })
 
 function submitConfirm(): void {
+  if (isPayOnDelivery.value) {
+    emit('pay-on-delivery', { delivery_address: deliveryAddress.value.trim() || null })
+    return
+  }
   if (!canConfirm.value) {
     return
   }
@@ -517,7 +534,20 @@ function applyClient(client: { id: number; name: string; phone: string | null })
         label="Dirección de entrega"
         placeholder="Calle 10 # 5-20, apto 301"
       />
+      <label
+        v-if="allowPayOnDelivery && sale === null && showDelivery && isDelivery"
+        class="flex items-start gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700"
+      >
+        <input v-model="payOnDelivery" type="checkbox" class="mt-0.5 h-4 w-4 rounded accent-indigo-600" />
+        <span>
+          <span class="font-medium">Paga al recibir</span>
+          <span class="block text-xs text-slate-500">
+            Lo cobra el domiciliario. Queda como cuenta abierta y la cierras cuando vuelva con la plata.
+          </span>
+        </span>
+      </label>
 
+      <template v-if="!isPayOnDelivery">
       <div v-if="!receivableMode">
         <NxToggleButton
           v-model="isCourtesy"
@@ -783,10 +813,13 @@ function applyClient(client: { id: number; name: string; phone: string | null })
           </NxTabPanel>
         </NxTabPanels>
       </NxTabs>
+      </template>
     </div>
 
     <template #footer>
-      <NxButton class="w-full" :disabled="!canConfirm" :loading="submitting" @click="submitConfirm">Cobrar</NxButton>
+      <NxButton class="w-full" :disabled="!isPayOnDelivery && !canConfirm" :loading="submitting" @click="submitConfirm">
+        {{ isPayOnDelivery ? 'Enviar sin cobrar' : 'Cobrar' }}
+      </NxButton>
     </template>
   </NxModal>
 </template>

@@ -6,13 +6,17 @@
 // legacy) - un solo componente en vez de 3 copias porque la logica de
 // imprimir/enviar es identica, solo cambia el tipo/id de entidad que le
 // pasa cada pantalla.
+import { useQuery } from '@tanstack/vue-query'
 import { computed, ref, watch } from 'vue'
 
+import { useBusiness } from '@/composables/useBusiness'
 import { useSystemAlert } from '@/composables/useSystemAlert'
+import { fetchPrintingStatus, reprintSaleReceipt } from '@/modules/printing/services/printingService'
 import { fetchReceiptPdf, fetchReceiptPrintHtml, sendReceipt } from '@/services/receipts'
 import type { ReceiptChannel, ReceiptEntityType } from '@/types/receipt'
 import { NxButton, NxInput, NxModal } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
+import { hasFeature } from '@/utils/hasFeature'
 
 const props = defineProps<{
   modelValue: boolean
@@ -46,6 +50,38 @@ async function print(): Promise<void> {
     printError.value = extractErrorMessage(error, 'No pudimos generar el comprobante.')
   } finally {
     isPrinting.value = false
+  }
+}
+
+// Con impresión automática y una impresora del mostrador, «Imprimir» la
+// manda a esa impresora (Nexolú Print Agent) y lo de siempre queda como
+// «En este equipo». Sin eso, este modal se ve exactamente igual que antes:
+// así imprime, por ejemplo, quien usa una impresora Bluetooth desde el
+// navegador del celular.
+const { data: business } = useBusiness()
+const printingStatus = useQuery({
+  queryKey: ['printing-status'],
+  queryFn: fetchPrintingStatus,
+  enabled: computed(() => props.modelValue && props.entityType === 'sale' && hasFeature(business.value, 'auto_printing')),
+})
+const canPrintToCounter = computed(
+  () =>
+    props.entityType === 'sale' &&
+    hasFeature(business.value, 'auto_printing') &&
+    printingStatus.data.value?.has_counter_printer === true,
+)
+const isSendingToPrinter = ref(false)
+
+async function printToCounter(): Promise<void> {
+  printError.value = null
+  isSendingToPrinter.value = true
+  try {
+    await reprintSaleReceipt(props.entityId)
+    notify('Se está imprimiendo en el mostrador.')
+  } catch (error) {
+    printError.value = extractErrorMessage(error, 'No pudimos mandarlo a la impresora.')
+  } finally {
+    isSendingToPrinter.value = false
   }
 }
 
@@ -111,7 +147,11 @@ async function send(): Promise<void> {
       <div>
         <p class="mb-2 text-sm font-semibold text-slate-700">Imprimir</p>
         <div class="flex flex-wrap gap-2">
-          <NxButton variant="outline" icon="pi pi-print" :loading="isPrinting" @click="print">Imprimir</NxButton>
+          <template v-if="canPrintToCounter">
+            <NxButton icon="pi pi-print" :loading="isSendingToPrinter" @click="printToCounter">Imprimir</NxButton>
+            <NxButton variant="outline" icon="pi pi-desktop" :loading="isPrinting" @click="print">En este equipo</NxButton>
+          </template>
+          <NxButton v-else variant="outline" icon="pi pi-print" :loading="isPrinting" @click="print">Imprimir</NxButton>
           <NxButton variant="outline" icon="pi pi-file-pdf" :loading="isOpeningPdf" @click="viewPdf">Ver PDF</NxButton>
         </div>
         <p v-if="printError" class="mt-1 text-xs text-red-600">{{ printError }}</p>
