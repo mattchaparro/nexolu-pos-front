@@ -5,7 +5,7 @@
 import { computed, ref, watch } from 'vue'
 
 import { useSystemAlert } from '@/composables/useSystemAlert'
-import { NxButton, NxInputNumber, NxSwitch } from '@/ui'
+import { NxButton, NxInput, NxInputNumber, NxSwitch } from '@/ui'
 import { extractErrorMessage } from '@/utils/extractErrorMessage'
 
 import { useReservationSettings } from '../composables/useReservations'
@@ -26,6 +26,27 @@ watch(
   },
   { immediate: true },
 )
+
+// Dias cerrados: festivos, un evento privado, vacaciones.
+const newBlockedDate = ref('')
+
+function addBlockedDate(): void {
+  const day = newBlockedDate.value
+  if (rules.value && day && !rules.value.blocked_dates.includes(day)) {
+    rules.value.blocked_dates = [...rules.value.blocked_dates, day].sort()
+  }
+  newBlockedDate.value = ''
+}
+
+function removeBlockedDate(day: string): void {
+  if (rules.value) {
+    rules.value.blocked_dates = rules.value.blocked_dates.filter((d) => d !== day)
+  }
+}
+
+function blockedLabel(day: string): string {
+  return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(`${day}T12:00:00Z`))
+}
 
 const canOpen = computed(() => state.value?.hours_configured === true)
 const copied = ref(false)
@@ -89,6 +110,27 @@ async function copyLink(): Promise<void> {
         <NxInputNumber v-model="rules.min_notice_minutes" label="Reservar con al menos (min)" :currency="false" :min="0" :max="2880" />
         <NxInputNumber v-model="rules.max_days_ahead" label="Hasta cuántos días adelante" :currency="false" :min="1" :max="180" />
         <NxInputNumber v-model="rules.max_party_size" label="Máximo de personas por internet" :currency="false" :min="1" :max="40" />
+      </div>
+
+      <div>
+        <p class="text-sm font-medium text-slate-800">Días cerrados</p>
+        <p class="text-xs text-slate-500">En estas fechas no se ofrecen reservas, aunque tu horario diga que abres.</p>
+        <div v-if="rules.blocked_dates.length > 0" class="mt-2 flex flex-wrap gap-2">
+          <span
+            v-for="day in rules.blocked_dates"
+            :key="day"
+            class="flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
+          >
+            {{ blockedLabel(day) }}
+            <button type="button" class="text-slate-400 hover:text-red-500" :aria-label="`Quitar ${day}`" @click="removeBlockedDate(day)">
+              <i class="pi pi-times text-[10px]" />
+            </button>
+          </span>
+        </div>
+        <div class="mt-2 flex items-end gap-2">
+          <NxInput v-model="newBlockedDate" type="date" label="Cerrar un día" size="sm" class="w-44" />
+          <NxButton size="sm" variant="outline" :disabled="!newBlockedDate" @click="addBlockedDate">Agregar</NxButton>
+        </div>
       </div>
 
       <label class="flex items-start gap-3">

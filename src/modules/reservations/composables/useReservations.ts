@@ -12,6 +12,7 @@ import {
   fetchReservations,
   fetchReservationSettings,
   fetchReservationSummary,
+  rescheduleReservation,
   runReservationAction,
   updateBusinessHours,
   updateReservation,
@@ -73,6 +74,12 @@ export function useReservationMutations() {
     act: useMutation({
       mutationFn: ({ id, action }: { id: number; action: ReservationAction }) => runReservationAction(id, action),
       onError,
+      onSettled: refresh,
+    }),
+    reschedule: useMutation({
+      mutationFn: ({ id, startsAt, partySize }: { id: number; startsAt: string; partySize?: number }) =>
+        rescheduleReservation(id, startsAt, partySize),
+      onSuccess: () => notify('Reserva cambiada'),
       onSettled: refresh,
     }),
     update: useMutation({

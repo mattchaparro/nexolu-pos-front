@@ -88,6 +88,14 @@ export async function confirmReservation(id: number, tableId?: number | null): P
   return data
 }
 
+export async function rescheduleReservation(id: number, startsAt: string, partySize?: number): Promise<Reservation> {
+  const { data } = await httpClient.post<Reservation>(`/reservations/${id}/reschedule`, {
+    starts_at: startsAt,
+    ...(partySize ? { party_size: partySize } : {}),
+  })
+  return data
+}
+
 export async function assignReservationTable(id: number, tableId: number): Promise<Reservation> {
   const { data } = await httpClient.post<Reservation>(`/reservations/${id}/assign-table`, { table_id: tableId })
   return data
@@ -104,6 +112,8 @@ export interface ReservationRules {
   min_notice_minutes: number
   max_days_ahead: number
   max_party_size: number
+  /** Dias cerrados (festivos, eventos), YYYY-MM-DD. */
+  blocked_dates: string[]
 }
 
 export interface ReservationSettingsState {

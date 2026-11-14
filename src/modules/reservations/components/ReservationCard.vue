@@ -2,13 +2,14 @@
 // Una reserva en la lista del dia: hora, quien, cuantos, mesa y las acciones
 // que corresponden a su estado. Confirmar asigna sola la mesa mas ajustada;
 // la mesa se puede cambiar despues desde el selector.
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useTables } from '@/modules/open-tabs/composables/useTables'
 import { NxButton, NxSelect } from '@/ui'
 
 import { useReservationMutations } from '../composables/useReservations'
+import ReservationRescheduleModal from './ReservationRescheduleModal.vue'
 import type { Reservation } from '../services/reservationService'
 import { isLive, STATUS_LABELS, STATUS_TONES, timeLabel, whatsappUrl } from '../support/reservationText'
 
@@ -20,6 +21,8 @@ const { confirm, assignTable, act } = useReservationMutations()
 
 const tables = computed(() => (tablesQuery.data.value ?? []).filter((t) => t.is_active && t.capacity >= props.reservation.party_size))
 const hasTables = computed(() => (tablesQuery.data.value ?? []).some((t) => t.is_active))
+
+const rescheduleOpen = ref(false)
 
 const busy = computed(() => confirm.isPending.value || assignTable.isPending.value || act.isPending.value)
 
@@ -95,12 +98,14 @@ const whatsapp = computed(() => {
         <NxButton size="sm" :loading="confirm.isPending.value" :disabled="busy" @click="confirm.mutate({ id: reservation.id })">
           Confirmar
         </NxButton>
+        <NxButton size="sm" variant="outline" :disabled="busy" @click="rescheduleOpen = true">Cambiar hora</NxButton>
         <NxButton size="sm" variant="outline" :disabled="busy" @click="act.mutate({ id: reservation.id, action: 'decline' })">
           Rechazar
         </NxButton>
       </template>
       <template v-else-if="reservation.status === 'confirmed'">
         <NxButton size="sm" :disabled="busy" @click="seat">Llegó, sentar</NxButton>
+        <NxButton size="sm" variant="outline" :disabled="busy" @click="rescheduleOpen = true">Cambiar hora</NxButton>
         <NxButton size="sm" variant="outline" :disabled="busy" @click="act.mutate({ id: reservation.id, action: 'no-show' })">
           No llegó
         </NxButton>
@@ -112,5 +117,7 @@ const whatsapp = computed(() => {
         Se cierra sola al cobrar la cuenta de la mesa<template v-if="reservation.table"> {{ reservation.table.name }}</template>.
       </p>
     </div>
+
+    <ReservationRescheduleModal v-model="rescheduleOpen" :reservation="reservation" />
   </div>
 </template>
