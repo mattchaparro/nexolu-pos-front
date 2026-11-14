@@ -48,8 +48,8 @@ const offline = computed(() => status.value?.agents_offline ?? [])
       <p>
         {{
           status.failed_jobs === 1
-            ? 'Un ticket no se pudo imprimir hoy'
-            : `${status.failed_jobs} tickets no se pudieron imprimir hoy`
+            ? 'Un ticket no se pudo imprimir en las últimas 24 horas'
+            : `${status.failed_jobs} tickets no se pudieron imprimir en las últimas 24 horas`
         }}. Revisa papel y cable de la impresora; el administrador los puede reintentar en Ajustes ›
         Impresoras.
       </p>

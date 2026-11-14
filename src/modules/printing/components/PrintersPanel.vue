@@ -129,6 +129,7 @@ async function removeAgent(agent: PrintAgent): Promise<void> {
 
 function agentState(agent: PrintAgent): { label: string; classes: string } {
   if (agent.status === 'pairing') {
+    // Con un código pendiente el token anterior sigue imprimiendo hasta que se use.
     return { label: 'Esperando el código', classes: 'bg-amber-50 text-amber-700' }
   }
   if (agent.status !== 'paired') {
