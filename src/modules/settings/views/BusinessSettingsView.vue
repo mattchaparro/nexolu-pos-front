@@ -21,6 +21,7 @@ import { useAiMessagePackCheckout } from '@/modules/ai-message-packs/composables
 import { useAiQuotaState } from '@/modules/ai-message-packs/composables/useAiQuotaState'
 import BranchesPanel from '@/modules/branches/components/BranchesPanel.vue'
 import { useCategories } from '@/modules/catalog/composables/useCategories'
+import PrintersPanel from '@/modules/printing/components/PrintersPanel.vue'
 import {
   NxButton,
   NxCard,
@@ -60,10 +61,16 @@ const canEdit = computed(
 // redirige a ?tab=sedes desde que Sedes dejó el menú lateral).
 const activeTab = ref(typeof route.query.tab === 'string' ? route.query.tab : '0')
 const showBranchesTab = computed(() => hasFeature(business.value, 'multi_branch'))
+// Impresoras: solo con impresión automática y solo para el admin (la API
+// de configuración es business-admin).
+const showPrintersTab = computed(() => hasFeature(business.value, 'auto_printing') && canEdit.value)
 watch(
   business,
   (value) => {
     if (value && activeTab.value === 'sedes' && !showBranchesTab.value) {
+      activeTab.value = '0'
+    }
+    if (value && activeTab.value === 'impresoras' && !showPrintersTab.value) {
       activeTab.value = '0'
     }
   },
@@ -512,6 +519,7 @@ const { gatewaysQuery } = usePaymentGateways()
           <NxTab value="1">Facturacion</NxTab>
           <NxTab value="2">Ventas</NxTab>
           <NxTab value="8">Medios de pago</NxTab>
+          <NxTab v-if="showPrintersTab" value="impresoras">Impresoras</NxTab>
           <NxTab value="3">Inventario</NxTab>
           <NxTab v-if="business?.can_access_layaways" value="4">Apartados</NxTab>
           <NxTab v-if="business?.can_access_services" value="5">Ordenes de servicio</NxTab>
@@ -523,6 +531,11 @@ const { gatewaysQuery } = usePaymentGateways()
           <!-- ================= Sedes ================= -->
           <NxTabPanel v-if="showBranchesTab" value="sedes">
             <BranchesPanel />
+          </NxTabPanel>
+
+          <!-- ================= Impresoras ================= -->
+          <NxTabPanel v-if="showPrintersTab" value="impresoras">
+            <PrintersPanel v-if="activeTab === 'impresoras'" />
           </NxTabPanel>
 
           <!-- ================= Negocio ================= -->

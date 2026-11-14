@@ -63,6 +63,12 @@ export const adminNavItems: NavItem[] = [
     routeName: 'kitchen.index',
     featureKey: 'kitchen_board',
   },
+  {
+    label: 'Despacho',
+    icon: 'pi pi-send',
+    routeName: 'dispatch.index',
+    featureKey: 'kitchen_printing',
+  },
   // Solo si el negocio hace domicilios (Configuración › Ventas): ver useNavItems.
   { label: 'Domicilios', icon: 'pi pi-truck', routeName: 'deliveries.index' },
   { label: 'Catálogo', icon: 'pi pi-shop', routeName: 'catalog.index' },

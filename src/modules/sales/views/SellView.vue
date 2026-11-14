@@ -17,6 +17,7 @@ import { useGuidedTour } from '@/composables/useGuidedTour'
 import { usePermissions } from '@/composables/usePermissions'
 import { useSystemAlert } from '@/composables/useSystemAlert'
 import { useCurrentShift } from '@/modules/cash-shifts/composables/useCurrentShift'
+import PrintingStatusBanner from '@/modules/printing/components/PrintingStatusBanner.vue'
 import { useAuthStore } from '@/stores/auth.store'
 import { useBranchStore } from '@/stores/branch.store'
 import type { Product, ProductVariant } from '@/types/product'
@@ -531,6 +532,7 @@ const { branches: sellableBranches } = useBranches()
 <template>
   <div class="flex h-[calc(100dvh-4rem)] flex-col lg:h-[calc(100dvh-4rem-3rem)]">
     <NxPageHeader title="Vender" icon="pi pi-shopping-cart" compact />
+    <PrintingStatusBanner class="mb-2 shrink-0" />
 
     <div
       v-if="branchStore.isAllBranches"

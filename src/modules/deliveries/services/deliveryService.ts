@@ -10,6 +10,8 @@ export interface Delivery {
   customer_name: string | null
   customer_phone: string | null
   address: string | null
+  /** Pedido online para recoger (lo muestra Despacho). */
+  is_pickup?: boolean
   notes: string | null
   items: { name: string; quantity: number }[]
   total: number
