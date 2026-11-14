@@ -5,15 +5,13 @@ import type { Delivery } from '../services/deliveryService'
 // Textos de un domicilio que comparten Domicilios (el domiciliario) y
 // Despacho (la caja).
 
-/** Lo que hay que cobrarle al cliente en la puerta (0 = ya está pago). */
+/**
+ * Lo que hay que cobrarle al cliente en la puerta (0 = ya está pago). Lo
+ * decide el API (DeliveryService::amountToCollect), el mismo que imprime el
+ * ticket del domiciliario: así la pantalla y el papel nunca se contradicen.
+ */
 export function cashToCollect(delivery: Delivery): number {
-  if (delivery.is_paid_online) {
-    return 0
-  }
-  if (delivery.is_open_tab || delivery.payment_method === 'cash') {
-    return delivery.total
-  }
-  return 0
+  return Number(delivery.amount_to_collect ?? 0)
 }
 
 export function paymentText(
@@ -23,13 +21,11 @@ export function paymentText(
   if (delivery.is_paid_online) {
     return 'Ya pagado en línea'
   }
-  if (delivery.is_open_tab) {
-    return `Cobrar ${formatCop(delivery.total)} al entregar`
+  const amount = cashToCollect(delivery)
+  if (amount > 0) {
+    return delivery.is_open_tab ? `Cobrar ${formatCop(amount)} al entregar` : `Cobrar ${formatCop(amount)} en efectivo`
   }
-  if (delivery.payment_method === 'cash') {
-    return `Cobrar ${formatCop(delivery.total)} en efectivo`
-  }
-  return `Pagado con ${methodLabel(delivery.payment_method)}`
+  return delivery.payment_method ? `Pagado con ${methodLabel(delivery.payment_method)}` : 'Ya pagado'
 }
 
 export function deliveryTitle(delivery: Delivery): string {

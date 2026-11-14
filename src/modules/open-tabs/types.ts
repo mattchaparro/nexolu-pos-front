@@ -12,6 +12,10 @@ export interface OpenTabPayload {
   notes?: string | null
   is_delivery?: boolean
   delivery_address?: string | null
+  customer_identification?: string | null
+  client_id?: number | null
+  save_address_to_client?: boolean
+  cart_discount_id?: number | null
   items: SaleItemInput[]
 }
 
