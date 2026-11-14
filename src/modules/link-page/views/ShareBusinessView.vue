@@ -8,6 +8,7 @@ import { computed } from 'vue'
 import ShareLinkPanel from '@/modules/online-store/components/ShareLinkPanel.vue'
 import { NxPageHeader } from '@/ui'
 
+import BrandLookCard from '../components/BrandLookCard.vue'
 import LinkPageCard from '../components/LinkPageCard.vue'
 import LinkPageStyleCard from '../components/LinkPageStyleCard.vue'
 import PublicProfileCard from '../components/PublicProfileCard.vue'
@@ -34,6 +35,8 @@ const catalogUrl = computed(() => state.value?.public_url.replace(/\/enlaces$/, 
     <PublicProfileCard />
 
     <LinkPageStyleCard />
+
+    <BrandLookCard />
 
     <div v-if="state?.has_store" class="rounded-xl border border-slate-200 bg-white p-4">
       <p class="text-sm font-semibold text-slate-800">Tu catálogo</p>

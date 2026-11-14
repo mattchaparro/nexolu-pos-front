@@ -1,12 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
 import {
+  type BrandImageKind,
+  deleteBrandImage,
   deleteLinkPageIcon,
   deleteLinkPageLogo,
   fetchLinkPage,
   type LinkPagePayload,
   type LinkPageState,
   updateLinkPage,
+  uploadBrandImage,
   uploadLinkPageIcon,
   uploadLinkPageLogo,
 } from '../services/linkPageService'
@@ -51,8 +54,20 @@ export function useLinkPage() {
     onSuccess: onSaved,
   })
 
+  const uploadBrandImageMutation = useMutation({
+    mutationFn: ({ kind, file }: { kind: BrandImageKind; file: File }) => uploadBrandImage(kind, file),
+    onSuccess: onSaved,
+  })
+
+  const deleteBrandImageMutation = useMutation({
+    mutationFn: (kind: BrandImageKind) => deleteBrandImage(kind),
+    onSuccess: onSaved,
+  })
+
   return {
     linkPageQuery,
+    uploadBrandImageMutation,
+    deleteBrandImageMutation,
     updateMutation,
     uploadLogoMutation,
     deleteLogoMutation,

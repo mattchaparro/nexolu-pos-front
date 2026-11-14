@@ -51,9 +51,33 @@ const FONTS: FontOption[] = [
     body: "'IBM Plex Sans', system-ui, sans-serif",
     google: 'Space+Grotesk:wght@600;700|IBM+Plex+Sans:wght@400;500',
   },
+  {
+    value: 'impacto',
+    label: 'Impacto',
+    hint: 'Titulares gruesos y condensados. Hamburguesería, comida callejera.',
+    heading: "'Anton', Impact, 'Arial Narrow', sans-serif",
+    body: "'Karla', system-ui, sans-serif",
+    google: 'Anton|Karla:wght@400;600',
+  },
+  {
+    value: 'bistro',
+    label: 'Bistró',
+    hint: 'Serif elegante, de mantel. Restaurantes y pastelería.',
+    heading: "'Playfair Display', Georgia, serif",
+    body: "'Lato', system-ui, sans-serif",
+    google: 'Playfair+Display:wght@600;700|Lato:wght@400;700',
+  },
+  {
+    value: 'urbana',
+    label: 'Urbana',
+    hint: 'Mayúscula y condensada. Bares, café de especialidad.',
+    heading: "'Bebas Neue', Impact, sans-serif",
+    body: "'Barlow', system-ui, sans-serif",
+    google: 'Bebas+Neue|Barlow:wght@400;600',
+  },
 ]
 
-// Se cargan las cuatro de una: son muestras que hay que poder comparar
+// Se cargan todas de una: son muestras que hay que poder comparar
 // lado a lado, y pedirlas al elegir haría que la que se está mirando sea
 // la única que todavía no se ve.
 onMounted(() => {
