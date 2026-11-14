@@ -18,13 +18,18 @@ const DEFAULT_RANGE = { open: '17:00', close: '22:00' }
 const { notify } = useSystemAlert()
 const { hoursQuery, saveHours } = useReservationSettings()
 
+// Copia profunda: structuredClone no sirve con los datos reactivos de Vue (DataCloneError).
+function clone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
+}
+
 const hours = ref<WeeklyHours | null>(null)
 
 watch(
   () => hoursQuery.data.value,
   (state) => {
     if (state) {
-      hours.value = structuredClone(state.weekly_hours)
+      hours.value = clone(state.weekly_hours)
     }
   },
   { immediate: true },
@@ -64,7 +69,7 @@ function copyToAll(): void {
     return
   }
   for (const day of WEEK_DAYS) {
-    hours.value[day] = structuredClone(source)
+    hours.value[day] = clone(source)
   }
 }
 
